@@ -60,6 +60,19 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
+        .result-container {
+            opacity: 0.5;
+            filter: blur(2px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .result-container.active {
+            opacity: 1;
+            filter: blur(0);
+            pointer-events: all;
+        }
+
         .result-box {
             background: rgba(0, 0, 0, 0.3);
             border-radius: var(--radius-md);
@@ -89,6 +102,12 @@
             line-height: 1.1;
         }
 
+        .result-sub {
+            font-size: 0.9rem;
+            color: #ef4444;
+            margin-top: 8px;
+        }
+
         .result-value.text-danger {
             color: #f87171;
         }
@@ -115,6 +134,14 @@
             color: white;
             margin-top: 40px;
             margin-bottom: 16px;
+        }
+
+        .source-dropdown {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
         }
 
         @media (max-width: 768px) {
@@ -152,8 +179,8 @@
         <div class="container hero-content">
             <span class="hero-badge">Inflation Tracking Tool 2025</span>
             <h1>The True Cost of <span class="gradient-text">Weight Loss Drugs</span></h1>
-            <p class="hero-subtitle">See specifically how much Ozempic, Wegovy, or Mounjaro will cost you over 5 years
-                compared to natural alternatives.</p>
+            <p class="hero-subtitle">See specifically how much Ozempic, Wegovy, or Mounjaro will cost you over 5 years.
+                Does not account for potential insurance adjustments.</p>
         </div>
     </section>
 
@@ -195,31 +222,36 @@
                         </select>
                     </div>
 
-                    <button class="btn btn-primary btn-block" onclick="calculate()">Update Projection</button>
+                    <!-- Explicit Action Button -->
+                    <button class="btn btn-primary btn-block" onclick="calculate()">Calculate True Cost &rarr;</button>
                 </div>
 
                 <!-- Result Card -->
-                <div class="calc-card" id="resultCard">
+                <div class="calc-card">
                     <h3 style="margin-bottom: 24px;">5-Year Financial Impact</h3>
 
-                    <div class="result-box" id="annualBox">
-                        <div class="result-label">Annual Cost (2025)</div>
-                        <div class="result-value" id="annualCost">$11,220</div>
+                    <div id="resultContainer" class="result-container">
+                        <div class="result-box" id="annualBox">
+                            <div class="result-label">Base Annual Cost</div>
+                            <div class="result-value" id="annualCost">$---</div>
+                        </div>
+
+                        <div class="result-box alert" id="totalBox">
+                            <div class="result-label">5-Year Projected Cost</div>
+                            <div class="result-value text-danger" id="fiveYearCost">$---</div>
+                            <div class="result-sub" id="inflationText">With 6% avg. annual inflation</div>
+                        </div>
+
+                        <div class="calc-cta-section" id="dynamicCta">
+                            <!-- Dynamic Content injected here via JS -->
+                        </div>
                     </div>
 
-                    <div class="result-box alert" id="totalBox">
-                        <div class="result-label">5-Year Projected Cost</div>
-                        <div class="result-value text-danger" id="fiveYearCost">$56,100</div>
+                    <div class="source-dropdown">
+                        <p><strong>Sources:</strong> Cost estimates based on national retail averages (GoodRx,
+                            manufacturers list price). Inflation projection based on historical pharmaceutical price
+                            trends (6% avg). Costs vary by pharmacy and coverage.</p>
                     </div>
-
-                    <div class="calc-cta-section" id="dynamicCta">
-                        <!-- Dynamic Content injected here via JS -->
-                    </div>
-
-                    <p class="disclaimer-text">
-                        *Estimates based on current national retail prices. Does not account for annual pharmaceutical
-                        price hikes (avg 5-8%/year).
-                    </p>
                 </div>
             </div>
         </div>
@@ -230,16 +262,16 @@
         <div class="container press-content">
             <h2>Why The Cost Is Higher Than You Think</h2>
             <p>Most patients focus on the monthly copay, but fail to account for the long-term duration required by
-                GLP-1 agonists. Clinical data shows that weight regain is rapid upon cessation, meaning these costs
-                differ from a standard antibiotic course—they are a lifetime subscription.</p>
+                GLP-1 agonists. Studies suggest that many patients may regain weight after stopping treatment, meaning
+                these costs can differ from a standard antibiotic course—they are often a long-term commitment.</p>
 
             <h3>The "Inflation" Factor</h3>
-            <p>With pharmaceutical prices rising an average of 6% annually, the cost of maintaining a Semaglutide
-                prescription could exceed $70,000 over the next 5 years for uninsured patients.</p>
+            <p>With pharmaceutical prices rising annually, the cost of maintaining a Semaglutide prescription could be
+                significantly higher over the next 5 years for uninsured patients.</p>
 
             <h3>Is There A Better Way?</h3>
             <p>For those who do not qualify for insurance coverage, or who are concerned about the long-term financial
-                commitment, science-backed natural alternatives focuses on metabolic activation rather than appetite
+                commitment, science-backed natural alternatives focus on metabolic activation rather than appetite
                 suppression.</p>
         </div>
     </section>
@@ -281,7 +313,7 @@
             if (select.value !== 'custom') {
                 document.getElementById('monthlyCost').value = prices[select.value];
             }
-            calculate();
+            // Don't auto calculate now, user must click
         }
 
         function formatMoney(amount) {
@@ -291,10 +323,22 @@
         function calculate() {
             const monthly = parseFloat(document.getElementById('monthlyCost').value) || 0;
             const annual = monthly * 12;
-            const fiveYear = annual * 5;
+
+            // Inflation Calculation (Compound 6% over 5 years)
+            let fiveYearTotal = 0;
+            let currentAnnual = annual;
+            const inflationRate = 0.06;
+
+            for (let i = 0; i < 5; i++) {
+                fiveYearTotal += currentAnnual;
+                currentAnnual = currentAnnual * (1 + inflationRate);
+            }
+
+            // Reveal Results
+            document.getElementById('resultContainer').classList.add('active');
 
             document.getElementById('annualCost').innerText = formatMoney(annual);
-            document.getElementById('fiveYearCost').innerText = formatMoney(fiveYear);
+            document.getElementById('fiveYearCost').innerText = formatMoney(fiveYearTotal);
 
             // "Big Kahuna" Logic
             const ctaContainer = document.getElementById('dynamicCta');
@@ -303,9 +347,13 @@
             // Scenario A: High Cost / No Insurance -> Push Insurance Checker (CPA)
             if (status === 'none' || status === 'deductible' || monthly > 300) {
                 ctaContainer.innerHTML = `
-                    <p style="margin-bottom: 16px; color: #f87171; font-weight: 600;">⚠️ Alert: This cost exceeds average household budgets.</p>
+                    <p style="margin-bottom: 16px; color: #f87171; font-weight: 600;">⚠️ Heads up: Over 5 years, costs can add up fast—especially without coverage.</p>
+                    
                     <a href="#" class="btn btn-primary btn-block" style="margin-bottom: 12px; background: #ef4444;">Check Insurance Eligibility &rarr;</a>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 20px;">(Opens external partner site)</div>
+
                     <a href="https://7234ch3ijklm2tda73liqh6yf0.hop.clickbank.net" class="btn btn-block" style="background: rgba(255,255,255,0.1);">Or Try The Natural Alternative</a>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">(Commission-earned link)</div>
                 `;
             }
             // Scenario B: Low Cost / Covered -> Push Standard Affiliate
@@ -313,12 +361,10 @@
                 ctaContainer.innerHTML = `
                     <p style="margin-bottom: 16px; color: var(--secondary); font-weight: 600;">✅ Excellent! You have good coverage.</p>
                     <a href="https://7234ch3ijklm2tda73liqh6yf0.hop.clickbank.net" class="btn btn-primary btn-block">Boost Results with Flat Belly Flush &rarr;</a>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">(Commission-earned link)</div>
                 `;
             }
         }
-
-        // Initialize
-        calculate();
     </script>
 </body>
 
