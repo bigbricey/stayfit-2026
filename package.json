@@ -1,0 +1,12 @@
+{
+  "name": "stayfitwithai",
+  "version": "1.0.0",
+  "description": "AI-powered fitness recommendations website",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  },
+  "keywords": ["fitness", "weight loss", "belly fat", "workout"],
+  "author": "StayFitWithAI",
+  "license": "MIT"
+}
