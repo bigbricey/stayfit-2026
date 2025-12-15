@@ -1,12 +1,26 @@
 {
-  "name": "stayfitwithai",
-  "version": "1.0.0",
-  "description": "AI-powered fitness recommendations website",
+  "name": "engine",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "npx serve .",
-    "start": "npx serve ."
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
-  "keywords": ["fitness", "weight loss", "belly fat", "workout"],
-  "author": "StayFitWithAI",
-  "license": "MIT"
+  "dependencies": {
+    "next": "16.0.10",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
 }
