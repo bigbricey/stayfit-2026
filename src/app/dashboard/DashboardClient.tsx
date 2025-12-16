@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Link from 'next/link';
+import ProfileSetupModal from '@/components/ProfileSetupModal';
+import LogTab from '@/components/LogTab';
+import ProgressTab from '@/components/ProgressTab';
 
 interface DashboardProps {
     user: { id: string; email?: string };
@@ -32,6 +35,7 @@ export default function DashboardClient({
     const [weight, setWeight] = useState('');
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'log' | 'progress' | 'feedback'>('overview');
+    const [showProfileSetup, setShowProfileSetup] = useState(!profile?.goal_weight || !profile?.start_weight);
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -240,10 +244,24 @@ export default function DashboardClient({
                     </div>
                 )}
 
+                {activeTab === 'log' && (
+                    <LogTab userId={user.id} weightEntries={weightEntries} mealsToday={mealsToday} />
+                )}
+
+                {activeTab === 'progress' && (
+                    <ProgressTab profile={profile} weightEntries={weightEntries} streak={streak} />
+                )}
+
                 {activeTab === 'feedback' && (
                     <FeedbackForm userId={user.id} />
                 )}
             </div>
+
+            <ProfileSetupModal
+                userId={user.id}
+                isOpen={showProfileSetup}
+                onClose={() => setShowProfileSetup(false)}
+            />
         </div>
     );
 }
