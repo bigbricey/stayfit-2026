@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
-import Navigation from "@/components/Navigation";
+
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-gray-100`}>
         <Providers>
           {/* Navigation with active tab highlighting */}
-          <Navigation />
+          {/* Navigation removed for Chat UI override */}
 
           {/* Main Content */}
           <main className="min-h-screen">
