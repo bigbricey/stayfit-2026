@@ -4,19 +4,20 @@ import Link from 'next/link';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-// Common foods database (sample)
-const commonFoods = [
-    { name: 'Banana, medium', calories: 105, carbs: 27, fat: 0.4, protein: 1.3 },
-    { name: 'Apple, medium', calories: 95, carbs: 25, fat: 0.3, protein: 0.5 },
-    { name: 'Egg, large', calories: 78, carbs: 0.6, fat: 5, protein: 6 },
-    { name: 'Chicken Breast, 4oz', calories: 165, carbs: 0, fat: 3.6, protein: 31 },
-    { name: 'Brown Rice, 1 cup cooked', calories: 216, carbs: 45, fat: 1.8, protein: 5 },
-    { name: 'Greek Yogurt, 6oz', calories: 100, carbs: 6, fat: 0.7, protein: 17 },
-    { name: 'Oatmeal, 1 cup cooked', calories: 166, carbs: 28, fat: 3.6, protein: 5.9 },
-    { name: 'Salmon, 4oz', calories: 233, carbs: 0, fat: 14, protein: 25 },
-    { name: 'Broccoli, 1 cup', calories: 55, carbs: 11, fat: 0.6, protein: 3.7 },
-    { name: 'Almonds, 1oz (23 nuts)', calories: 164, carbs: 6, fat: 14, protein: 6 },
-];
+interface FoodItem {
+    fdcId: number;
+    name: string;
+    brand: string | null;
+    servingSize: number;
+    servingUnit: string;
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fiber: number;
+    sugar: number;
+    sodium: number;
+}
 
 function AddFoodForm() {
     const searchParams = useSearchParams();
@@ -24,23 +25,45 @@ function AddFoodForm() {
     const mealDisplay = meal.charAt(0).toUpperCase() + meal.slice(1);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<typeof commonFoods>([]);
-    const [selectedFood, setSelectedFood] = useState<typeof commonFoods[0] | null>(null);
+    const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
     const [servings, setServings] = useState('1');
     const [message, setMessage] = useState('');
+    const [totalHits, setTotalHits] = useState(0);
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         if (!searchQuery.trim()) {
-            setSearchResults(commonFoods.slice(0, 5));
+            setMessage('Please enter a food to search');
             return;
         }
-        const results = commonFoods.filter(food =>
-            food.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setSearchResults(results);
+
+        setIsSearching(true);
+        setMessage('');
+        setSearchResults([]);
+
+        try {
+            const response = await fetch(`/api/food/search?query=${encodeURIComponent(searchQuery)}`);
+            const data = await response.json();
+
+            if (data.error) {
+                setMessage(data.error);
+            } else {
+                setSearchResults(data.foods || []);
+                setTotalHits(data.totalHits || 0);
+                if (data.foods?.length === 0) {
+                    setMessage('No foods found. Try a different search term.');
+                }
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            setMessage('Error searching foods. Please try again.');
+        }
+
+        setIsSearching(false);
     };
 
-    const handleSelectFood = (food: typeof commonFoods[0]) => {
+    const handleSelectFood = (food: FoodItem) => {
         setSelectedFood(food);
         setSearchResults([]);
     };
@@ -57,6 +80,8 @@ function AddFoodForm() {
         setServings('1');
     };
 
+    const servingMultiplier = parseFloat(servings || '1');
+
     return (
         <div className="bg-[#F5F5F5] min-h-screen">
             <div className="max-w-3xl mx-auto px-4 py-6">
@@ -72,41 +97,54 @@ function AddFoodForm() {
                     <div className="p-5">
                         {/* Search Section */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Search for a food</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Search for any food</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    placeholder="e.g., banana, chicken breast, rice..."
+                                    placeholder="e.g., pizza, grilled chicken, avocado toast..."
                                     className="flex-1 border border-gray-300 rounded px-3 py-2 focus:border-[#0073CF] focus:outline-none"
                                 />
                                 <button
                                     onClick={handleSearch}
-                                    className="bg-[#0073CF] text-white px-4 py-2 rounded hover:bg-[#005AA7] transition-colors"
+                                    disabled={isSearching}
+                                    className="bg-[#0073CF] text-white px-4 py-2 rounded hover:bg-[#005AA7] transition-colors disabled:opacity-50"
                                 >
-                                    Search
+                                    {isSearching ? 'Searching...' : 'Search'}
                                 </button>
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
-                                Or <button onClick={() => setSearchResults(commonFoods)} className="text-[#0073CF] hover:underline">browse all common foods</button>
+                                Powered by USDA FoodData Central - Search millions of foods
                             </p>
                         </div>
 
                         {/* Search Results */}
                         {searchResults.length > 0 && (
                             <div className="mb-6">
-                                <h3 className="font-medium text-gray-700 mb-2">Search Results</h3>
-                                <div className="border border-gray-200 rounded max-h-60 overflow-y-auto">
-                                    {searchResults.map((food, idx) => (
+                                <h3 className="font-medium text-gray-700 mb-2">
+                                    Found {totalHits.toLocaleString()} results (showing top 25)
+                                </h3>
+                                <div className="border border-gray-200 rounded max-h-80 overflow-y-auto">
+                                    {searchResults.map((food) => (
                                         <button
-                                            key={idx}
+                                            key={food.fdcId}
                                             onClick={() => handleSelectFood(food)}
-                                            className="w-full text-left px-4 py-3 hover:bg-[#E8F4FC] border-b border-gray-100 last:border-b-0 flex justify-between items-center"
+                                            className="w-full text-left px-4 py-3 hover:bg-[#E8F4FC] border-b border-gray-100 last:border-b-0"
                                         >
-                                            <span className="text-gray-800">{food.name}</span>
-                                            <span className="text-gray-500 text-sm">{food.calories} cal</span>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="text-gray-800 font-medium">{food.name}</div>
+                                                    {food.brand && (
+                                                        <div className="text-xs text-gray-500">{food.brand}</div>
+                                                    )}
+                                                </div>
+                                                <div className="text-right text-sm">
+                                                    <div className="font-medium text-gray-800">{Math.round(food.calories)} cal</div>
+                                                    <div className="text-xs text-gray-500">per {food.servingSize}{food.servingUnit}</div>
+                                                </div>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -116,27 +154,35 @@ function AddFoodForm() {
                         {/* Selected Food */}
                         {selectedFood && (
                             <div className="mb-6 p-4 bg-[#E8F4FC] rounded-lg border border-[#C5DCE9]">
-                                <h3 className="font-medium text-gray-800 mb-3">Selected: {selectedFood.name}</h3>
+                                <h3 className="font-medium text-gray-800 mb-1">{selectedFood.name}</h3>
+                                {selectedFood.brand && (
+                                    <p className="text-sm text-gray-500 mb-3">{selectedFood.brand}</p>
+                                )}
                                 <div className="grid grid-cols-4 gap-4 text-center text-sm mb-4">
                                     <div>
                                         <div className="text-gray-500">Calories</div>
-                                        <div className="font-semibold">{Math.round(selectedFood.calories * parseFloat(servings || '1'))}</div>
+                                        <div className="font-semibold text-lg">{Math.round(selectedFood.calories * servingMultiplier)}</div>
                                     </div>
                                     <div>
                                         <div className="text-gray-500">Carbs</div>
-                                        <div className="font-semibold">{Math.round(selectedFood.carbs * parseFloat(servings || '1'))}g</div>
+                                        <div className="font-semibold">{Math.round(selectedFood.carbs * servingMultiplier)}g</div>
                                     </div>
                                     <div>
                                         <div className="text-gray-500">Fat</div>
-                                        <div className="font-semibold">{Math.round(selectedFood.fat * parseFloat(servings || '1'))}g</div>
+                                        <div className="font-semibold">{Math.round(selectedFood.fat * servingMultiplier)}g</div>
                                     </div>
                                     <div>
                                         <div className="text-gray-500">Protein</div>
-                                        <div className="font-semibold">{Math.round(selectedFood.protein * parseFloat(servings || '1'))}g</div>
+                                        <div className="font-semibold">{Math.round(selectedFood.protein * servingMultiplier)}g</div>
                                     </div>
                                 </div>
+                                <div className="grid grid-cols-3 gap-4 text-center text-xs text-gray-500 mb-4">
+                                    <div>Fiber: {Math.round(selectedFood.fiber * servingMultiplier)}g</div>
+                                    <div>Sugar: {Math.round(selectedFood.sugar * servingMultiplier)}g</div>
+                                    <div>Sodium: {Math.round(selectedFood.sodium * servingMultiplier)}mg</div>
+                                </div>
                                 <div className="flex items-center gap-4">
-                                    <label className="text-sm text-gray-600">Number of servings:</label>
+                                    <label className="text-sm text-gray-600">Servings ({selectedFood.servingSize}{selectedFood.servingUnit} each):</label>
                                     <input
                                         type="number"
                                         min="0.25"
@@ -151,7 +197,7 @@ function AddFoodForm() {
 
                         {/* Message */}
                         {message && (
-                            <div className={`mb-4 p-3 rounded ${message.includes('Added') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            <div className={`mb-4 p-3 rounded ${message.includes('Added') ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}`}>
                                 {message}
                             </div>
                         )}
@@ -181,6 +227,9 @@ function AddFoodForm() {
                         <h2 className="font-semibold text-gray-800">Quick Add (Enter calories manually)</h2>
                     </div>
                     <div className="p-5">
+                        <p className="text-sm text-gray-500 mb-3">
+                            Can&apos;t find your food? Enter the calories manually.
+                        </p>
                         <div className="flex items-center gap-4">
                             <input
                                 type="number"
