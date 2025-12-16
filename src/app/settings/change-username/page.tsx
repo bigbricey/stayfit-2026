@@ -86,7 +86,6 @@ export default function ChangeUsernamePage() {
                     id: user.id,
                     display_name: newUsername,
                     email: user.email,
-                    updated_at: new Date().toISOString(),
                 });
 
             if (error) {
