@@ -59,7 +59,7 @@ export default function Navigation() {
                             <span className="text-white/50">|</span>
                             <Link href="/help" className="hover:underline">Help</Link>
                             <Link href="/settings" className="hover:underline">Settings</Link>
-                            <Link href="/api/auth/signout" className="hover:underline">Log Out</Link>
+                            <Link href="/logout" className="hover:underline">Log Out</Link>
                         </div>
                     </div>
                 </div>
@@ -74,8 +74,8 @@ export default function Navigation() {
                                 key={item.href}
                                 href={item.href}
                                 className={`px-4 py-2.5 text-sm font-medium transition-colors ${isActiveMain(item.href)
-                                        ? 'text-white bg-[#004080]'
-                                        : 'text-white/90 hover:bg-[#004080]'
+                                    ? 'text-white bg-[#004080]'
+                                    : 'text-white/90 hover:bg-[#004080]'
                                     }`}
                             >
                                 {item.label}
@@ -94,8 +94,8 @@ export default function Navigation() {
                                 key={item.href}
                                 href={item.href}
                                 className={`py-2.5 border-b-2 transition-colors ${isActiveSecondary(item.href)
-                                        ? 'text-[#0073CF] font-medium border-[#0073CF]'
-                                        : 'text-gray-600 hover:text-[#0073CF] border-transparent'
+                                    ? 'text-[#0073CF] font-medium border-[#0073CF]'
+                                    : 'text-gray-600 hover:text-[#0073CF] border-transparent'
                                     }`}
                             >
                                 {item.label}
