@@ -48,24 +48,45 @@ export default function RootLayout({
               <Link href="/" className="px-5 py-3 text-sm font-medium text-white hover:bg-[#004080] transition-colors">
                 HOME
               </Link>
-              <Link href="/food" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
+              <Link href="/dashboard" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
                 FOOD
               </Link>
               <Link href="/exercise" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
                 EXERCISE
               </Link>
               <Link href="/tools" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
-                TOOLS
+                REPORTS
               </Link>
               <Link href="/goals" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
-                GOALS
+                APPS
               </Link>
-              <Link href="/dashboard" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
-                MY DASHBOARD
+              <Link href="/community" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
+                COMMUNITY
+              </Link>
+              <Link href="/blog" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
+                BLOG
+              </Link>
+              <Link href="/premium" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
+                PREMIUM
               </Link>
             </div>
           </div>
         </nav>
+
+        {/* Secondary Navigation - Light Blue (MFP Style) */}
+        <div className="bg-[#E8F4FC] border-b border-[#C5DCE9]">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex gap-6 text-sm">
+              <Link href="/dashboard" className="py-2.5 text-[#0073CF] font-medium border-b-2 border-[#0073CF]">Home</Link>
+              <Link href="/goals" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Goals</Link>
+              <Link href="/check-in" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Check-In</Link>
+              <Link href="/mail" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Mail</Link>
+              <Link href="/profile" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Profile</Link>
+              <Link href="/friends" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Friends</Link>
+              <Link href="/settings" className="py-2.5 text-gray-600 hover:text-[#0073CF] border-b-2 border-transparent">Settings</Link>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content */}
         <main className="min-h-screen">
