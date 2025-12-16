@@ -5,10 +5,10 @@ import CostCalculator from '@/components/CostCalculator';
 import type { Metadata } from 'next';
 
 type Props = {
-    params: {
+    params: Promise<{
         state: string;
         city: string;
-    };
+    }>;
 };
 
 // Generate segments for all cities in locations.json
@@ -33,9 +33,10 @@ export async function generateStaticParams() {
 */
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const resolvedParams = await params;
     const cityData = locations.find(
-        (l) => l.state.toLowerCase() === params.state &&
-            l.slug.startsWith(params.city) // rough match, reliable enough for prototype
+        (l) => l.state.toLowerCase() === resolvedParams.state &&
+            l.slug.startsWith(resolvedParams.city) // rough match, reliable enough for prototype
     );
 
     if (!cityData) return { title: 'Not Found' };
@@ -47,11 +48,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 
-export default function CityPage({ params }: Props) {
+export default async function CityPage({ params }: Props) {
+    const resolvedParams = await params;
     // Find the city data
     const cityData = locations.find(
-        (l) => l.state.toLowerCase() === params.state &&
-            l.slug.startsWith(params.city)
+        (l) => l.state.toLowerCase() === resolvedParams.state &&
+            l.slug.startsWith(resolvedParams.city)
         // Note: In a real app we'd store exact "city slug" in JSON. 
         // For this prototype, parsing "austin" from "austin-tx" is fine.
     );
@@ -59,6 +61,7 @@ export default function CityPage({ params }: Props) {
     if (!cityData) {
         notFound();
     }
+
 
     return (
         <main className="min-h-screen bg-black text-slate-200">
