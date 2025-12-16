@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const settingsCategories = [
     { id: 'account', label: 'Account Settings' },
@@ -26,6 +27,25 @@ export default function SettingsPage() {
     const [dateFormat, setDateFormat] = useState('mm/dd/yyyy');
     const [timezone, setTimezone] = useState('America/New_York');
     const [language, setLanguage] = useState('en');
+
+    // User data from Supabase
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [displayName, setDisplayName] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadUser() {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                setUserEmail(user.email || null);
+                setDisplayName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+            }
+            setIsLoading(false);
+        }
+        loadUser();
+    }, []);
 
     return (
         <div className="bg-[#F5F5F5] min-h-screen">
@@ -74,7 +94,7 @@ export default function SettingsPage() {
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                                             <div className="flex items-center gap-3">
-                                                <span className="text-gray-600">user@example.com</span>
+                                                <span className="text-gray-600">{isLoading ? 'Loading...' : (userEmail || 'Not set')}</span>
                                                 <Link href="/settings/change-email" className="text-[#0073CF] text-sm hover:underline">Change</Link>
                                             </div>
                                         </div>
@@ -83,7 +103,7 @@ export default function SettingsPage() {
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
                                             <div className="flex items-center gap-3">
-                                                <span className="text-gray-600">FitUser123</span>
+                                                <span className="text-gray-600">{isLoading ? 'Loading...' : (displayName || 'Not set')}</span>
                                                 <Link href="/settings/change-username" className="text-[#0073CF] text-sm hover:underline">Change</Link>
                                             </div>
                                         </div>
@@ -189,7 +209,7 @@ export default function SettingsPage() {
                                     <div className="p-5 space-y-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                                            <input type="text" defaultValue="FitUser123" className="w-64 border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#0073CF] focus:outline-none" />
+                                            <input type="text" defaultValue={displayName || ''} className="w-64 border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#0073CF] focus:outline-none" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
