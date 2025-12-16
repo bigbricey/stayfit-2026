@@ -8,7 +8,7 @@ const mainNavItems = [
     { href: '/food', label: 'FOOD' },
     { href: '/exercise', label: 'EXERCISE' },
     { href: '/reports', label: 'REPORTS' },
-    { href: '/goals', label: 'APPS' },
+    { href: '/apps', label: 'APPS' },
     { href: '/community', label: 'COMMUNITY' },
     { href: '/blog', label: 'BLOG' },
     { href: '/premium', label: 'PREMIUM' },
