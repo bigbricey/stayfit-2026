@@ -53,8 +53,8 @@ export default function RootLayout({
         <nav className="bg-[#005AA7]">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex">
-              <Link href="/" className="px-5 py-3 text-sm font-medium text-white hover:bg-[#004080] transition-colors">
-                HOME
+              <Link href="/" className="px-4 py-2.5 text-sm font-medium text-white bg-[#004080]">
+                MY HOME
               </Link>
               <Link href="/dashboard" className="px-5 py-3 text-sm font-medium text-white/90 hover:bg-[#004080] transition-colors">
                 FOOD
