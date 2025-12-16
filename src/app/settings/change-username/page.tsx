@@ -85,11 +85,13 @@ export default function ChangeUsernamePage() {
                 .upsert({
                     id: user.id,
                     display_name: newUsername,
+                    email: user.email,
                     updated_at: new Date().toISOString(),
                 });
 
             if (error) {
-                setMessage('Error updating username');
+                console.error('Supabase error:', error);
+                setMessage(`Error: ${error.message || 'Could not update. Database may not be set up.'}`);
             } else {
                 setMessage('Username updated successfully!');
                 setCurrentUsername(newUsername);
@@ -98,7 +100,7 @@ export default function ChangeUsernamePage() {
             }
         } catch (err) {
             console.error(err);
-            setMessage('An error occurred');
+            setMessage('An unexpected error occurred');
         }
 
         setIsSaving(false);
