@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import ProfileSettings from '@/components/ProfileSettings';
 
 const settingsCategories = [
     { id: 'account', label: 'Account Settings' },
@@ -202,30 +203,10 @@ export default function SettingsPage() {
 
                             {/* Profile Settings */}
                             {activeSection === 'profile' && (
-                                <>
-                                    <div className="px-5 py-4 border-b border-gray-100">
-                                        <h2 className="text-lg font-semibold text-gray-800">My Profile Settings</h2>
-                                    </div>
-                                    <div className="p-5 space-y-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                                            <input type="text" defaultValue={displayName || ''} className="w-64 border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#0073CF] focus:outline-none" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-                                            <textarea rows={3} className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#0073CF] focus:outline-none" placeholder="Tell us about yourself..."></textarea>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                            <input type="text" placeholder="City, Country" className="w-64 border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#0073CF] focus:outline-none" />
-                                        </div>
-                                        <div className="pt-4">
-                                            <button className="bg-[#0073CF] text-white px-6 py-2 rounded font-medium hover:bg-[#005AA7] transition-colors">
-                                                Save Changes
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
+                                <ProfileSettings
+                                    displayName={displayName}
+                                    userEmail={userEmail}
+                                />
                             )}
 
                             {/* Privacy Settings */}
