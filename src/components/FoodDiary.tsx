@@ -21,10 +21,10 @@ interface FoodDiaryProps {
 }
 
 const mealConfig = {
-    breakfast: { icon: '🌅', label: 'Breakfast', time: 'Morning' },
-    lunch: { icon: '☀️', label: 'Lunch', time: 'Midday' },
-    dinner: { icon: '🌙', label: 'Dinner', time: 'Evening' },
-    snack: { icon: '🍎', label: 'Snacks', time: 'Anytime' }
+    breakfast: { icon: '🌅', label: 'Breakfast' },
+    lunch: { icon: '☀️', label: 'Lunch' },
+    dinner: { icon: '🌙', label: 'Dinner' },
+    snack: { icon: '🍎', label: 'Snacks' }
 };
 
 export default function FoodDiary({ userId, meals, onUpdate }: FoodDiaryProps) {
@@ -43,59 +43,49 @@ export default function FoodDiary({ userId, meals, onUpdate }: FoodDiaryProps) {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-1">
             {mealTypes.map((type) => {
                 const typeMeals = meals.filter(m => m.meal_type === type);
                 const mealCals = getMealCalories(type);
                 const config = mealConfig[type];
 
                 return (
-                    <div
-                        key={type}
-                        className="group bg-gradient-to-br from-slate-900/80 to-slate-800/80 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-slate-600/50 transition-all duration-300"
-                    >
+                    <div key={type} className="border-b border-gray-200 last:border-0">
                         {/* Meal Header */}
-                        <div className="flex items-center justify-between px-5 py-4 bg-slate-800/30 border-b border-slate-700/30">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">{config.icon}</span>
-                                <div>
-                                    <div className="font-semibold text-white">{config.label}</div>
-                                    <div className="text-xs text-slate-500">{config.time}</div>
-                                </div>
+                        <div className="flex items-center justify-between py-3 bg-gray-50 px-4 -mx-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">{config.icon}</span>
+                                <span className="font-medium text-gray-800">{config.label}</span>
                             </div>
-                            <div className="text-right">
-                                <div className="text-lg font-bold text-cyan-400">{mealCals}</div>
-                                <div className="text-xs text-slate-500">calories</div>
-                            </div>
+                            <span className="text-[#0073CF] font-medium">{mealCals}</span>
                         </div>
 
                         {/* Foods in this meal */}
-                        <div className="divide-y divide-slate-800/50">
+                        <div className="divide-y divide-gray-100">
                             {typeMeals.length === 0 && (
-                                <div className="px-5 py-4 text-center text-slate-500 text-sm">
-                                    No foods logged yet
+                                <div className="py-3 px-4 text-gray-400 text-sm italic">
+                                    No foods logged
                                 </div>
                             )}
 
                             {typeMeals.map((meal) => (
                                 <div
                                     key={meal.id}
-                                    className="flex items-center justify-between px-5 py-3 hover:bg-slate-800/30 transition-colors group/item"
+                                    className="flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors group"
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-white font-medium truncate">{meal.description || 'Unnamed food'}</div>
-                                        <div className="flex gap-3 text-xs text-slate-500 mt-1">
+                                        <div className="text-gray-800">{meal.description || 'Unnamed food'}</div>
+                                        <div className="flex gap-3 text-xs text-gray-400 mt-0.5">
                                             <span>P: {meal.protein || 0}g</span>
                                             <span>C: {meal.carbs || 0}g</span>
                                             <span>F: {meal.fat || 0}g</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4 ml-4">
-                                        <span className="text-slate-300 font-medium">{meal.calories || 0}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-gray-600">{meal.calories || 0}</span>
                                         <button
                                             onClick={() => handleDelete(meal.id)}
-                                            className="opacity-0 group-hover/item:opacity-100 w-7 h-7 flex items-center justify-center rounded-full bg-slate-700/50 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all text-sm"
-                                            title="Remove"
+                                            className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 transition-all text-xs"
                                         >
                                             ✕
                                         </button>
@@ -103,8 +93,8 @@ export default function FoodDiary({ userId, meals, onUpdate }: FoodDiaryProps) {
                                 </div>
                             ))}
 
-                            {/* Add Food Search */}
-                            <div className="p-4 bg-slate-900/30">
+                            {/* Add Food */}
+                            <div className="py-3 px-4">
                                 <FoodSearch
                                     userId={userId}
                                     mealType={type}
