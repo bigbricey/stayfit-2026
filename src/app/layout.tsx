@@ -24,18 +24,26 @@ export default function RootLayout({
         {/* Top Header - MFP Blue Bar */}
         <header className="bg-[#0073CF] text-white">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-between h-14">
+            <div className="flex items-center justify-between h-12">
               {/* Logo */}
               <Link href="/" className="flex items-center">
                 <span className="text-2xl font-bold tracking-tight">stayfitwithai</span>
               </Link>
 
-              {/* User Links */}
-              <div className="flex items-center gap-4 text-sm">
-                <Link href="/login" className="hover:underline">Log In</Link>
-                <Link href="/signup" className="bg-white text-[#0073CF] px-4 py-1.5 rounded font-medium hover:bg-gray-100 transition-colors">
-                  Sign Up
+              {/* User Links - MFP Style */}
+              <div className="flex items-center gap-3 text-sm">
+                <span>Hi, <Link href="/profile" className="font-medium hover:underline">User</Link></span>
+                <span className="text-white/50">|</span>
+                <Link href="/mail" className="hover:underline flex items-center gap-1">
+                  <span>✉️</span> <span className="bg-white/20 px-1.5 rounded text-xs">0</span>
                 </Link>
+                <Link href="/notifications" className="hover:underline flex items-center gap-1">
+                  <span>👤</span> <span className="bg-white/20 px-1.5 rounded text-xs">0</span>
+                </Link>
+                <span className="text-white/50">|</span>
+                <Link href="/help" className="hover:underline">Help</Link>
+                <Link href="/settings" className="hover:underline">Settings</Link>
+                <Link href="/api/auth/signout" className="hover:underline">Log Out</Link>
               </div>
             </div>
           </div>
