@@ -16,48 +16,71 @@ export async function GET(request: Request) {
 
     if (code) {
         const cookieStore = await cookies();
-
-        // 🚨 CRITICAL FIX: Force Next.js to read cookies before Supabase needs them
+        // Force Next.js to read cookies (Fix for Next.js 14 lazy cookies)
         cookieStore.getAll();
 
-        // We need to collect cookies that Supabase wants to set
-        // and then apply them to the redirect response
-        const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = [];
-
-        const supabase = createServerClient(
+        // 1. Dry Client: Exchange code without persisting cookies yet
+        // We do this to get the session object so we can sanitize it
+        const supabaseDry = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value;
-                    },
-                    set(name: string, value: string, options: CookieOptions) {
-                        // Collect cookies to set on the response
-                        cookiesToSet.push({ name, value, options });
-                    },
-                    remove(name: string, options: CookieOptions) {
-                        cookiesToSet.push({ name, value: '', options: { ...options, maxAge: 0 } });
-                    },
+                    getAll() { return []; },
+                    setAll() { },
                 },
             }
         );
 
-        const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error: sessionError } = await supabaseDry.auth.exchangeCodeForSession(code);
 
-        if (!sessionError) {
-            console.log('Session exchange successful, redirecting to:', next);
+        if (!sessionError && data?.session) {
+            const session = data.session;
 
-            // 🚨 CRITICAL FIX: Use status 303 to avoid SameSite=Lax issues on redirect
+            // 2. Sanitize: Remove massive provider tokens to prevent cookie bloat
+            // This manually emulates the "Save provider tokens = OFF" setting
+            // @ts-ignore
+            delete session.provider_token;
+            // @ts-ignore
+            delete session.provider_refresh_token;
+
+            console.log('Session sanitized (tokens removed). Persisting clean session.');
+
+            // 3. Real Client: Configured to collect cookies for the response
+            // This ensures cookies are set on the redirect response object
+            const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = [];
+
+            const supabase = createServerClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    cookies: {
+                        get(name: string) {
+                            return cookieStore.get(name)?.value;
+                        },
+                        set(name: string, value: string, options: CookieOptions) {
+                            cookiesToSet.push({ name, value, options });
+                        },
+                        remove(name: string, options: CookieOptions) {
+                            cookiesToSet.push({ name, value: '', options: { ...options, maxAge: 0 } });
+                        },
+                    },
+                }
+            );
+
+            // 4. Persist the CLEAN session
+            await supabase.auth.setSession(session);
+
+            console.log('Session set successfully. Redirecting to:', next);
+
+            // 5. Create Response with 303 Redirect and collected cookies
+            // 303 helps with SameSite=Lax issues on redirect
             const response = NextResponse.redirect(`${origin}${next}`, {
                 status: 303,
             });
 
-            // Set all cookies on the redirect response
-            // We can trust the store now because we forced it to load early
-            // and we collected the Supabase sets
             for (const { name, value, options } of cookiesToSet) {
-                // Remove explicit domain to allow browser to handle www/non-www
+                // Remove explicit domain to allow browser to handle www/non-www automatically
                 const cookieOptions = {
                     ...options,
                     domain: undefined,
