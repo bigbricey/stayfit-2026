@@ -42,6 +42,13 @@ export async function GET(request: Request) {
 
         const { data, error: sessionError } = await supabaseExchange.auth.exchangeCodeForSession(code);
 
+        console.log('Exchange result:', {
+            hasData: !!data,
+            hasSession: !!data?.session,
+            errorMessage: sessionError?.message,
+            errorName: sessionError?.name
+        });
+
         if (!sessionError && data?.session) {
             const session = data.session;
 
