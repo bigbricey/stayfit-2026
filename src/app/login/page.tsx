@@ -46,7 +46,13 @@ function LoginForm() {
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback?redirect=${redirect}`,
+                // Force the callback to match Supabase Site URL exactly
+                // Using the specific callback URL configured in Supabase
+                redirectTo: 'https://stayfitwithai.com/auth/callback',
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
             },
         });
     };
