@@ -47,19 +47,19 @@ export async function GET(request: Request) {
 
         if (!sessionError) {
             console.log('Session exchange successful, redirecting to:', next);
-            console.log('Cookies to set:', cookiesToSet.map(c => ({ name: c.name, hasValue: !!c.value, options: c.options })));
 
-            // Create redirect response
-            const response = NextResponse.redirect(`${origin}${next}`);
+            // 🚨 CRITICAL FIX: Use status 303 to avoid SameSite=Lax issues on redirect
+            const response = NextResponse.redirect(`${origin}${next}`, {
+                status: 303,
+            });
 
-            // 🚨 CRITICAL: Set all cookies on the redirect response
-            // Force the domain to be the root domain for cross-subdomain access
+            // Set all cookies on the redirect response
+            // We can trust the store now because we forced it to load early
+            // and we collected the Supabase sets
             for (const { name, value, options } of cookiesToSet) {
-                // Override domain to ensure cookies work across www and non-www
+                // Remove explicit domain to allow browser to handle www/non-www
                 const cookieOptions = {
                     ...options,
-                    // Remove any explicit domain to let the browser use the current domain
-                    // This ensures www.stayfitwithai.com sets cookies for www.stayfitwithai.com
                     domain: undefined,
                 };
                 response.cookies.set(name, value, cookieOptions);
