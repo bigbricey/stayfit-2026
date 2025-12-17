@@ -21,16 +21,20 @@ export async function GET(request: Request) {
 
         // 1. CLIENT A: THE EXCHANGER (Read-Only)
         // ✅ CRITICAL: Must return actual cookies so it can find the PKCE Code Verifier
-        // 🛑 CRITICAL: 'setAll' is empty to stop the massive 'provider_token' from being set early
+        // 🛑 CRITICAL: 'set'/'remove' are empty to stop the massive 'provider_token' from being set early
         const supabaseExchanger = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
-                    getAll() { return cookieStore.getAll() },
-                    setAll(cookiesToSet) {
+                    get(name: string) {
+                        return cookieStore.get(name)?.value;
+                    },
+                    set(name: string, value: string, options: CookieOptions) {
                         // SILENTLY IGNORE: Do not set cookies here.
-                        // We block the "fat" session from touching the response.
+                    },
+                    remove(name: string, options: CookieOptions) {
+                        // SILENTLY IGNORE: Do not remove cookies here.
                     },
                 },
             }
@@ -66,7 +70,7 @@ export async function GET(request: Request) {
                 {
                     cookies: {
                         getAll() { return cookieStore.getAll() },
-                        setAll(cookiesToSet) {
+                        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
                             // Now we write the *clean* cookies to the response
                             cookiesToSet.forEach(({ name, value, options }) => {
                                 // Defaulting domain to undefined ensures it works on www and non-www
