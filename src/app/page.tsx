@@ -7,12 +7,17 @@ export default async function Home() {
   const supabase = await createClient();
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (!user) {
+  console.log('Page Auth Check:', { hasSession: !!session, userEmail: session?.user?.email });
+
+  if (!session) {
+    console.log('Page redirecting to login');
     return redirect('/login');
   }
+
+  const user = session.user;
 
   return (
     <main className="bg-white dark:bg-black min-h-screen transition-colors">

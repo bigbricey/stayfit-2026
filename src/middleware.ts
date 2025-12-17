@@ -27,7 +27,15 @@ export async function middleware(request: NextRequest) {
     // Refresh session if expired
     const {
         data: { user },
+        error: userError,
     } = await supabase.auth.getUser();
+
+    console.log('Middleware Auth Check:', {
+        path: request.nextUrl.pathname,
+        hasUser: !!user,
+        userEmail: user?.email,
+        error: userError?.message
+    });
 
     // Protect dashboard and home routes (require authentication)
     const protectedPaths = ['/', '/dashboard'];
@@ -36,6 +44,7 @@ export async function middleware(request: NextRequest) {
     );
 
     if (isProtectedPath && !user) {
+        console.log('Middleware redirecting to login from:', request.nextUrl.pathname);
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         url.searchParams.set('redirect', request.nextUrl.pathname);
