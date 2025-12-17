@@ -16,10 +16,26 @@ function LoginForm() {
     const urlError = searchParams.get('error');
 
     useEffect(() => {
+        // Debug: Log all URL parameters when login page loads
+        console.log('Login page loaded with params:', {
+            error: urlError,
+            redirect: searchParams.get('redirect'),
+            v: searchParams.get('v'),
+            detail: searchParams.get('detail'),
+            debug: searchParams.get('debug'),
+            fullUrl: typeof window !== 'undefined' ? window.location.href : 'SSR'
+        });
+
         if (urlError === 'auth_error') {
             setError('Authentication failed. Please try again or use email/password.');
+        } else if (urlError === 'missing_verifier') {
+            setError('Session cookies missing. Please clear cookies and try again.');
+        } else if (urlError === 'exchange_failed') {
+            setError(`Failed to complete login: ${searchParams.get('detail') || 'Unknown error'}`);
+        } else if (urlError) {
+            setError(`Login error: ${urlError}`);
         }
-    }, [urlError]);
+    }, [urlError, searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
