@@ -18,8 +18,11 @@ export async function GET(request: Request) {
         const cookieStore = await cookies();
 
         // 🚨 CRITICAL FIX: Force Next.js to read cookies before Supabase needs them
-        // This prevents the "code verifier missing" error in Next.js 14 lazy cookie handling
         cookieStore.getAll();
+
+        // We need to collect cookies that Supabase wants to set
+        // and then apply them to the redirect response
+        const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = [];
 
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,18 +33,11 @@ export async function GET(request: Request) {
                         return cookieStore.get(name)?.value;
                     },
                     set(name: string, value: string, options: CookieOptions) {
-                        try {
-                            cookieStore.set({ name, value, ...options });
-                        } catch (error) {
-                            // Handle cookies in edge cases or when response is already sent
-                        }
+                        // Collect cookies to set on the response
+                        cookiesToSet.push({ name, value, options });
                     },
                     remove(name: string, options: CookieOptions) {
-                        try {
-                            cookieStore.delete({ name, ...options });
-                        } catch (error) {
-                            // Handle cookies in edge cases
-                        }
+                        cookiesToSet.push({ name, value: '', options: { ...options, maxAge: 0 } });
                     },
                 },
             }
@@ -51,7 +47,17 @@ export async function GET(request: Request) {
 
         if (!sessionError) {
             console.log('Session exchange successful, redirecting to:', next);
-            return NextResponse.redirect(`${origin}${next}`);
+
+            // Create redirect response
+            const response = NextResponse.redirect(`${origin}${next}`);
+
+            // 🚨 CRITICAL: Set all cookies on the redirect response
+            // This is required because cookieStore.set() doesn't work with redirects
+            for (const { name, value, options } of cookiesToSet) {
+                response.cookies.set(name, value, options);
+            }
+
+            return response;
         }
 
         console.error('Session exchange error:', sessionError);
