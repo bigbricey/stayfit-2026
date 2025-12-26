@@ -3,97 +3,109 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Solo Leveling Background - The "System" (Data Erosion & Murky Smoke)
+// Solo Leveling Background - "Notification / Necromancer" Style (Energy Current & Mana Storm)
 export function SoloLevelingBackground() {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden bg-[#02050c]">
             {/* 
-                GLOBAL SVG FILTERS 
-                These define the "Texture" and "Erosion" styles used throughout the UI.
+                V6 CONCEPT: "Mana Infused System"
+                - Background: A chaotic "Mana Storm" texture (Turbulence + ColorMatrix) representing the raw magic.
+                - Lines: "Energy Currents" that flow continuously (using animated stroke-dasharray and gradients).
+                - Feel: Not just "eroded" (v5) or "technical" (v4), but "Magical Digital" - alive and flowing.
             */}
+
             <svg className="absolute w-0 h-0">
                 <defs>
-                    {/* FILTER 1: Electric Distortion (The "Ciphering" Effect) 
-                        Creates the gritty, jagged, eroding edges.
+                    {/* FILTER 1: Mana Storm (The "Background Lightning/Energy") 
+                        Creates a swirling, localized distortion that looks like magical energy clouds.
                     */}
-                    <filter id="electric-distortion">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="warp">
-                            {/* Slowly animate the noise to make edges ripple like smoke */}
-                            <animate attributeName="baseFrequency" values="0.04;0.041;0.04" dur="8s" repeatCount="indefinite" />
+                    <filter id="mana-storm">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" result="warp">
+                            <animate attributeName="baseFrequency" values="0.015;0.018;0.015" dur="10s" repeatCount="indefinite" />
                         </feTurbulence>
-                        <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="4" in="SourceGraphic" in2="warp" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  1 0 1 0 0  0 0 0 16 -6" in="warp" result="coloredWarp" />
+                        <feGaussianBlur stdDeviation="8" in="coloredWarp" result="blurWarp" />
+                        <feComposite operator="in" in="blurWarp" in2="SourceGraphic" />
                     </filter>
 
-                    {/* FILTER 2: Smoke Noise (The "Murky" Background)
-                        Creates the swirling, liquid-like atmosphere.
+                    {/* FILTER 2: Energy Flow (The "Current")
+                        Makes lines glow intensely and slightly distort as energy passes.
                     */}
-                    <filter id="smoke-noise">
-                        <feTurbulence type="turbulence" baseFrequency="0.01" numOctaves="5" result="turbulence">
-                            <animate attributeName="baseFrequency" values="0.01;0.012;0.01" dur="15s" repeatCount="indefinite" />
-                        </feTurbulence>
-                        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" in="turbulence" result="smoke" />
-                        <feComposite in="smoke" in2="SourceGraphic" operator="in" />
-                    </filter>
-
-                    {/* FILTER 3: Heavy Bloom (The "Energy" Glow) */}
-                    <filter id="heavy-bloom" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="6" result="blur" />
+                    <filter id="energy-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0.6 0 0 0  0 0 1 0 0  0 0 0 18 -7" in="blur" result="blueGlow" />
                         <feMerge>
-                            <feMergeNode in="blur" />
-                            <feMergeNode in="blur" />
+                            <feMergeNode in="blueGlow" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
+
+                    {/* GRADIENT: "Data Stream"
+                        Used for the flowing lines to simulate pulses of energy.
+                    */}
+                    <linearGradient id="data-stream" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="rgba(0, 100, 255, 0)" />
+                        <stop offset="50%" stopColor="rgba(0, 200, 255, 0.8)" />
+                        <stop offset="100%" stopColor="rgba(0, 100, 255, 0)" />
+                        <animate attributeName="x1" values="-100%;100%" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="x2" values="0%;200%" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="y1" values="-100%;100%" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="y2" values="0%;200%" dur="3s" repeatCount="indefinite" />
+                    </linearGradient>
                 </defs>
             </svg>
 
-            {/* LAYER 1: The Murky Background (Fluid Smoke) */}
+            {/* LAYER 1: The Mana Storm (Background Energy) 
+                Chaotic blue energy clouds swirling in the deep background.
+            */}
             <div className="absolute inset-0 opacity-40 mix-blend-screen">
                 <svg width="100%" height="100%">
-                    <rect width="100%" height="100%" filter="url(#smoke-noise)" fill="#003366" opacity="0.5" />
+                    <rect width="100%" height="100%" filter="url(#mana-storm)" fill="#003366" opacity="0.6">
+                        <animate attributeName="opacity" values="0.4;0.6;0.4" dur="6s" repeatCount="indefinite" />
+                    </rect>
                 </svg>
             </div>
 
-            {/* LAYER 2: Ciphering "Data Lines" (Eroded Structures) */}
-            <div className="absolute inset-0 pointer-events-none" style={{ filter: "url(#electric-distortion)" }}>
-                <svg width="100%" height="100%">
-                    {/* Large "System" Arcs - Eroded */}
-                    <path
-                        d="M -100 200 Q 300 100 600 -100"
-                        stroke="rgba(0, 119, 255, 0.4)"
-                        strokeWidth="2"
-                        fill="none"
-                    />
-                    <path
-                        d="M -100 400 Q 400 300 800 -100"
-                        stroke="rgba(0, 119, 255, 0.3)"
-                        strokeWidth="3"
-                        fill="none"
-                    />
+            {/* LAYER 2: Energy Circuit Lines (The "Digital System") 
+                Lines that have a "flowing" look, pulsing with the gradient defined above.
+            */}
+            <svg className="absolute inset-0 w-full h-full" style={{ filter: 'url(#energy-glow)' }}>
+                {/* Large Diagonal Cuts - mimicking the "Notification" box fractures */}
+                <line x1="-10%" y1="60%" x2="60%" y2="-10%" stroke="url(#data-stream)" strokeWidth="1.5" opacity="0.6">
+                    <animate attributeName="stroke-dashoffset" values="1000;0" dur="4s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="4s" repeatCount="indefinite" />
+                </line>
 
-                    {/* Vertical "Data Rain" Lines */}
-                    <line x1="85%" y1="0" x2="85%" y2="100%" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="1" />
-                    <line x1="15%" y1="0" x2="15%" y2="100%" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="1" />
+                <line x1="20%" y1="110%" x2="110%" y2="20%" stroke="rgba(0, 140, 255, 0.3)" strokeWidth="1">
+                    <animate attributeName="stroke-width" values="1;2;1" dur="3s" repeatCount="indefinite" />
+                </line>
 
-                    {/* Tech Decor */}
-                    <rect x="83%" y="15%" width="4%" height="10%" stroke="rgba(0, 180, 255, 0.3)" fill="none" />
-                    <rect x="13%" y="75%" width="4%" height="5%" stroke="rgba(0, 180, 255, 0.3)" fill="none" />
-                </svg>
-            </div>
+                {/* Random "Lightning" Cracks - thin, sharp lines that appear and disappear */}
+                <path d="M 100 200 L 150 250 L 120 300 L 200 400" stroke="rgba(180, 220, 255, 0.8)" strokeWidth="1" fill="none" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="5s" repeatCount="indefinite" begin="0s" />
+                    <animate attributeName="d" values="M 100 200 L 150 250 L 120 300 L 200 400; M 105 205 L 140 240 L 130 310 L 210 390" dur="0.2s" repeatCount="indefinite" />
+                </path>
 
-            {/* LAYER 3: Floating Data Particles (The "Ciphering Off" Effect) */}
-            <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                    backgroundImage: 'radial-gradient(#00aaff 1px, transparent 1px)',
-                    backgroundSize: '30px 30px',
-                    maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
-                    animation: 'cipher-float 8s linear infinite'
-                }}
+                <path d="M 800 600 L 750 650 L 780 700 L 700 800" stroke="rgba(180, 220, 255, 0.8)" strokeWidth="1" fill="none" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="7s" repeatCount="indefinite" begin="2s" />
+                </path>
+            </svg>
+
+            {/* LAYER 3: Complex "Magic Circle" Runic Rings (Subtle)
+                The "Necromancer" screen often has these faint rotating rings.
+            */}
+            <svg className="absolute inset-0 w-full h-full animate-slow-rotate opacity-20 pointer-events-none" viewBox="0 0 1000 1000">
+                <circle cx="50%" cy="50%" r="300" stroke="rgba(50, 100, 255, 0.3)" strokeWidth="1" strokeDasharray="10 20 5 30" fill="none" />
+                <circle cx="50%" cy="50%" r="450" stroke="rgba(50, 100, 255, 0.2)" strokeWidth="2" strokeDasharray="50 50" fill="none" />
+            </svg>
+
+            {/* LAYER 4: Deep Vignette & Texture Overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,#02050c_90%)]" />
+
+            {/* Fine Grain/Noise Overlay for "Texture" */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             />
-
-            {/* LAYER 4: Deep Vignette (Central Focus) */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#02050c_90%)]" />
         </div>
     );
 }
