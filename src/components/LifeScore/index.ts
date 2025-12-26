@@ -4,4 +4,5 @@ export { ScoreDisplay } from './ScoreDisplay';
 export { TrendChart } from './TrendChart';
 export { CharacterSheet } from './CharacterSheet';
 export { LevelUpModal } from './LevelUpModal';
+export { CircularDial } from './CircularDial';
 export * from './types';
