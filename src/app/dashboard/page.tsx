@@ -93,7 +93,7 @@ export default function GameHub() {
 
                 <div className="p-6 md:p-8">
                     <div className="mb-6 text-center">
-                        <h2 className="text-white/60 text-xs tracking-[0.3em] uppercase font-light">
+                        <h2 className="text-white text-xs tracking-[0.3em] uppercase font-light">
                             Select Module
                         </h2>
                     </div>
