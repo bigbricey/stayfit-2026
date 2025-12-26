@@ -324,108 +324,102 @@ button:active:not(:disabled) {
 /* Scan line effect - DISABLED */
 
 /* ========================================
-   ANIMATED BACKGROUND - Energy Beam Effects
+   ANIMATED BACKGROUND - Plasma Tendrils
    ======================================== */
 
-/* Smoky atmospheric background shift */
-@keyframes smoke-shift {
-  0% {
-    transform: translate(0, 0) scale(1);
+/* Main plasma pulse - organic breathing of the tendrils */
+@keyframes plasma-pulse {
+
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+
+  25% {
+    opacity: 0.5;
+    transform: scale(1.02);
   }
 
   50% {
-    transform: translate(-30px, -15px) scale(1.05);
+    opacity: 0.4;
+    transform: scale(0.98);
   }
 
-  100% {
-    transform: translate(0, 0) scale(1);
+  75% {
+    opacity: 0.55;
+    transform: scale(1.01);
   }
 }
 
-.animate-smoke-shift {
-  animation: smoke-shift 25s ease-in-out infinite;
+.animate-plasma-pulse {
+  animation: plasma-pulse 8s ease-in-out infinite;
 }
 
-/* Slow drifting animation for blueprint lines */
-@keyframes drift {
+/* Delayed plasma pulse for secondary layer */
+.animate-plasma-pulse-delayed {
+  animation: plasma-pulse 10s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+/* Tendril flow - energy traveling through the branches */
+@keyframes tendril-flow {
   0% {
-    transform: translate(0, 0);
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.5));
   }
 
   50% {
-    transform: translate(-15px, -10px);
+    stroke-dashoffset: -50;
+    filter: drop-shadow(0 0 8px rgba(0, 200, 255, 0.8));
   }
 
   100% {
-    transform: translate(0, 0);
+    stroke-dashoffset: -100;
+    filter: drop-shadow(0 0 4px rgba(0, 200, 255, 0.5));
   }
 }
 
-.animate-drift {
-  animation: drift 40s linear infinite;
+.animate-tendril-flow {
+  stroke-dasharray: 20 30;
+  animation: tendril-flow 6s linear infinite;
 }
 
-/* Horizontal beam sweep - travels left to right */
-@keyframes beam-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
+.animate-tendril-flow-reverse {
+  stroke-dasharray: 15 25;
+  animation: tendril-flow 8s linear infinite reverse;
+}
 
+/* Energy node pulse - bright spots that glow */
+@keyframes node-pulse {
+
+  0%,
   100% {
-    transform: translateX(100%);
+    opacity: 0.6;
+    r: 6;
+  }
+
+  25% {
+    opacity: 1;
+    r: 10;
+  }
+
+  50% {
+    opacity: 0.7;
+    r: 7;
+  }
+
+  75% {
+    opacity: 0.9;
+    r: 9;
   }
 }
 
-.animate-beam-sweep {
-  animation: beam-sweep 3s linear infinite;
+.animate-node-pulse {
+  animation: node-pulse 3s ease-in-out infinite;
 }
 
-/* Horizontal beam sweep reverse - travels right to left */
-@keyframes beam-sweep-reverse {
-  0% {
-    transform: translateX(100%);
-  }
-
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
-.animate-beam-sweep-reverse {
-  animation: beam-sweep-reverse 4s linear infinite;
-}
-
-/* Slower beam sweep for subtle middle line */
-.animate-beam-sweep-slow {
-  animation: beam-sweep 8s linear infinite;
-}
-
-/* Vertical beam - travels top to bottom */
-@keyframes beam-vertical {
-  0% {
-    transform: translateY(-100%);
-  }
-
-  100% {
-    transform: translateY(100%);
-  }
-}
-
-.animate-beam-vertical {
-  animation: beam-vertical 5s linear infinite;
-}
-
-/* Vertical beam reverse - travels bottom to top */
-@keyframes beam-vertical-reverse {
-  0% {
-    transform: translateY(100%);
-  }
-
-  100% {
-    transform: translateY(-100%);
-  }
-}
-
-.animate-beam-vertical-reverse {
-  animation: beam-vertical-reverse 6s linear infinite;
+.animate-node-pulse-delayed {
+  animation: node-pulse 4s ease-in-out infinite;
+  animation-delay: -1.5s;
 }

@@ -3,133 +3,128 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Solo Leveling Background - Traveling Energy Beams
+// Solo Leveling Background - Plasma Tendrils / Energy Veins
 export function SoloLevelingBackground() {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#02040a' }}>
 
-            {/* LAYER 1: SMOKY ATMOSPHERIC BACKGROUND */}
+            {/* LAYER 1: Deep atmospheric base */}
             <div
-                className="absolute animate-smoke-shift"
+                className="absolute inset-0"
                 style={{
-                    top: '-50%',
-                    left: '-50%',
-                    width: '200%',
-                    height: '200%',
-                    background: `
-                        radial-gradient(ellipse at 30% 30%, rgba(10, 40, 80, 0.4), transparent 50%),
-                        radial-gradient(ellipse at 70% 60%, rgba(5, 25, 50, 0.5), transparent 60%),
-                        radial-gradient(ellipse at 50% 80%, rgba(8, 30, 60, 0.3), transparent 40%)
-                    `,
-                    filter: 'blur(40px)',
+                    background: 'radial-gradient(ellipse at 50% 30%, rgba(10, 40, 80, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(5, 25, 60, 0.4) 0%, transparent 60%)',
                 }}
             />
 
-            {/* LAYER 2: FAINT ICE-CRACK / BLUEPRINT LINES (drifting slowly) */}
-            <div
-                className="absolute inset-0 animate-drift opacity-15"
-                style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cpath d='M0,50 L150,0 M50,200 L180,100 L100,250 M300,0 L250,150 L350,200 M500,50 L450,180 L550,150 M700,0 L650,120 L750,100 M100,400 L200,350 L150,500 M400,350 L500,450 L450,550 M600,400 L700,350 L650,550 M0,300 L100,280 L50,400 M750,250 L800,350' stroke='rgba(100,180,255,0.3)' stroke-width='0.8' fill='none'/%3E%3Cpath d='M0,150 C100,120 200,180 300,150 S450,100 550,150 S700,180 800,150' stroke='rgba(100,180,255,0.2)' stroke-width='0.5' fill='none'/%3E%3Cpath d='M0,450 C150,400 300,500 450,450 S600,400 800,450' stroke='rgba(100,180,255,0.2)' stroke-width='0.5' fill='none'/%3E%3C/svg%3E")`,
-                    backgroundSize: '800px 600px',
-                    backgroundRepeat: 'repeat',
-                }}
-            />
+            {/* LAYER 2: PLASMA TENDRILS - Organic branching energy pattern */}
+            <svg
+                className="absolute inset-0 w-full h-full animate-plasma-pulse"
+                viewBox="0 0 1000 800"
+                preserveAspectRatio="xMidYMid slice"
+                style={{ opacity: 0.4 }}
+            >
+                <defs>
+                    {/* Glow filter for energy effect */}
+                    <filter id="plasma-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
 
-            {/* LAYER 3: TRAVELING ENERGY BEAMS - Top */}
-            <div className="absolute top-[10%] left-0 right-0 h-[3px] overflow-hidden">
-                <div
-                    className="absolute inset-0 animate-beam-sweep"
-                    style={{
-                        background: 'linear-gradient(90deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 52%, #00f0ff 54%, transparent 60%, transparent 100%)',
-                        boxShadow: '0 0 20px #00f0ff, 0 0 40px #00f0ff, 0 0 60px rgba(0, 240, 255, 0.5)',
-                    }}
-                />
-                {/* Static glow rail */}
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: 'linear-gradient(90deg, rgba(0,200,255,0.1) 0%, rgba(0,200,255,0.3) 50%, rgba(0,200,255,0.1) 100%)',
-                        boxShadow: '0 0 10px rgba(0, 200, 255, 0.3)',
-                    }}
-                />
-            </div>
+                {/* Main energy tendrils - organic branching paths */}
+                <g filter="url(#plasma-glow)" className="animate-tendril-flow">
+                    {/* Central cluster spreading outward */}
+                    <path d="M500,400 Q450,350 400,320 Q350,290 280,260 Q220,230 150,220" stroke="rgba(0,200,255,0.6)" strokeWidth="2" fill="none" />
+                    <path d="M280,260 Q260,240 220,250 Q180,260 130,280" stroke="rgba(0,200,255,0.4)" strokeWidth="1.5" fill="none" />
+                    <path d="M400,320 Q380,280 350,240 Q320,200 280,160" stroke="rgba(0,200,255,0.5)" strokeWidth="1.5" fill="none" />
+                    <path d="M350,240 Q330,220 340,180 Q350,140 380,100" stroke="rgba(0,200,255,0.3)" strokeWidth="1" fill="none" />
 
-            {/* LAYER 3B: TRAVELING ENERGY BEAMS - Bottom */}
-            <div className="absolute bottom-[8%] left-0 right-0 h-[4px] overflow-hidden">
-                <div
-                    className="absolute inset-0 animate-beam-sweep-reverse"
-                    style={{
-                        background: 'linear-gradient(90deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 52%, #00f0ff 54%, transparent 60%, transparent 100%)',
-                        boxShadow: '0 0 30px #00f0ff, 0 0 60px #00f0ff, 0 0 80px rgba(0, 240, 255, 0.6)',
-                    }}
-                />
-                {/* Static glow rail */}
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: 'linear-gradient(90deg, rgba(0,200,255,0.15) 0%, rgba(0,200,255,0.4) 50%, rgba(0,200,255,0.15) 100%)',
-                        boxShadow: '0 0 15px rgba(0, 200, 255, 0.4)',
-                    }}
-                />
-            </div>
+                    <path d="M500,400 Q550,350 600,320 Q650,290 720,260 Q780,230 850,220" stroke="rgba(0,200,255,0.6)" strokeWidth="2" fill="none" />
+                    <path d="M720,260 Q740,240 780,250 Q820,260 870,280" stroke="rgba(0,200,255,0.4)" strokeWidth="1.5" fill="none" />
+                    <path d="M600,320 Q620,280 650,240 Q680,200 720,160" stroke="rgba(0,200,255,0.5)" strokeWidth="1.5" fill="none" />
 
-            {/* LAYER 3C: TRAVELING ENERGY BEAMS - Middle subtle */}
-            <div className="absolute top-[45%] left-0 right-0 h-[1px] overflow-hidden opacity-40">
-                <div
-                    className="absolute inset-0 animate-beam-sweep-slow"
-                    style={{
-                        background: 'linear-gradient(90deg, transparent 0%, transparent 45%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 55%, transparent 100%)',
-                        boxShadow: '0 0 15px #00f0ff',
-                    }}
-                />
-            </div>
+                    <path d="M500,400 Q480,450 450,500 Q420,550 380,600 Q340,650 280,700" stroke="rgba(0,200,255,0.6)" strokeWidth="2" fill="none" />
+                    <path d="M450,500 Q420,520 400,560 Q380,600 340,650" stroke="rgba(0,200,255,0.4)" strokeWidth="1.5" fill="none" />
+                    <path d="M380,600 Q350,620 360,670 Q370,720 350,780" stroke="rgba(0,200,255,0.3)" strokeWidth="1" fill="none" />
 
-            {/* LAYER 4: VERTICAL ENERGY ACCENTS (left and right borders) */}
-            <div className="absolute left-[5%] top-0 bottom-0 w-[2px] overflow-hidden opacity-60">
-                <div
-                    className="absolute inset-0 animate-beam-vertical"
-                    style={{
-                        background: 'linear-gradient(180deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 60%, transparent 100%)',
-                        boxShadow: '0 0 15px #00f0ff, 0 0 30px rgba(0, 240, 255, 0.5)',
-                    }}
-                />
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: 'linear-gradient(180deg, rgba(0,200,255,0.05) 0%, rgba(0,200,255,0.2) 50%, rgba(0,200,255,0.05) 100%)',
-                    }}
-                />
-            </div>
+                    <path d="M500,400 Q520,450 550,500 Q580,550 620,600 Q660,650 720,700" stroke="rgba(0,200,255,0.6)" strokeWidth="2" fill="none" />
+                    <path d="M550,500 Q580,520 600,560 Q620,600 660,650" stroke="rgba(0,200,255,0.4)" strokeWidth="1.5" fill="none" />
+                </g>
+            </svg>
 
-            <div className="absolute right-[5%] top-0 bottom-0 w-[2px] overflow-hidden opacity-60">
-                <div
-                    className="absolute inset-0 animate-beam-vertical-reverse"
-                    style={{
-                        background: 'linear-gradient(180deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 60%, transparent 100%)',
-                        boxShadow: '0 0 15px #00f0ff, 0 0 30px rgba(0, 240, 255, 0.5)',
-                    }}
-                />
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        background: 'linear-gradient(180deg, rgba(0,200,255,0.05) 0%, rgba(0,200,255,0.2) 50%, rgba(0,200,255,0.05) 100%)',
-                    }}
-                />
-            </div>
+            {/* LAYER 3: Secondary tendril network (offset, different timing) */}
+            <svg
+                className="absolute inset-0 w-full h-full animate-plasma-pulse-delayed"
+                viewBox="0 0 1000 800"
+                preserveAspectRatio="xMidYMid slice"
+                style={{ opacity: 0.3 }}
+            >
+                <defs>
+                    <filter id="plasma-glow-2" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <g filter="url(#plasma-glow-2)" className="animate-tendril-flow-reverse">
+                    {/* Upper left cluster */}
+                    <path d="M200,200 Q250,180 300,150 Q350,120 420,80 Q490,40 560,20" stroke="rgba(100,180,255,0.5)" strokeWidth="1.5" fill="none" />
+                    <path d="M300,150 Q320,120 360,90 Q400,60 450,30" stroke="rgba(100,180,255,0.3)" strokeWidth="1" fill="none" />
+                    <path d="M200,200 Q180,250 150,300 Q120,350 80,420" stroke="rgba(100,180,255,0.4)" strokeWidth="1.5" fill="none" />
+
+                    {/* Lower right cluster */}
+                    <path d="M800,600 Q750,580 700,550 Q650,520 580,480 Q510,440 440,420" stroke="rgba(100,180,255,0.5)" strokeWidth="1.5" fill="none" />
+                    <path d="M700,550 Q680,520 640,490 Q600,460 550,430" stroke="rgba(100,180,255,0.3)" strokeWidth="1" fill="none" />
+                    <path d="M800,600 Q820,650 850,700 Q880,750 920,820" stroke="rgba(100,180,255,0.4)" strokeWidth="1.5" fill="none" />
+
+                    {/* Scattered smaller branches */}
+                    <path d="M100,500 Q150,480 200,440 Q250,400 320,360" stroke="rgba(100,180,255,0.3)" strokeWidth="1" fill="none" />
+                    <path d="M900,300 Q850,320 800,360 Q750,400 680,440" stroke="rgba(100,180,255,0.3)" strokeWidth="1" fill="none" />
+                </g>
+            </svg>
+
+            {/* LAYER 4: Bright core energy pulses (traveling along paths) */}
+            <svg
+                className="absolute inset-0 w-full h-full"
+                viewBox="0 0 1000 800"
+                preserveAspectRatio="xMidYMid slice"
+            >
+                <defs>
+                    <filter id="intense-glow" x="-100%" y="-100%" width="300%" height="300%">
+                        <feGaussianBlur stdDeviation="8" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                {/* Bright energy nodes that pulse */}
+                <circle className="animate-node-pulse" cx="500" cy="400" r="8" fill="rgba(150,220,255,0.8)" filter="url(#intense-glow)" />
+                <circle className="animate-node-pulse-delayed" cx="280" cy="260" r="4" fill="rgba(150,220,255,0.6)" filter="url(#intense-glow)" />
+                <circle className="animate-node-pulse" cx="720" cy="260" r="4" fill="rgba(150,220,255,0.6)" filter="url(#intense-glow)" />
+                <circle className="animate-node-pulse-delayed" cx="380" cy="600" r="5" fill="rgba(150,220,255,0.6)" filter="url(#intense-glow)" />
+                <circle className="animate-node-pulse" cx="620" cy="600" r="5" fill="rgba(150,220,255,0.6)" filter="url(#intense-glow)" />
+            </svg>
 
             {/* LAYER 5: DARK VIGNETTE */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0, 2, 8, 0.85) 100%)',
+                    background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0, 2, 8, 0.7) 70%, rgba(0, 0, 5, 0.95) 100%)',
                 }}
             />
 
-            {/* LAYER 6: SCANLINES (subtle hologram texture) */}
+            {/* LAYER 6: Subtle scanlines */}
             <div
-                className="absolute inset-0 pointer-events-none opacity-[0.08]"
+                className="absolute inset-0 pointer-events-none opacity-[0.06]"
                 style={{
-                    backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,200,255,0.15) 3px)',
+                    backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,200,255,0.1) 3px)',
                     backgroundSize: '100% 4px',
                 }}
             />
