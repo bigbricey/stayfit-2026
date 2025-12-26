@@ -324,89 +324,30 @@ button:active:not(:disabled) {
 /* Scan line effect - DISABLED */
 
 /* ========================================
-   ANIMATED BACKGROUND - Technical Blueprint
+   ANIMATED BACKGROUND - System Data Erosion
    ======================================== */
 
-/* Slow rotation for radar arcs */
-@keyframes slow-rotate {
+/* Floating data particles "ciphering off" */
+@keyframes cipher-float {
   0% {
-    transform: rotate(0deg) scale(1);
+    transform: translateY(0) scale(1);
+    opacity: 0;
   }
 
-  50% {
-    transform: rotate(2deg) scale(1.02);
-  }
-
-  100% {
-    transform: rotate(0deg) scale(1);
-  }
-}
-
-.animate-slow-rotate {
-  animation: slow-rotate 30s ease-in-out infinite;
-}
-
-/* Slow drift for wavy lines */
-@keyframes drift {
-  0% {
-    transform: translateX(0) translateY(0);
-  }
-
-  50% {
-    transform: translateX(-20px) translateY(-10px);
-  }
-
-  100% {
-    transform: translateX(0) translateY(0);
-  }
-}
-
-.animate-drift {
-  animation: drift 25s ease-in-out infinite;
-}
-
-/* Slow pulse for tech elements */
-@keyframes pulse-slow {
-
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 4s ease-in-out infinite;
-}
-
-/* Energy node pulse */
-@keyframes node-pulse {
-
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: scale(1);
-  }
-
-  50% {
+  20% {
     opacity: 0.5;
-    transform: scale(1.3);
+  }
+
+  80% {
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateY(-60px) scale(1.1);
+    opacity: 0;
   }
 }
 
-.animate-node-pulse {
-  animation: node-pulse 3s ease-in-out infinite;
-}
-
-.animate-node-pulse-delayed {
-  animation: node-pulse 4s ease-in-out infinite;
-  animation-delay: -1.5s;
-}
-
-.animate-node-pulse-delayed {
-  animation: node-pulse 4s ease-in-out infinite;
-  animation-delay: -1.5s;
+.animate-cipher-float {
+  animation: cipher-float 5s linear infinite;
 }

@@ -3,134 +3,105 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Solo Leveling Background - Technical Blueprint with Radar Arcs
+// Solo Leveling Background - The "System" (Data Erosion & Murky Smoke)
 export function SoloLevelingBackground() {
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#020510' }}>
-
-            {/* LAYER 1: Large curved RADAR/SONAR arcs */}
-            <svg
-                className="absolute inset-0 w-full h-full animate-slow-rotate"
-                viewBox="0 0 1000 800"
-                preserveAspectRatio="xMidYMid slice"
-                style={{ opacity: 0.2 }}
-            >
+        <div className="fixed inset-0 z-0 overflow-hidden bg-[#02050c]">
+            {/* 
+                GLOBAL SVG FILTERS 
+                These define the "Texture" and "Erosion" styles used throughout the UI.
+            */}
+            <svg className="absolute w-0 h-0">
                 <defs>
-                    <filter id="arc-glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="2" result="blur" />
+                    {/* FILTER 1: Electric Distortion (The "Ciphering" Effect) 
+                        Creates the gritty, jagged, eroding edges.
+                    */}
+                    <filter id="electric-distortion">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="warp">
+                            {/* Slowly animate the noise to make edges ripple like smoke */}
+                            <animate attributeName="baseFrequency" values="0.04;0.041;0.04" dur="8s" repeatCount="indefinite" />
+                        </feTurbulence>
+                        <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="4" in="SourceGraphic" in2="warp" />
+                    </filter>
+
+                    {/* FILTER 2: Smoke Noise (The "Murky" Background)
+                        Creates the swirling, liquid-like atmosphere.
+                    */}
+                    <filter id="smoke-noise">
+                        <feTurbulence type="turbulence" baseFrequency="0.01" numOctaves="5" result="turbulence">
+                            <animate attributeName="baseFrequency" values="0.01;0.012;0.01" dur="15s" repeatCount="indefinite" />
+                        </feTurbulence>
+                        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" in="turbulence" result="smoke" />
+                        <feComposite in="smoke" in2="SourceGraphic" operator="in" />
+                    </filter>
+
+                    {/* FILTER 3: Heavy Bloom (The "Energy" Glow) */}
+                    <filter id="heavy-bloom" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="6" result="blur" />
                         <feMerge>
+                            <feMergeNode in="blur" />
                             <feMergeNode in="blur" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
                 </defs>
-                {/* Large sweeping arcs - radar style */}
-                <g filter="url(#arc-glow)">
-                    <path d="M800,100 A400,400 0 0,1 800,500" stroke="rgba(80,150,220,0.4)" strokeWidth="1" fill="none" />
-                    <path d="M850,50 A450,450 0 0,1 850,550" stroke="rgba(80,150,220,0.3)" strokeWidth="0.8" fill="none" />
-                    <path d="M900,0 A500,500 0 0,1 900,600" stroke="rgba(80,150,220,0.2)" strokeWidth="0.6" fill="none" />
-
-                    <path d="M200,700 A350,350 0 0,0 200,300" stroke="rgba(80,150,220,0.4)" strokeWidth="1" fill="none" />
-                    <path d="M150,750 A400,400 0 0,0 150,250" stroke="rgba(80,150,220,0.3)" strokeWidth="0.8" fill="none" />
-                    <path d="M100,800 A450,450 0 0,0 100,200" stroke="rgba(80,150,220,0.2)" strokeWidth="0.6" fill="none" />
-
-                    {/* Concentric circles in corner */}
-                    <circle cx="850" cy="150" r="80" stroke="rgba(80,150,220,0.25)" strokeWidth="0.5" fill="none" />
-                    <circle cx="850" cy="150" r="120" stroke="rgba(80,150,220,0.2)" strokeWidth="0.5" fill="none" />
-                    <circle cx="850" cy="150" r="160" stroke="rgba(80,150,220,0.15)" strokeWidth="0.5" fill="none" />
-                </g>
             </svg>
 
-            {/* LAYER 2: Diagonal grid lines */}
-            <svg
-                className="absolute inset-0 w-full h-full"
-                viewBox="0 0 1000 800"
-                preserveAspectRatio="xMidYMid slice"
-                style={{ opacity: 0.15 }}
-            >
-                {/* Diagonal lines crossing */}
-                <line x1="0" y1="200" x2="600" y2="800" stroke="rgba(100,180,255,0.4)" strokeWidth="0.5" />
-                <line x1="0" y1="400" x2="400" y2="800" stroke="rgba(100,180,255,0.3)" strokeWidth="0.5" />
-                <line x1="200" y1="0" x2="800" y2="600" stroke="rgba(100,180,255,0.35)" strokeWidth="0.5" />
-                <line x1="400" y1="0" x2="1000" y2="600" stroke="rgba(100,180,255,0.3)" strokeWidth="0.5" />
-                <line x1="600" y1="0" x2="1000" y2="400" stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
+            {/* LAYER 1: The Murky Background (Fluid Smoke) */}
+            <div className="absolute inset-0 opacity-40 mix-blend-screen">
+                <svg width="100%" height="100%">
+                    <rect width="100%" height="100%" filter="url(#smoke-noise)" fill="#003366" opacity="0.5" />
+                </svg>
+            </div>
 
-                {/* Opposite diagonal */}
-                <line x1="1000" y1="200" x2="400" y2="800" stroke="rgba(100,180,255,0.3)" strokeWidth="0.5" />
-                <line x1="800" y1="0" x2="200" y2="600" stroke="rgba(100,180,255,0.35)" strokeWidth="0.5" />
-                <line x1="1000" y1="400" x2="600" y2="800" stroke="rgba(100,180,255,0.25)" strokeWidth="0.5" />
+            {/* LAYER 2: Ciphering "Data Lines" (Eroded Structures) */}
+            <div className="absolute inset-0 pointer-events-none" style={{ filter: "url(#electric-distortion)" }}>
+                <svg width="100%" height="100%">
+                    {/* Large "System" Arcs - Eroded */}
+                    <path
+                        d="M -100 200 Q 300 100 600 -100"
+                        stroke="rgba(0, 119, 255, 0.4)"
+                        strokeWidth="2"
+                        fill="none"
+                    />
+                    <path
+                        d="M -100 400 Q 400 300 800 -100"
+                        stroke="rgba(0, 119, 255, 0.3)"
+                        strokeWidth="3"
+                        fill="none"
+                    />
 
-                {/* Horizontal/vertical lines */}
-                <line x1="0" y1="300" x2="1000" y2="300" stroke="rgba(100,180,255,0.2)" strokeWidth="0.3" />
-                <line x1="0" y1="500" x2="1000" y2="500" stroke="rgba(100,180,255,0.2)" strokeWidth="0.3" />
-                <line x1="300" y1="0" x2="300" y2="800" stroke="rgba(100,180,255,0.15)" strokeWidth="0.3" />
-                <line x1="700" y1="0" x2="700" y2="800" stroke="rgba(100,180,255,0.15)" strokeWidth="0.3" />
-            </svg>
+                    {/* Vertical "Data Rain" Lines */}
+                    <line x1="85%" y1="0" x2="85%" y2="100%" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="1" />
+                    <line x1="15%" y1="0" x2="15%" y2="100%" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="1" />
 
-            {/* LAYER 3: Scattered tech rectangles */}
-            <svg
-                className="absolute inset-0 w-full h-full animate-pulse-slow"
-                viewBox="0 0 1000 800"
-                preserveAspectRatio="xMidYMid slice"
-                style={{ opacity: 0.2 }}
-            >
-                {/* Small scattered rectangles */}
-                <rect x="100" y="150" width="40" height="25" stroke="rgba(100,180,255,0.5)" strokeWidth="0.8" fill="none" />
-                <rect x="750" y="100" width="50" height="30" stroke="rgba(100,180,255,0.4)" strokeWidth="0.8" fill="none" />
-                <rect x="600" y="600" width="60" height="35" stroke="rgba(100,180,255,0.45)" strokeWidth="0.8" fill="none" />
-                <rect x="200" y="500" width="45" height="28" stroke="rgba(100,180,255,0.4)" strokeWidth="0.8" fill="none" />
-                <rect x="850" y="450" width="35" height="22" stroke="rgba(100,180,255,0.35)" strokeWidth="0.8" fill="none" />
-                <rect x="50" y="650" width="55" height="32" stroke="rgba(100,180,255,0.4)" strokeWidth="0.8" fill="none" />
+                    {/* Tech Decor */}
+                    <rect x="83%" y="15%" width="4%" height="10%" stroke="rgba(0, 180, 255, 0.3)" fill="none" />
+                    <rect x="13%" y="75%" width="4%" height="5%" stroke="rgba(0, 180, 255, 0.3)" fill="none" />
+                </svg>
+            </div>
 
-                {/* Corner brackets */}
-                <path d="M80,80 L80,60 L100,60" stroke="rgba(100,180,255,0.5)" strokeWidth="1" fill="none" />
-                <path d="M920,80 L920,60 L900,60" stroke="rgba(100,180,255,0.5)" strokeWidth="1" fill="none" />
-                <path d="M80,720 L80,740 L100,740" stroke="rgba(100,180,255,0.5)" strokeWidth="1" fill="none" />
-                <path d="M920,720 L920,740 L900,740" stroke="rgba(100,180,255,0.5)" strokeWidth="1" fill="none" />
-            </svg>
-
-            {/* LAYER 4: Topographic/wavy curves */}
-            <svg
-                className="absolute inset-0 w-full h-full animate-drift"
-                viewBox="0 0 1000 800"
-                preserveAspectRatio="xMidYMid slice"
-                style={{ opacity: 0.12 }}
-            >
-                <path d="M0,200 Q200,150 400,200 T800,180 T1000,220" stroke="rgba(100,180,255,0.5)" strokeWidth="0.6" fill="none" />
-                <path d="M0,250 Q250,200 500,250 T900,230 T1000,270" stroke="rgba(100,180,255,0.4)" strokeWidth="0.5" fill="none" />
-                <path d="M0,550 Q200,500 400,550 T800,530 T1000,570" stroke="rgba(100,180,255,0.5)" strokeWidth="0.6" fill="none" />
-                <path d="M0,600 Q250,550 500,600 T900,580 T1000,620" stroke="rgba(100,180,255,0.4)" strokeWidth="0.5" fill="none" />
-            </svg>
-
-            {/* LAYER 5: Glowing energy spots */}
-            <svg
-                className="absolute inset-0 w-full h-full"
-                viewBox="0 0 1000 800"
-                preserveAspectRatio="xMidYMid slice"
-            >
-                <defs>
-                    <filter id="spot-glow" x="-100%" y="-100%" width="300%" height="300%">
-                        <feGaussianBlur stdDeviation="10" result="blur" />
-                        <feMerge>
-                            <feMergeNode in="blur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-                <circle className="animate-node-pulse" cx="850" cy="200" r="15" fill="rgba(80,150,220,0.3)" filter="url(#spot-glow)" />
-                <circle className="animate-node-pulse-delayed" cx="150" cy="600" r="12" fill="rgba(80,150,220,0.25)" filter="url(#spot-glow)" />
-            </svg>
-
-            {/* LAYER 6: DARK VIGNETTE */}
+            {/* LAYER 3: Floating Data Particles (The "Ciphering Off" Effect) */}
             <div
-                className="absolute inset-0 pointer-events-none"
+                className="absolute inset-0 opacity-30"
                 style={{
-                    background: 'radial-gradient(ellipse at center, transparent 10%, rgba(2, 5, 16, 0.6) 50%, rgba(1, 2, 8, 0.95) 100%)',
+                    backgroundImage: 'radial-gradient(#00aaff 1px, transparent 1px)',
+                    backgroundSize: '30px 30px',
+                    maskImage: 'linear-gradient(to bottom, transparent, black, transparent)',
+                    animation: 'cipher-float 8s linear infinite'
                 }}
             />
+
+            {/* LAYER 4: Deep Vignette (Central Focus) */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#02050c_90%)]" />
         </div>
     );
 }
+
+// Global Animation Styles for "Ciphering Off"
+// Note: This needs to be in globals.css for valid CSS, but adding strictly required keyframes here 
+// via a style tag if not present in globals.css is a fallback pattern, or relying on globals.css update.
+// We will update globals.css separately to ensure 'cipher-float' exists.
 
 // White outlined panel box
 export function SystemPanel({ children, className = '' }: { children: ReactNode; className?: string }) {
