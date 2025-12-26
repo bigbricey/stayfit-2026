@@ -9,20 +9,11 @@ function SystemWindow({ children, className = '' }: { children: React.ReactNode;
   return (
     <div className={`relative ${className}`}>
       {/* Outer glow */}
-      <div className="absolute -inset-1 bg-cyan-500/20 blur-xl rounded-lg" />
+      <div className="absolute -inset-2 bg-cyan-500/20 blur-2xl" />
 
-      {/* Window frame */}
-      <div className="relative">
-        {/* Corner accents */}
-        <div className="absolute -top-0.5 -left-0.5 w-4 h-4 border-t-2 border-l-2 border-cyan-400" />
-        <div className="absolute -top-0.5 -right-0.5 w-4 h-4 border-t-2 border-r-2 border-cyan-400" />
-        <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 border-b-2 border-l-2 border-cyan-400" />
-        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 border-b-2 border-r-2 border-cyan-400" />
-
-        {/* Main panel */}
-        <div className="border border-cyan-500/50 bg-slate-950/80 backdrop-blur-sm p-6">
-          {children}
-        </div>
+      {/* Main panel - no corner accents, just clean border */}
+      <div className="relative border border-cyan-500/50 bg-slate-950/90 backdrop-blur-sm p-8">
+        {children}
       </div>
     </div>
   );
@@ -111,8 +102,8 @@ export default function WelcomePage() {
     <main className="min-h-screen relative flex items-center justify-center p-6">
       <TechBackground />
 
-      {/* Main System Window */}
-      <div className={`relative z-10 w-full max-w-md transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      {/* Main System Window - BIG, takes up most of screen */}
+      <div className={`relative z-10 w-full max-w-3xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <SystemWindow>
           <NotificationHeader text="SYSTEM" />
 
