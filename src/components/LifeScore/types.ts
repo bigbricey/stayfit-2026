@@ -149,13 +149,13 @@ export function getLevelFromTotalXP(totalXP: number): { level: number; currentXP
 }
 
 export function getTitleForLevel(level: number): { title: string; color: string } {
-    let result = TITLES[0];
+    let result: { title: string; color: string } = { title: TITLES[0].title, color: TITLES[0].color };
     for (const t of TITLES) {
         if (level >= t.minLevel) {
-            result = t;
+            result = { title: t.title, color: t.color };
         }
     }
-    return { title: result.title, color: result.color };
+    return result;
 }
 
 export function getClassModifier(stats: PlayerStats): string | null {
