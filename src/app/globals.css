@@ -321,26 +321,4 @@ button:active:not(:disabled) {
   background-size: 60px 60px;
 }
 
-/* Scan line effect */
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-
-  100% {
-    transform: translateY(100vh);
-  }
-}
-
-.scanline::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
-  animation: scanline 4s linear infinite;
-  pointer-events: none;
-  z-index: 1000;
-}
+/* Scan line effect - DISABLED */
