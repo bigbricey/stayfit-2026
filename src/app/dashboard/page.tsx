@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     SoloLevelingLayout,
@@ -9,8 +9,7 @@ import {
 } from '@/components/SoloLeveling';
 import { AnimatedNumber } from '@/components/SoloLeveling/AnimatedNumber';
 import { XPPopup } from '@/components/SoloLeveling/XPPopup';
-import { SystemNotification, NotificationManager } from '@/components/SoloLeveling/SystemNotification';
-import { saveMeal, getTodaysMeals } from '@/lib/actions/meals';
+import { NotificationManager } from '@/components/SoloLeveling/SystemNotification';
 import {
     ArrowLeft,
     Utensils,
@@ -65,7 +64,7 @@ function AnimatedStat({ value, icon: Icon, label, color }: {
 export default function Dashboard() {
     const router = useRouter();
     const [meals, setMeals] = useState<Meal[]>([]);
-    const [isPending, startTransition] = useTransition();
+    const [isPending, setIsPending] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     // Animation states
@@ -82,17 +81,28 @@ export default function Dashboard() {
 
     useEffect(() => {
         setMounted(true);
-        loadMeals();
+        // Load from localStorage
+        const saved = localStorage.getItem('stayfit_meals_today');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                const today = new Date().toISOString().split('T')[0];
+                if (parsed.date === today) {
+                    setMeals(parsed.meals || []);
+                }
+            } catch (e) {
+                console.error('Error loading saved meals:', e);
+            }
+        }
     }, []);
 
-    const loadMeals = async () => {
-        try {
-            const todaysMeals = await getTodaysMeals();
-            setMeals(todaysMeals);
-        } catch (error) {
-            console.error('Error loading meals:', error);
+    // Save to localStorage whenever meals change
+    useEffect(() => {
+        if (mounted && meals.length > 0) {
+            const today = new Date().toISOString().split('T')[0];
+            localStorage.setItem('stayfit_meals_today', JSON.stringify({ date: today, meals }));
         }
-    };
+    }, [meals, mounted]);
 
     const totals = meals.reduce((acc, meal) => ({
         calories: acc.calories + meal.calories,
@@ -129,35 +139,38 @@ export default function Dashboard() {
         const calorieValue = parseInt(calories) || 0;
         const xpGain = Math.floor(calorieValue / 50) + 10; // Base 10 XP + 1 per 50 cal
 
-        startTransition(async () => {
-            try {
-                await saveMeal({
-                    name: mealName || selectedType,
-                    calories: calorieValue,
-                    protein: parseInt(protein) || 0,
-                    carbs: parseInt(carbs) || 0,
-                    fat: parseInt(fat) || 0,
-                    meal_type: selectedType,
-                });
-                await loadMeals();
+        setIsPending(true);
 
-                // Show animations!
-                showXPGain(xpGain);
-                setTimeout(() => {
-                    showNotification(`Nutrition data recorded. +${xpGain} XP acquired.`, 'success');
-                }, 500);
+        // Simulate a brief delay for effect
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Reset form
-                setMealName('');
-                setCalories('');
-                setProtein('');
-                setCarbs('');
-                setFat('');
-            } catch (error) {
-                console.error('Error saving meal:', error);
-                showNotification('Failed to log meal. Try again.', 'warning');
-            }
-        });
+        // Create new meal (local state only for now)
+        const newMeal: Meal = {
+            id: Date.now().toString(),
+            name: mealName || selectedType.charAt(0).toUpperCase() + selectedType.slice(1),
+            calories: calorieValue,
+            protein: parseInt(protein) || 0,
+            carbs: parseInt(carbs) || 0,
+            fat: parseInt(fat) || 0,
+            meal_type: selectedType,
+            created_at: new Date().toISOString(),
+        };
+
+        setMeals(prev => [...prev, newMeal]);
+
+        // Show animations!
+        showXPGain(xpGain);
+        setTimeout(() => {
+            showNotification(`Nutrition data recorded. +${xpGain} XP acquired.`, 'success');
+        }, 500);
+
+        // Reset form
+        setMealName('');
+        setCalories('');
+        setProtein('');
+        setCarbs('');
+        setFat('');
+        setIsPending(false);
     };
 
     if (!mounted) return null;
