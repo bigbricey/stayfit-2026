@@ -122,10 +122,10 @@ export function SystemPanel({ children, className = '' }: { children: ReactNode;
 
 // Panel with header title
 // Panel with header title
-export function SystemPanelWithHeader({ 
-    title, 
-    icon: Icon, 
-    children, 
+export function SystemPanelWithHeader({
+    title,
+    icon: Icon,
+    children,
     className = '',
     backButton,
     rightElement
@@ -266,21 +266,25 @@ export function SoloLevelingLayout({ children }: { children: ReactNode }) {
     );
 }
 
-// RESTORED CONCEPT: "Standardized Game Console" (v5.0)
+// RESTORED CONCEPT: "Standardized Game Console" (v5.5)
 // This wrapper enforces the "Video Game Screen" look on EVERY page.
 // - Fixed max-width (max-w-2xl)
+// - Fixed max-height (80vh) - like a real game screen
 // - Centered in viewport
 // - "Extreme Legibility" text defaults
+// - Internal scrolling for overflow content
 export function SoloLevelingPage({ children, className = '' }: { children: ReactNode; className?: string }) {
     return (
         <SoloLevelingLayout>
             <div className="min-h-screen flex items-center justify-center p-4 md:p-8">
-                <div className={`w-full max-w-2xl animate-in fade-in zoom-in duration-500 ${className}`}>
+                <div className={`w-full max-w-2xl max-h-[80vh] flex flex-col animate-in fade-in zoom-in duration-500 ${className}`}>
                     {/* 
                         Enforce "Extreme Legibility" by default for all children 
-                        unless overridden. 
+                        unless overridden.
+                        The outer container has fixed dimensions.
+                        Content inside scrolls if it overflows.
                     */}
-                    <div className="text-white [&_*]:text-shadow-legibility">
+                    <div className="text-white [&_*]:text-shadow-legibility flex-1 overflow-y-auto overflow-x-hidden">
                         {children}
                     </div>
                 </div>
