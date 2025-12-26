@@ -266,10 +266,10 @@ export function SoloLevelingLayout({ children }: { children: ReactNode }) {
     );
 }
 
-// RESTORED CONCEPT: "Standardized Game Console" (v6.0)
+// RESTORED CONCEPT: "Standardized Game Console" (v7.0)
 // This wrapper enforces the "Video Game Screen" look on EVERY page.
 // - Fixed max-width (max-w-2xl)
-// - FIXED HEIGHT (600px) - ensures Welcome, Dashboard, and Modules are IDENTICAL size.
+// - FIXED HEIGHT (600px) - matches user's Welcome page expectation.
 // - Centered in viewport
 // - "Extreme Legibility" text defaults
 // - Internal scrolling for overflow content
@@ -291,11 +291,12 @@ export function SoloLevelingPage({ children, className = '' }: { children: React
                         Content inside scrolls if it overflows.
                         h-full ensures the backgrounds/borders stretch to fill the 600px even if content is small.
                     */}
-                    <div className="text-white [&_*]:text-shadow-legibility flex-1 h-full overflow-hidden flex flex-col relative">
+                    <div className="text-white [&_*]:text-shadow-legibility flex-1 h-full overflow-hidden flex flex-col relative pointer-events-auto">
                         {/* 
                            We wrap children in a flex-1 overflow container so the border/header stays fixed 
                            if the SystemPanelWithHeader is used correctly (it controls its own sizing).
                            But effectively, we just want the child to FILL this box.
+                           added 'custom-scrollbar' for cleaner look if supported
                         */}
                         <div className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar">
                             {children}
