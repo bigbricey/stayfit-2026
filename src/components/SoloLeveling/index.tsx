@@ -136,18 +136,23 @@ export function VitalBar({ icon: Icon, label, current, max, color }: {
     );
 }
 
-// Simple action button
-export function SystemButton({ children, onClick, className = '' }: {
+// Simple action button with micro-interactions
+export function SystemButton({ children, onClick, className = '', disabled = false }: {
     children: ReactNode;
     onClick?: () => void;
     className?: string;
+    disabled?: boolean;
 }) {
     return (
         <button
             onClick={onClick}
+            disabled={disabled}
             className={`w-full py-4 border border-white/40 bg-white/5 text-white font-bold tracking-[0.15em] uppercase
-        hover:bg-white/10 hover:border-white/60 
-        transition-all duration-300 flex items-center justify-center gap-2 ${className}`}
+                transition-all duration-150 flex items-center justify-center gap-2 group
+                hover:bg-white/10 hover:border-white/60 hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]
+                active:scale-[0.98] active:bg-white/15
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/5
+                ${className}`}
             style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}
         >
             {children}
