@@ -21,7 +21,8 @@ import {
     Coffee,
     Sun,
     Moon,
-    Cookie
+    Cookie,
+    Plus
 } from 'lucide-react';
 import Link from 'next/link';
 
