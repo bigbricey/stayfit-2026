@@ -139,11 +139,12 @@ export function SystemPanelWithHeader({
 }) {
     const IconComponent = Icon || AlertCircle;
     return (
-        <div className={`relative border border-white/40 bg-transparent ${className}`}>
+        <div className={`relative border border-white/40 bg-transparent flex flex-col ${className}`}>
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-            <div className="relative">
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
+
+            {/* Header - Fixed at top */}
+            <div className="relative shrink-0 z-20">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 bg-black/20 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                         {backButton && (
                             <div className="mr-2">
@@ -163,10 +164,11 @@ export function SystemPanelWithHeader({
                         </div>
                     )}
                 </div>
-                {/* Content */}
-                <div className="p-4 md:p-6">
-                    {children}
-                </div>
+            </div>
+
+            {/* Content - Scrollable area filling remaining space */}
+            <div className="relative flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 z-10">
+                {children}
             </div>
         </div>
     );
@@ -293,12 +295,10 @@ export function SoloLevelingPage({ children, className = '' }: { children: React
                     */}
                     <div className="text-white [&_*]:text-shadow-legibility flex-1 h-full overflow-hidden flex flex-col relative pointer-events-auto">
                         {/* 
-                           We wrap children in a flex-1 overflow container so the border/header stays fixed 
-                           if the SystemPanelWithHeader is used correctly (it controls its own sizing).
-                           But effectively, we just want the child to FILL this box.
-                           added 'custom-scrollbar' for cleaner look if supported
+                           Wrapper passes full height to children.
+                           Scrolling is now handled INSIDE SystemPanelWithHeader to keep borders fixed.
                         */}
-                        <div className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar">
+                        <div className="w-full h-full flex flex-col">
                             {children}
                         </div>
                     </div>
