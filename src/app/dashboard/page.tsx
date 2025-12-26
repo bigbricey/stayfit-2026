@@ -135,12 +135,12 @@ export default function GameHub() {
                                             {/* Text */}
                                             <div className="text-center">
                                                 <h3 className={`text-sm font-bold tracking-widest uppercase mb-0.5 transition-colors duration-300
-                                                    ${mod.locked ? 'text-white/50' : 'text-white/90 group-hover:text-cyan-100'}
+                                                    ${mod.locked ? 'text-white/90' : 'text-white/90 group-hover:text-cyan-100'}
                                                 `}>
                                                     {mod.title}
                                                 </h3>
                                                 <p className={`text-[9px] font-mono tracking-[0.1em] uppercase hidden sm:block
-                                                    ${mod.locked ? 'text-white/30' : 'text-white/30'}
+                                                    ${mod.locked ? 'text-white/70' : 'text-white/50'}
                                                 `}>
                                                     {mod.subtitle}
                                                 </p>
@@ -149,7 +149,7 @@ export default function GameHub() {
                                             {/* Lock Icon Overlay - subtle */}
                                             {mod.locked && (
                                                 <div className="absolute top-2 right-2">
-                                                    <Lock className="w-3 h-3 text-white/20" />
+                                                    <Lock className="w-3 h-3 text-white/40" />
                                                 </div>
                                             )}
 
