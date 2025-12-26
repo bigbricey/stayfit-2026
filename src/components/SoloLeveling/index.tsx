@@ -3,54 +3,134 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Animated Solo Leveling Background with Lightning Effect
+// Solo Leveling Background - Traveling Energy Beams
 export function SoloLevelingBackground() {
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#050a14' }}>
+        <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#02040a' }}>
 
-            {/* LAYER 1: SLOW DRIFTING BLUEPRINT LINES */}
+            {/* LAYER 1: SMOKY ATMOSPHERIC BACKGROUND */}
             <div
-                className="absolute inset-0 animate-drift opacity-20"
+                className="absolute animate-smoke-shift"
                 style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cdefs%3E%3Cstyle%3E.line%7Bfill:none;stroke:rgba(77,184,255,0.5);stroke-width:1px;%7D.thick%7Bfill:none;stroke:rgba(77,184,255,0.7);stroke-width:1.5px;%7D.faint%7Bfill:none;stroke:rgba(77,184,255,0.25);stroke-width:0.5px;%7D%3C/style%3E%3C/defs%3E%3Cpath class='line' d='M-50,50 L100,150 L50,250 L200,200 M300,50 L400,150 L350,300 M600,-50 L700,100 L650,200 M50,500 L150,450 L250,550 M500,400 L600,500 L550,650' /%3E%3Cpath class='faint' d='M10,10 L790,590 M790,10 L10,590 M100,0 L100,600 M700,0 L700,600 M0,150 L800,150 M0,450 L800,450' /%3E%3Cpath class='line' d='M0,300 C100,250 200,350 300,300 S500,250 600,300 S700,350 800,300 M-100,400 C100,350 200,450 300,400 S500,350 600,400 S800,450 900,400' /%3E%3Crect class='thick' x='120' y='80' width='60' height='40' /%3E%3Crect class='thick' x='600' y='350' width='100' height='80' /%3E%3Cpolyline class='thick' points='50,50 80,50 80,80' /%3E%3Cpolyline class='thick' points='750,550 720,550 720,520' /%3E%3Ccircle class='faint' cx='400' cy='300' r='150' /%3E%3Ccircle class='faint' cx='400' cy='300' r='200' /%3E%3C/svg%3E")`,
+                    top: '-50%',
+                    left: '-50%',
+                    width: '200%',
+                    height: '200%',
+                    background: `
+                        radial-gradient(ellipse at 30% 30%, rgba(10, 40, 80, 0.4), transparent 50%),
+                        radial-gradient(ellipse at 70% 60%, rgba(5, 25, 50, 0.5), transparent 60%),
+                        radial-gradient(ellipse at 50% 80%, rgba(8, 30, 60, 0.3), transparent 40%)
+                    `,
+                    filter: 'blur(40px)',
+                }}
+            />
+
+            {/* LAYER 2: FAINT ICE-CRACK / BLUEPRINT LINES (drifting slowly) */}
+            <div
+                className="absolute inset-0 animate-drift opacity-15"
+                style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cpath d='M0,50 L150,0 M50,200 L180,100 L100,250 M300,0 L250,150 L350,200 M500,50 L450,180 L550,150 M700,0 L650,120 L750,100 M100,400 L200,350 L150,500 M400,350 L500,450 L450,550 M600,400 L700,350 L650,550 M0,300 L100,280 L50,400 M750,250 L800,350' stroke='rgba(100,180,255,0.3)' stroke-width='0.8' fill='none'/%3E%3Cpath d='M0,150 C100,120 200,180 300,150 S450,100 550,150 S700,180 800,150' stroke='rgba(100,180,255,0.2)' stroke-width='0.5' fill='none'/%3E%3Cpath d='M0,450 C150,400 300,500 450,450 S600,400 800,450' stroke='rgba(100,180,255,0.2)' stroke-width='0.5' fill='none'/%3E%3C/svg%3E")`,
                     backgroundSize: '800px 600px',
                     backgroundRepeat: 'repeat',
                 }}
             />
 
-            {/* LAYER 2: LIGHTNING SURGE - jerky flashing layer */}
-            <div
-                className="absolute inset-0 animate-lightning pointer-events-none"
-                style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cdefs%3E%3Cstyle%3E.bolt%7Bfill:none;stroke:rgba(174,226,255,0.8);stroke-width:2px;%7D%3C/style%3E%3C/defs%3E%3Cpath class='bolt' d='M100,0 L150,100 L120,150 L200,250 M400,0 L450,80 L420,120 L500,200 M700,50 L650,150 L700,200 L650,300 M200,400 L250,500 L200,550 M600,350 L550,450 L620,550' /%3E%3Cpath class='bolt' d='M0,200 L100,250 L50,300 L150,400 M300,100 L400,180 L350,250 M500,300 L600,380 L550,450' /%3E%3C/svg%3E")`,
-                    backgroundSize: '800px 600px',
-                    backgroundRepeat: 'repeat',
-                    mixBlendMode: 'color-dodge',
-                }}
-            />
+            {/* LAYER 3: TRAVELING ENERGY BEAMS - Top */}
+            <div className="absolute top-[10%] left-0 right-0 h-[3px] overflow-hidden">
+                <div
+                    className="absolute inset-0 animate-beam-sweep"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 52%, #00f0ff 54%, transparent 60%, transparent 100%)',
+                        boxShadow: '0 0 20px #00f0ff, 0 0 40px #00f0ff, 0 0 60px rgba(0, 240, 255, 0.5)',
+                    }}
+                />
+                {/* Static glow rail */}
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'linear-gradient(90deg, rgba(0,200,255,0.1) 0%, rgba(0,200,255,0.3) 50%, rgba(0,200,255,0.1) 100%)',
+                        boxShadow: '0 0 10px rgba(0, 200, 255, 0.3)',
+                    }}
+                />
+            </div>
 
-            {/* LAYER 3: DARK VIGNETTE (shadows at edges) */}
+            {/* LAYER 3B: TRAVELING ENERGY BEAMS - Bottom */}
+            <div className="absolute bottom-[8%] left-0 right-0 h-[4px] overflow-hidden">
+                <div
+                    className="absolute inset-0 animate-beam-sweep-reverse"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 52%, #00f0ff 54%, transparent 60%, transparent 100%)',
+                        boxShadow: '0 0 30px #00f0ff, 0 0 60px #00f0ff, 0 0 80px rgba(0, 240, 255, 0.6)',
+                    }}
+                />
+                {/* Static glow rail */}
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'linear-gradient(90deg, rgba(0,200,255,0.15) 0%, rgba(0,200,255,0.4) 50%, rgba(0,200,255,0.15) 100%)',
+                        boxShadow: '0 0 15px rgba(0, 200, 255, 0.4)',
+                    }}
+                />
+            </div>
+
+            {/* LAYER 3C: TRAVELING ENERGY BEAMS - Middle subtle */}
+            <div className="absolute top-[45%] left-0 right-0 h-[1px] overflow-hidden opacity-40">
+                <div
+                    className="absolute inset-0 animate-beam-sweep-slow"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent 0%, transparent 45%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 55%, transparent 100%)',
+                        boxShadow: '0 0 15px #00f0ff',
+                    }}
+                />
+            </div>
+
+            {/* LAYER 4: VERTICAL ENERGY ACCENTS (left and right borders) */}
+            <div className="absolute left-[5%] top-0 bottom-0 w-[2px] overflow-hidden opacity-60">
+                <div
+                    className="absolute inset-0 animate-beam-vertical"
+                    style={{
+                        background: 'linear-gradient(180deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 60%, transparent 100%)',
+                        boxShadow: '0 0 15px #00f0ff, 0 0 30px rgba(0, 240, 255, 0.5)',
+                    }}
+                />
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(0,200,255,0.05) 0%, rgba(0,200,255,0.2) 50%, rgba(0,200,255,0.05) 100%)',
+                    }}
+                />
+            </div>
+
+            <div className="absolute right-[5%] top-0 bottom-0 w-[2px] overflow-hidden opacity-60">
+                <div
+                    className="absolute inset-0 animate-beam-vertical-reverse"
+                    style={{
+                        background: 'linear-gradient(180deg, transparent 0%, transparent 40%, #00f0ff 50%, #ffffff 51%, #00f0ff 52%, transparent 60%, transparent 100%)',
+                        boxShadow: '0 0 15px #00f0ff, 0 0 30px rgba(0, 240, 255, 0.5)',
+                    }}
+                />
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(0,200,255,0.05) 0%, rgba(0,200,255,0.2) 50%, rgba(0,200,255,0.05) 100%)',
+                    }}
+                />
+            </div>
+
+            {/* LAYER 5: DARK VIGNETTE */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    background: 'radial-gradient(ellipse at center, transparent 20%, rgba(2, 5, 15, 0.7) 70%, rgba(0, 2, 10, 0.95) 100%)',
+                    background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0, 2, 8, 0.85) 100%)',
                 }}
             />
 
-            {/* LAYER 4: TOP GLOW (pulsing light source) */}
+            {/* LAYER 6: SCANLINES (subtle hologram texture) */}
             <div
-                className="absolute top-0 left-0 right-0 h-3/4 pointer-events-none animate-pulse-glow"
+                className="absolute inset-0 pointer-events-none opacity-[0.08]"
                 style={{
-                    background: 'radial-gradient(ellipse at top center, rgba(77, 184, 255, 0.25) 0%, transparent 60%)',
-                }}
-            />
-
-            {/* LAYER 5: Subtle scanlines for "hologram" feel */}
-            <div
-                className="absolute inset-0 pointer-events-none opacity-10"
-                style={{
-                    backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.3) 3px, rgba(0,0,0,0.5) 4px)',
-                    mixBlendMode: 'overlay',
+                    backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,200,255,0.15) 3px)',
+                    backgroundSize: '100% 4px',
                 }}
             />
         </div>
