@@ -1,118 +1,116 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckInForm } from './CheckInForm';
 import { CharacterSheet } from './CharacterSheet';
+import { StatEntryWizard } from './StatEntryWizard';
 import { LevelUpModal } from './LevelUpModal';
-import { TrendChart } from './TrendChart';
-import { loadPlayerData, getTodayCheckIn, PlayerData, processCheckIn, DailyCheckIn, getTodayString } from './types';
-import { Plus, ChevronRight, Swords } from 'lucide-react';
+import { loadPlayerData, PlayerData, getTodayCheckIn, DailyCheckIn } from './types';
+import { Swords, Loader2 } from 'lucide-react';
+
+type ViewState = 'character' | 'wizard';
 
 export function LifeScoreDashboard() {
+    const [view, setView] = useState<ViewState>('character');
     const [player, setPlayer] = useState<PlayerData | null>(null);
     const [todayCheckIn, setTodayCheckIn] = useState<DailyCheckIn | null>(null);
-    const [showForm, setShowForm] = useState(false);
+    const [showLevelUp, setShowLevelUp] = useState(false);
+    const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 1, newLevel: 2 });
     const [isLoading, setIsLoading] = useState(true);
 
-    // Level up modal state
-    const [showLevelUp, setShowLevelUp] = useState(false);
-    const [levelUpData, setLevelUpData] = useState({ level: 1, title: '', titleColor: '', xpGained: 0 });
-
-    const refreshData = () => {
-        const loaded = loadPlayerData();
-        setPlayer(loaded);
-        setTodayCheckIn(getTodayCheckIn());
-    };
-
     useEffect(() => {
-        refreshData();
-        setIsLoading(false);
+        const loadData = () => {
+            const playerData = loadPlayerData();
+            const checkIn = getTodayCheckIn();
+            setPlayer(playerData);
+            setTodayCheckIn(checkIn);
+            setIsLoading(false);
+        };
+        loadData();
     }, []);
 
-    const handleCheckInSaved = (xpGained: number, leveledUp: boolean, newPlayer: PlayerData) => {
+    const handleStartWizard = () => {
+        setView('wizard');
+    };
+
+    const handleWizardComplete = (xpGained: number, leveledUp: boolean, newPlayer: PlayerData) => {
+        const oldLevel = player?.progress.level ?? 1;
+        setPlayer(newPlayer);
+        setTodayCheckIn(getTodayCheckIn());
+        setView('character');
+
         if (leveledUp) {
-            setLevelUpData({
-                level: newPlayer.progress.level,
-                title: newPlayer.progress.title,
-                titleColor: newPlayer.progress.titleColor,
-                xpGained,
-            });
+            setLevelUpInfo({ oldLevel, newLevel: newPlayer.progress.level });
             setShowLevelUp(true);
         }
-        refreshData();
-        setShowForm(false);
+    };
+
+    const handleWizardCancel = () => {
+        setView('character');
+    };
+
+    const handleLevelUpClose = () => {
+        setShowLevelUp(false);
     };
 
     if (isLoading || !player) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-cyan-400 animate-pulse flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
-                    <span className="text-sm tracking-wider uppercase">Initializing System...</span>
-                </div>
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-cyan-500 animate-spin" />
             </div>
         );
     }
 
-    // No check-in today - show form
-    if (!todayCheckIn || showForm) {
+    // Wizard View
+    if (view === 'wizard') {
         return (
-            <div className="max-w-lg mx-auto p-4">
-                {todayCheckIn && (
-                    <button
-                        onClick={() => setShowForm(false)}
-                        className="mb-4 text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
-                    >
-                        <ChevronRight size={16} className="rotate-180" />
-                        <span className="tracking-wider uppercase">Back to Status</span>
-                    </button>
-                )}
-                <CheckInForm
-                    existingCheckIn={todayCheckIn}
-                    onCheckInSaved={handleCheckInSaved}
-                    player={player}
-                />
-
-                <LevelUpModal
-                    isOpen={showLevelUp}
-                    newLevel={levelUpData.level}
-                    newTitle={levelUpData.title}
-                    titleColor={levelUpData.titleColor}
-                    xpGained={levelUpData.xpGained}
-                    onClose={() => setShowLevelUp(false)}
-                />
-            </div>
+            <StatEntryWizard
+                player={player}
+                existingCheckIn={todayCheckIn}
+                onComplete={handleWizardComplete}
+                onCancel={handleWizardCancel}
+            />
         );
     }
 
-    // Has today's check-in - show Character Sheet
+    // Character View (Main Screen)
     return (
-        <div className="max-w-lg mx-auto p-4 space-y-4">
-            <CharacterSheet player={player} />
+        <div className="min-h-screen bg-gradient-to-b from-[#020408] via-[#0a1628] to-[#020408]">
+            {/* Character Sheet */}
+            <div className="p-4">
+                <CharacterSheet player={player} />
+            </div>
 
-            {/* Update Button */}
-            <button
-                onClick={() => setShowForm(true)}
-                className="w-full py-4 rounded-xl border-2 border-dashed border-cyan-500/30
-                           text-cyan-400/70 font-bold tracking-wider uppercase
-                           hover:border-cyan-500/60 hover:text-cyan-300 hover:bg-cyan-500/5
-                           transition-all duration-300 flex items-center justify-center gap-2"
-            >
-                <Swords size={18} />
-                Update Combat Report
-            </button>
+            {/* Action Button */}
+            <div className="p-4 pb-8">
+                <button
+                    onClick={handleStartWizard}
+                    className="w-full py-5 rounded-xl font-black text-xl tracking-wider uppercase
+                               bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 
+                               hover:from-amber-500 hover:via-orange-400 hover:to-red-400 
+                               text-white transition-all duration-300 
+                               flex items-center justify-center gap-4"
+                    style={{ boxShadow: '0 0 40px rgba(251, 146, 60, 0.5)' }}
+                >
+                    <Swords size={28} />
+                    <span>{todayCheckIn ? 'Update Today' : 'Log Today'}</span>
+                    <Swords size={28} />
+                </button>
 
-            {/* Trend Chart */}
-            <TrendChart checkIns={player.checkIns} />
+                {todayCheckIn && (
+                    <p className="text-center text-cyan-400/50 text-sm mt-3">
+                        Already logged today • Tap to update
+                    </p>
+                )}
+            </div>
 
-            <LevelUpModal
-                isOpen={showLevelUp}
-                newLevel={levelUpData.level}
-                newTitle={levelUpData.title}
-                titleColor={levelUpData.titleColor}
-                xpGained={levelUpData.xpGained}
-                onClose={() => setShowLevelUp(false)}
-            />
+            {/* Level Up Modal */}
+            {showLevelUp && (
+                <LevelUpModal
+                    oldLevel={levelUpInfo.oldLevel}
+                    newLevel={levelUpInfo.newLevel}
+                    onClose={handleLevelUpClose}
+                />
+            )}
         </div>
     );
 }
