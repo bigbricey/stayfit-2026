@@ -2,73 +2,107 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, Zap, Dumbbell, Apple, Brain, Shield, ChevronRight } from 'lucide-react';
+import { Plus, Heart, Zap, Brain, Dumbbell, Wind, Eye, ChevronRight } from 'lucide-react';
 
-// Solo Leveling exact style background
+// Exact Solo Leveling Blueprint Background
 function SoloLevelingBackground() {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-[#0a0f1a]">
-      {/* Diagonal structural lines like in the screenshot */}
-      <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+    <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#001f3f' }}>
+      {/* Technical blueprint lines */}
+      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <pattern id="techGrid" width="100" height="100" patternUnits="userSpaceOnUse">
-            <path d="M 0 50 L 50 0 M 50 100 L 100 50" stroke="#0ea5e9" strokeWidth="0.5" fill="none" />
-            <path d="M 0 0 L 100 100 M 100 0 L 0 100" stroke="#0ea5e9" strokeWidth="0.3" fill="none" opacity="0.5" />
+          {/* Cracked ice / blueprint pattern */}
+          <pattern id="cracks" width="200" height="200" patternUnits="userSpaceOnUse">
+            <path d="M 0 50 L 80 0 M 20 200 L 100 80 L 180 120 M 150 0 L 100 80 M 100 80 L 50 150 L 0 180"
+              stroke="rgba(255,255,255,0.15)" strokeWidth="1" fill="none" />
+            <path d="M 200 20 L 150 80 L 180 150 M 0 100 L 60 120 L 80 200"
+              stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" fill="none" />
           </pattern>
-          <pattern id="gridLines" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#0ea5e9" strokeWidth="0.5" />
+          {/* Star dots */}
+          <pattern id="stars" width="100" height="100" patternUnits="userSpaceOnUse">
+            <circle cx="15" cy="25" r="1" fill="rgba(255,255,255,0.2)" />
+            <circle cx="75" cy="15" r="0.5" fill="rgba(255,255,255,0.15)" />
+            <circle cx="45" cy="65" r="0.8" fill="rgba(255,255,255,0.18)" />
+            <circle cx="85" cy="80" r="0.6" fill="rgba(255,255,255,0.12)" />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#techGrid)" />
-        <rect width="100%" height="100%" fill="url(#gridLines)" opacity="0.3" />
+        <rect width="100%" height="100%" fill="url(#stars)" />
+        <rect width="100%" height="100%" fill="url(#cracks)" />
       </svg>
 
-      {/* Ambient blue glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-cyan-500/10 blur-[100px]" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[300px] bg-blue-500/5 blur-[80px]" />
-      <div className="absolute top-0 right-0 w-[300px] h-[200px] bg-cyan-400/5 blur-[60px]" />
+      {/* Subtle blue glow in center */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-cyan-500/5 blur-[120px] rounded-full" />
     </div>
   );
 }
 
-// Progress bar like HP/MP
-function StatusBar({ label, current, max, icon: Icon, color }: {
+// White outlined panel box
+function SystemPanel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`relative border border-white/40 bg-transparent ${className}`}>
+      {/* Inner glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+      <div className="relative p-4 md:p-6">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Glowing number with bloom effect
+function GlowNumber({ value, size = 'lg' }: { value: number | string; size?: 'sm' | 'lg' | 'xl' }) {
+  const sizeClasses = {
+    sm: 'text-2xl',
+    lg: 'text-4xl',
+    xl: 'text-7xl md:text-8xl'
+  };
+  return (
+    <span
+      className={`font-bold text-white ${sizeClasses[size]}`}
+      style={{
+        textShadow: '0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(100,200,255,0.6), 0 0 40px rgba(100,200,255,0.4)',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+// Progress bar (HP/MP style)
+function VitalBar({ icon: Icon, label, current, max, color }: {
+  icon: React.ElementType;
   label: string;
   current: number;
   max: number;
-  icon: React.ElementType;
-  color: string;
+  color: 'green' | 'blue';
 }) {
-  const percent = (current / max) * 100;
+  const barColor = color === 'green' ? 'bg-green-400' : 'bg-cyan-400';
   return (
     <div className="flex items-center gap-3">
-      <Icon className={`w-5 h-5 ${color}`} />
-      <span className="text-cyan-100/80 text-sm w-8">{label}</span>
-      <div className="flex-1 h-2 bg-slate-800/80 border border-cyan-500/30">
-        <div
-          className={`h-full ${color === 'text-red-400' ? 'bg-red-500/80' : 'bg-cyan-500/80'}`}
-          style={{ width: `${percent}%` }}
-        />
+      <div className="flex flex-col items-center">
+        <div className="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-white/80 text-xs mt-1">{label}</span>
       </div>
-      <span className="text-cyan-100/60 text-xs w-20 text-right">
-        {current}<span className="text-cyan-500/40">/{max}</span>
-      </span>
+      <div className="flex-1">
+        <div className="h-3 bg-slate-800/50 border border-white/20">
+          <div className={`h-full ${barColor}`} style={{ width: '100%', boxShadow: `0 0 10px ${color === 'green' ? 'rgba(74,222,128,0.5)' : 'rgba(34,211,238,0.5)'}` }} />
+        </div>
+        <p className="text-white/60 text-xs text-right mt-1">{current}/{max}</p>
+      </div>
     </div>
   );
 }
 
-// Stat item like STR, VIT, etc
-function StatItem({ icon: Icon, label, value, color }: {
-  icon: React.ElementType;
-  label: string;
-  value: number;
-  color: string;
-}) {
+// Stat row with icon
+function StatRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
   return (
     <div className="flex items-center gap-3">
-      <Icon className={`w-5 h-5 ${color}`} />
-      <span className="text-cyan-100/70 text-sm">{label}:</span>
-      <span className="text-white text-2xl font-bold ml-auto">{value}</span>
+      <Icon className="w-5 h-5 text-white" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
+      <span className="text-white/70 text-sm">{label}:</span>
+      <GlowNumber value={value} size="lg" />
     </div>
   );
 }
@@ -89,70 +123,80 @@ export default function WelcomePage() {
     <main className="min-h-screen relative flex items-center justify-center p-4 md:p-8">
       <SoloLevelingBackground />
 
-      <div className={`relative z-10 w-full max-w-4xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`relative z-10 w-full max-w-3xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
-        {/* Level Header Section */}
-        <div className="flex items-end gap-6 mb-6">
-          <div>
-            <span className="text-7xl md:text-8xl font-black text-white drop-shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-              1
-            </span>
-            <p className="text-cyan-400/80 text-sm tracking-widest uppercase -mt-2">LEVEL</p>
+        {/* Header: Level + Job/Title */}
+        <div className="flex items-end justify-center gap-8 mb-6">
+          {/* Level Number */}
+          <div className="text-center">
+            <GlowNumber value="1" size="xl" />
+            <p className="text-white/60 text-sm tracking-[0.3em] uppercase mt-1">LEVEL</p>
           </div>
-          <div className="pb-2">
-            <p className="text-cyan-100/60 text-sm">
-              <span className="text-cyan-500/80">CLASS:</span> <span className="text-white">Beginner</span>
+
+          {/* Job & Title */}
+          <div className="pb-4 text-left">
+            <p className="text-white/70 text-sm">
+              <span className="text-white/50">JOB:</span>{' '}
+              <span className="text-white font-semibold">Beginner</span>
             </p>
-            <p className="text-cyan-100/60 text-sm">
-              <span className="text-cyan-500/80">TITLE:</span> <span className="text-white">Stay Fit with AI</span>
+            <p className="text-white/70 text-sm">
+              <span className="text-white/50">TITLE:</span>{' '}
+              <span className="text-white font-semibold">Fitness Hunter</span>
             </p>
           </div>
         </div>
 
-        {/* HP/MP Bars Panel */}
-        <div className="border border-cyan-500/40 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 mb-4">
-          <div className="grid gap-3">
-            <StatusBar label="HP" current={100} max={100} icon={Heart} color="text-red-400" />
-            <StatusBar label="XP" current={0} max={100} icon={Zap} color="text-cyan-400" />
-          </div>
-          <div className="flex justify-end mt-2">
-            <span className="text-cyan-500/60 text-xs">
-              FATIGUE: <span className="text-white font-bold">0</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Stats Grid Panel */}
-        <div className="border border-cyan-500/40 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 mb-6">
-          <div className="grid grid-cols-2 gap-x-12 gap-y-4">
-            <StatItem icon={Dumbbell} label="STR" value={10} color="text-orange-400" />
-            <StatItem icon={Heart} label="VIT" value={10} color="text-red-400" />
-            <StatItem icon={Zap} label="AGI" value={10} color="text-yellow-400" />
-            <StatItem icon={Brain} label="INT" value={10} color="text-purple-400" />
-            <StatItem icon={Apple} label="NUT" value={10} color="text-green-400" />
-            <div className="flex items-center justify-end col-span-1">
-              <div className="text-right">
-                <p className="text-cyan-500/60 text-xs">Available</p>
-                <p className="text-cyan-500/60 text-xs">Ability</p>
-                <p className="text-cyan-500/60 text-xs">Points:</p>
+        {/* Upper Panel: Vitals (HP, XP, Fatigue) */}
+        <SystemPanel className="mb-4">
+          <div className="grid grid-cols-3 gap-6 items-center">
+            <VitalBar icon={Plus} label="HP" current={100} max={100} color="green" />
+            <VitalBar icon={Zap} label="XP" current={0} max={100} color="blue" />
+            <div className="flex items-center justify-end gap-2">
+              <div className="w-8 h-8 rounded-full border border-white/60 flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white/80 rounded-full border-t-transparent animate-spin" style={{ animationDuration: '3s' }} />
               </div>
-              <span className="text-white text-3xl font-bold ml-3">0</span>
+              <span className="text-white/70 text-sm">FATIGUE:</span>
+              <GlowNumber value="0" size="sm" />
             </div>
           </div>
-        </div>
+        </SystemPanel>
 
-        {/* Action Button */}
+        {/* Lower Panel: Attributes Grid */}
+        <SystemPanel className="mb-6">
+          <div className="grid grid-cols-2 gap-x-12 gap-y-5">
+            {/* Left Column */}
+            <StatRow icon={Dumbbell} label="STR" value={10} />
+            <StatRow icon={Heart} label="VIT" value={10} />
+
+            <StatRow icon={Wind} label="AGI" value={10} />
+            <StatRow icon={Brain} label="INT" value={10} />
+
+            <StatRow icon={Eye} label="PER" value={10} />
+
+            {/* Ability Points - Bottom Right */}
+            <div className="flex items-center justify-end gap-3">
+              <div className="text-right">
+                <p className="text-white/50 text-xs">Available</p>
+                <p className="text-white/50 text-xs">Ability Points:</p>
+              </div>
+              <GlowNumber value="0" size="lg" />
+            </div>
+          </div>
+        </SystemPanel>
+
+        {/* Start Button */}
         <button
           onClick={() => router.push('/dashboard')}
-          className="w-full py-5 border border-cyan-500/50 bg-cyan-500/10 text-cyan-100 font-bold text-xl tracking-widest uppercase
-            hover:bg-cyan-500/20 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)]
+          className="w-full py-5 border border-white/40 bg-white/5 text-white font-bold text-lg tracking-[0.2em] uppercase
+            hover:bg-white/10 hover:border-white/60 
             transition-all duration-300 flex items-center justify-center gap-3 group"
+          style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}
         >
           <span>START TRACKING</span>
           <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
         </button>
 
-        <p className="text-center text-cyan-500/40 text-xs mt-4 tracking-widest">
+        <p className="text-center text-white/30 text-xs mt-4 tracking-[0.3em]">
           [ SYSTEM ACTIVATED ]
         </p>
       </div>
