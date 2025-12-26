@@ -3,34 +3,56 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Exact Solo Leveling Blueprint Background
+// Animated Solo Leveling Background with Lightning Effect
 export function SoloLevelingBackground() {
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#001f3f' }}>
-            {/* Technical blueprint lines */}
-            <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    {/* Cracked ice / blueprint pattern */}
-                    <pattern id="cracks" width="200" height="200" patternUnits="userSpaceOnUse">
-                        <path d="M 0 50 L 80 0 M 20 200 L 100 80 L 180 120 M 150 0 L 100 80 M 100 80 L 50 150 L 0 180"
-                            stroke="rgba(255,255,255,0.15)" strokeWidth="1" fill="none" />
-                        <path d="M 200 20 L 150 80 L 180 150 M 0 100 L 60 120 L 80 200"
-                            stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" fill="none" />
-                    </pattern>
-                    {/* Star dots */}
-                    <pattern id="stars" width="100" height="100" patternUnits="userSpaceOnUse">
-                        <circle cx="15" cy="25" r="1" fill="rgba(255,255,255,0.2)" />
-                        <circle cx="75" cy="15" r="0.5" fill="rgba(255,255,255,0.15)" />
-                        <circle cx="45" cy="65" r="0.8" fill="rgba(255,255,255,0.18)" />
-                        <circle cx="85" cy="80" r="0.6" fill="rgba(255,255,255,0.12)" />
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#stars)" />
-                <rect width="100%" height="100%" fill="url(#cracks)" />
-            </svg>
+        <div className="fixed inset-0 z-0 overflow-hidden" style={{ backgroundColor: '#050a14' }}>
 
-            {/* Subtle blue glow in center */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-cyan-500/5 blur-[120px] rounded-full" />
+            {/* LAYER 1: SLOW DRIFTING BLUEPRINT LINES */}
+            <div
+                className="absolute inset-0 animate-drift opacity-20"
+                style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cdefs%3E%3Cstyle%3E.line%7Bfill:none;stroke:rgba(77,184,255,0.5);stroke-width:1px;%7D.thick%7Bfill:none;stroke:rgba(77,184,255,0.7);stroke-width:1.5px;%7D.faint%7Bfill:none;stroke:rgba(77,184,255,0.25);stroke-width:0.5px;%7D%3C/style%3E%3C/defs%3E%3Cpath class='line' d='M-50,50 L100,150 L50,250 L200,200 M300,50 L400,150 L350,300 M600,-50 L700,100 L650,200 M50,500 L150,450 L250,550 M500,400 L600,500 L550,650' /%3E%3Cpath class='faint' d='M10,10 L790,590 M790,10 L10,590 M100,0 L100,600 M700,0 L700,600 M0,150 L800,150 M0,450 L800,450' /%3E%3Cpath class='line' d='M0,300 C100,250 200,350 300,300 S500,250 600,300 S700,350 800,300 M-100,400 C100,350 200,450 300,400 S500,350 600,400 S800,450 900,400' /%3E%3Crect class='thick' x='120' y='80' width='60' height='40' /%3E%3Crect class='thick' x='600' y='350' width='100' height='80' /%3E%3Cpolyline class='thick' points='50,50 80,50 80,80' /%3E%3Cpolyline class='thick' points='750,550 720,550 720,520' /%3E%3Ccircle class='faint' cx='400' cy='300' r='150' /%3E%3Ccircle class='faint' cx='400' cy='300' r='200' /%3E%3C/svg%3E")`,
+                    backgroundSize: '800px 600px',
+                    backgroundRepeat: 'repeat',
+                }}
+            />
+
+            {/* LAYER 2: LIGHTNING SURGE - jerky flashing layer */}
+            <div
+                className="absolute inset-0 animate-lightning pointer-events-none"
+                style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Cdefs%3E%3Cstyle%3E.bolt%7Bfill:none;stroke:rgba(174,226,255,0.8);stroke-width:2px;%7D%3C/style%3E%3C/defs%3E%3Cpath class='bolt' d='M100,0 L150,100 L120,150 L200,250 M400,0 L450,80 L420,120 L500,200 M700,50 L650,150 L700,200 L650,300 M200,400 L250,500 L200,550 M600,350 L550,450 L620,550' /%3E%3Cpath class='bolt' d='M0,200 L100,250 L50,300 L150,400 M300,100 L400,180 L350,250 M500,300 L600,380 L550,450' /%3E%3C/svg%3E")`,
+                    backgroundSize: '800px 600px',
+                    backgroundRepeat: 'repeat',
+                    mixBlendMode: 'color-dodge',
+                }}
+            />
+
+            {/* LAYER 3: DARK VIGNETTE (shadows at edges) */}
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    background: 'radial-gradient(ellipse at center, transparent 20%, rgba(2, 5, 15, 0.7) 70%, rgba(0, 2, 10, 0.95) 100%)',
+                }}
+            />
+
+            {/* LAYER 4: TOP GLOW (pulsing light source) */}
+            <div
+                className="absolute top-0 left-0 right-0 h-3/4 pointer-events-none animate-pulse-glow"
+                style={{
+                    background: 'radial-gradient(ellipse at top center, rgba(77, 184, 255, 0.25) 0%, transparent 60%)',
+                }}
+            />
+
+            {/* LAYER 5: Subtle scanlines for "hologram" feel */}
+            <div
+                className="absolute inset-0 pointer-events-none opacity-10"
+                style={{
+                    backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.3) 3px, rgba(0,0,0,0.5) 4px)',
+                    mixBlendMode: 'overlay',
+                }}
+            />
         </div>
     );
 }

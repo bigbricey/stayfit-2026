@@ -322,3 +322,177 @@ button:active:not(:disabled) {
 }
 
 /* Scan line effect - DISABLED */
+
+/* ========================================
+   ANIMATED BACKGROUND - Lightning Effects
+   ======================================== */
+
+/* Slow drifting animation for blueprint lines */
+@keyframes drift {
+  0% {
+    transform: translate(0, 0) scale(1.1);
+  }
+
+  25% {
+    transform: translate(-20px, -10px) scale(1.1);
+  }
+
+  50% {
+    transform: translate(-40px, -20px) scale(1.1);
+  }
+
+  75% {
+    transform: translate(-20px, -30px) scale(1.1);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+}
+
+.animate-drift {
+  animation: drift 30s linear infinite;
+}
+
+/* Lightning/electric twitch effect - flashes on and off chaotically */
+@keyframes electric-twitch {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+
+  2% {
+    opacity: 0.5;
+    transform: translate(5px, -3px);
+    filter: brightness(1.5);
+  }
+
+  3% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+
+  12% {
+    opacity: 0;
+  }
+
+  13% {
+    opacity: 0.7;
+    transform: translate(-8px, 5px);
+    filter: brightness(2);
+  }
+
+  14% {
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 0;
+  }
+
+  26% {
+    opacity: 0.3;
+    transform: translate(3px, 3px);
+  }
+
+  27% {
+    opacity: 0;
+  }
+
+  40% {
+    opacity: 0;
+  }
+
+  41% {
+    opacity: 0.9;
+    transform: translate(-5px, -5px);
+    filter: brightness(2.5);
+  }
+
+  43% {
+    opacity: 0.4;
+    transform: translate(2px, 2px);
+  }
+
+  44% {
+    opacity: 0;
+  }
+
+  60% {
+    opacity: 0;
+  }
+
+  61% {
+    opacity: 0.6;
+    transform: translate(6px, -4px);
+    filter: brightness(1.8);
+  }
+
+  62% {
+    opacity: 0;
+  }
+
+  75% {
+    opacity: 0;
+  }
+
+  76% {
+    opacity: 0.4;
+    transform: translate(-3px, 6px);
+  }
+
+  77% {
+    opacity: 0;
+  }
+
+  88% {
+    opacity: 0;
+  }
+
+  89% {
+    opacity: 0.8;
+    transform: translate(4px, -2px);
+    filter: brightness(2);
+  }
+
+  90% {
+    opacity: 0.3;
+  }
+
+  91% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning {
+  animation: electric-twitch 4s infinite;
+}
+
+/* Pulsing glow for top light source */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  30% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+
+  70% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 6s ease-in-out infinite;
+}
