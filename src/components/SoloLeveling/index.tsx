@@ -3,105 +3,98 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Solo Leveling Background - "Level 18 / System Interface" Style (Holographic Map & Lightning)
+// Solo Leveling Background - "Level 18 / System Interface" Style (Shattered Circuitry & Flowing Shadows)
 export function SoloLevelingBackground() {
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden bg-black">
+        <div className="fixed inset-0 z-0 overflow-hidden bg-[#000510]">
             {/* 
-                V7 CONCEPT: "Holographic Dungeon Map"
-                - Background: Pitch black (#000000) for max contrast.
-                - Texture: A "Dungeon Grid" or "Architectural Schematic" (angled, rectilinear).
-                - Energy: "Lightning" arcs and "Currents" traveling along the grid lines.
-                - Color: Ice Blue / Cyan (#00FFFF to #0088FF) + White Bloom.
+                V8 CONCEPT: "Shattered Circuitry & Flowing Shadows"
+                - Background: Deep Electric Blue/Black (#000510 to #001030).
+                - Texture: "Shattered Circuitry" - dense, jagged, diagonal debris. Not a clean grid.
+                - Motion: "Dark Masses Moving" - A dynamic noise mask that hides/reveals parts of the circuitry 
+                  to simulate energy flowing/shadows drifting.
             */}
 
             <svg className="absolute inset-0 w-full h-full">
                 <defs>
-                    {/* GLOW FILTER: Intense "Ice Blue" Bloom */}
-                    <filter id="ice-glow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feColorMatrix type="matrix" values="0 0 0 0 0   0 0.8 0 0 1   0 1 1 0 1  0 0 0 1 0" in="blur" result="coloredBlur" />
+                    {/* FILTER: "Flowing Shadow Mask" (The "Dark Masses") 
+                        Generates a moving cloudy noise texture to mask the background lines.
+                    */}
+                    <filter id="shadow-flow">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise">
+                            <animate attributeName="baseFrequency" values="0.01;0.015;0.01" dur="15s" repeatCount="indefinite" />
+                        </feTurbulence>
+                        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -9" in="noise" result="highContrastNoise" />
+                        <feComposite operator="in" in="SourceGraphic" in2="highContrastNoise" />
+                    </filter>
+
+                    {/* PATTERN: "Shattered Debris" (Dense, jagged lines) 
+                        Simulates the "corrupted tech" or "broken glass" look.
+                    */}
+                    <pattern id="shattered-tech" x="0" y="0" width="600" height="600" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+                        {/* Dense, scratchy background lines */}
+                        <path d="M 0 50 L 50 100 L 100 50 L 150 100" stroke="rgba(0, 100, 255, 0.1)" strokeWidth="1" fill="none" />
+                        <path d="M 200 0 L 250 50 L 200 100 L 250 150" stroke="rgba(0, 100, 255, 0.1)" strokeWidth="1" fill="none" />
+                        <path d="M 0 300 L 600 300" stroke="rgba(0, 100, 255, 0.05)" strokeWidth="0.5" fill="none" />
+
+                        {/* "Shards" - broken geometric shapes */}
+                        <path d="M 50 200 L 100 200 L 120 250 L 30 250 Z" stroke="rgba(0, 150, 255, 0.15)" strokeWidth="1" fill="rgba(0, 100, 255, 0.05)" />
+                        <path d="M 300 400 L 320 380 L 350 400 L 330 420 Z" stroke="rgba(0, 150, 255, 0.15)" strokeWidth="1" fill="rgba(0, 100, 255, 0.05)" />
+
+                        {/* "Circuitry" Traces - erratic lines */}
+                        <path d="M 10 10 L 40 10 L 40 40 L 80 40" stroke="rgba(0, 200, 255, 0.2)" strokeWidth="1" fill="none" />
+                        <path d="M 400 500 L 400 450 L 450 450 L 450 400" stroke="rgba(0, 200, 255, 0.2)" strokeWidth="1" fill="none" />
+                        <path d="M 500 100 L 520 120 L 500 140" stroke="rgba(0, 200, 255, 0.2)" strokeWidth="1" fill="none" />
+                    </pattern>
+
+                    {/* GLOW: Electric Blue Bloom */}
+                    <filter id="electric-bloom">
+                        <feGaussianBlur stdDeviation="2" result="blur" />
                         <feMerge>
-                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="blur" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
-
-                    {/* PATTERN: The "Dungeon Grid" (Complex tech map) 
-                        Represents the "blueprint" of the world often seen in the background.
-                    */}
-                    <pattern id="dungeon-grid" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
-                        {/* Main Grid Lines */}
-                        <path d="M 0 100 L 400 100 M 0 200 L 400 200 M 0 300 L 400 300" stroke="rgba(0, 200, 255, 0.15)" strokeWidth="1" fill="none" />
-                        <path d="M 100 0 L 100 400 M 200 0 L 200 400 M 300 0 L 300 400" stroke="rgba(0, 200, 255, 0.15)" strokeWidth="1" fill="none" />
-
-                        {/* Detailed "Rooms" / Geometry */}
-                        <rect x="50" y="50" width="50" height="50" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="rgba(0, 100, 255, 0.05)" />
-                        <rect x="250" y="150" width="100" height="50" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="none" />
-                        <path d="M 150 250 L 180 250 L 180 280 L 150 280 Z" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="none" />
-
-                        {/* "Nav Points" */}
-                        <circle cx="200" cy="200" r="2" fill="rgba(0, 255, 255, 0.3)" />
-                        <circle cx="100" cy="300" r="2" fill="rgba(0, 255, 255, 0.3)" />
-                        <circle cx="300" cy="100" r="2" fill="rgba(0, 255, 255, 0.3)" />
-                    </pattern>
-
-                    {/* GRADIENT: "Lightning Pulse" for the active currents */}
-                    <linearGradient id="current-pulse" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
-                        <stop offset="50%" stopColor="#00FFFF" />
-                        <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
-                    </linearGradient>
                 </defs>
 
-                {/* LAYER 1: The "Dungeon Map" Background 
-                    Covers the whole screen, angled, static but detailed.
+                {/* LAYER 1: The "Shattered" Background Pattern 
+                    The base layer of complex, broken tech geometry.
                 */}
-                <rect width="100%" height="100%" fill="url(#dungeon-grid)" />
+                <rect width="100%" height="100%" fill="url(#shattered-tech)" />
+
+                {/* LAYER 2: "Flowing Energy" Masked by "Dark Masses"
+                    This is the key to the "masses moving around" effect.
+                    We render the debris pattern again, BRIGHTER, but mask it with moving noise.
+                */}
+                <g filter="url(#shadow-flow)">
+                    <rect width="100%" height="100%" fill="url(#shattered-tech)" stroke="rgba(0, 255, 255, 0.5)" strokeWidth="2" />
+                    {/* Added extra distinct "currents" that get masked */}
+                    <path d="M -100 500 L 2000 500" stroke="#00FFFF" strokeWidth="2" strokeDasharray="100 1000">
+                        <animate attributeName="stroke-dashoffset" values="1100;0" dur="5s" repeatCount="indefinite" />
+                    </path>
+                </g>
             </svg>
 
-            {/* LAYER 2: "Energy Currents" (Traveling Lines) 
-                These are the "energy kind of going in the background".
-                They trace specific parts of the screen.
+            {/* LAYER 3: "Active" Circuit Traces (Foreground)
+                 Bright, unmasked lines that zip across to show active power.
             */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'url(#ice-glow)' }}>
-                {/* Horizontal fast currents */}
-                <path d="M -100 150 L 2000 150" stroke="url(#current-pulse)" strokeWidth="2" fill="none" strokeDasharray="200 2000">
-                    <animate attributeName="stroke-dashoffset" values="2200;0" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'url(#electric-bloom)' }}>
+                <path d="M -100 200 L 200 200 L 250 250 L 1000 250" stroke="#00FFFF" strokeWidth="1.5" fill="none" opacity="0.6" strokeDasharray="100 1500">
+                    <animate attributeName="stroke-dashoffset" values="1600;0" dur="4s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M -200 600 L 2000 600" stroke="url(#current-pulse)" strokeWidth="1.5" fill="none" strokeDasharray="300 2500">
-                    <animate attributeName="stroke-dashoffset" values="2800;0" dur="3.5s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0;0.7;0" dur="3.5s" repeatCount="indefinite" />
-                </path>
-
-                {/* Diagonal fast currents */}
-                <path d="M 0 800 L 1000 -200" stroke="url(#current-pulse)" strokeWidth="1" fill="none" strokeDasharray="100 1500">
-                    <animate attributeName="stroke-dashoffset" values="1600;0" dur="3s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0;0.5;0" dur="3s" repeatCount="indefinite" />
+                <path d="M 500 800 L 500 600 L 550 550 L 550 0" stroke="#0088FF" strokeWidth="1.5" fill="none" opacity="0.6" strokeDasharray="150 1200">
+                    <animate attributeName="stroke-dashoffset" values="1350;0" dur="6s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;0.8;0" dur="6s" repeatCount="indefinite" />
                 </path>
             </svg>
 
-            {/* LAYER 3: "Lightning" (Electric Arcs) 
-                Random jagged lines that flash in and out.
-             */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'url(#ice-glow)' }}>
-                <path d="M 100 100 L 120 150 L 90 200 L 130 250" stroke="#FFFFFF" strokeWidth="2" fill="none" opacity="0">
-                    {/* Flash sequence: wait 3s, falsh, wait... */}
-                    <animate attributeName="opacity" values="0;1;0;0" dur="4s" keyTimes="0;0.02;0.05;1" repeatCount="indefinite" />
-                    <animate attributeName="d" values="M 100 100 L 120 150 L 90 200 L 130 250; M 105 105 L 115 145 L 95 205 L 135 245" dur="0.1s" repeatCount="indefinite" />
-                </path>
-
-                <path d="M 800 500 L 850 520 L 820 560 L 860 600" stroke="#FFFFFF" strokeWidth="1.5" fill="none" opacity="0">
-                    <animate attributeName="opacity" values="0;0;1;0;0" dur="6s" keyTimes="0;0.5;0.52;0.55;1" repeatCount="indefinite" />
-                    <animate attributeName="d" values="M 800 500 L 850 520 L 820 560 L 860 600; M 805 505 L 845 525 L 825 555 L 865 605" dur="0.1s" repeatCount="indefinite" />
-                </path>
-            </svg>
-
-            {/* LAYER 4: Heavy Vignette and Blue Tint Overlay */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,10,30,0.8)_80%,#000000_100%)]" />
-            <div className="absolute inset-0 bg-[#001133] opacity-20 mix-blend-overlay" />
+            {/* LAYER 4: Deep Blue / Vignette Overlay 
+                Sets the "Deep Blue" tone of the whole screen.
+            */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#000510] via-transparent to-[#000a20] opacity-80" />
+            <div className="absolute inset-0 bg-[#001144] opacity-20 mix-blend-overlay" />
         </div>
     );
 }
