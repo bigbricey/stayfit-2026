@@ -3,109 +3,105 @@
 import { ReactNode } from 'react';
 import { Plus, Zap, AlertCircle } from 'lucide-react';
 
-// Solo Leveling Background - "Notification / Necromancer" Style (Energy Current & Mana Storm)
+// Solo Leveling Background - "Level 18 / System Interface" Style (Holographic Map & Lightning)
 export function SoloLevelingBackground() {
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden bg-[#02050c]">
+        <div className="fixed inset-0 z-0 overflow-hidden bg-black">
             {/* 
-                V6 CONCEPT: "Mana Infused System"
-                - Background: A chaotic "Mana Storm" texture (Turbulence + ColorMatrix) representing the raw magic.
-                - Lines: "Energy Currents" that flow continuously (using animated stroke-dasharray and gradients).
-                - Feel: Not just "eroded" (v5) or "technical" (v4), but "Magical Digital" - alive and flowing.
+                V7 CONCEPT: "Holographic Dungeon Map"
+                - Background: Pitch black (#000000) for max contrast.
+                - Texture: A "Dungeon Grid" or "Architectural Schematic" (angled, rectilinear).
+                - Energy: "Lightning" arcs and "Currents" traveling along the grid lines.
+                - Color: Ice Blue / Cyan (#00FFFF to #0088FF) + White Bloom.
             */}
 
-            <svg className="absolute w-0 h-0">
+            <svg className="absolute inset-0 w-full h-full">
                 <defs>
-                    {/* FILTER 1: Mana Storm (The "Background Lightning/Energy") 
-                        Creates a swirling, localized distortion that looks like magical energy clouds.
-                    */}
-                    <filter id="mana-storm">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="4" result="warp">
-                            <animate attributeName="baseFrequency" values="0.015;0.018;0.015" dur="10s" repeatCount="indefinite" />
-                        </feTurbulence>
-                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  1 0 1 0 0  0 0 0 16 -6" in="warp" result="coloredWarp" />
-                        <feGaussianBlur stdDeviation="8" in="coloredWarp" result="blurWarp" />
-                        <feComposite operator="in" in="blurWarp" in2="SourceGraphic" />
-                    </filter>
-
-                    {/* FILTER 2: Energy Flow (The "Current")
-                        Makes lines glow intensely and slightly distort as energy passes.
-                    */}
-                    <filter id="energy-glow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="4" result="blur" />
-                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0.6 0 0 0  0 0 1 0 0  0 0 0 18 -7" in="blur" result="blueGlow" />
+                    {/* GLOW FILTER: Intense "Ice Blue" Bloom */}
+                    <filter id="ice-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feColorMatrix type="matrix" values="0 0 0 0 0   0 0.8 0 0 1   0 1 1 0 1  0 0 0 1 0" in="blur" result="coloredBlur" />
                         <feMerge>
-                            <feMergeNode in="blueGlow" />
+                            <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
 
-                    {/* GRADIENT: "Data Stream"
-                        Used for the flowing lines to simulate pulses of energy.
+                    {/* PATTERN: The "Dungeon Grid" (Complex tech map) 
+                        Represents the "blueprint" of the world often seen in the background.
                     */}
-                    <linearGradient id="data-stream" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="rgba(0, 100, 255, 0)" />
-                        <stop offset="50%" stopColor="rgba(0, 200, 255, 0.8)" />
-                        <stop offset="100%" stopColor="rgba(0, 100, 255, 0)" />
-                        <animate attributeName="x1" values="-100%;100%" dur="3s" repeatCount="indefinite" />
-                        <animate attributeName="x2" values="0%;200%" dur="3s" repeatCount="indefinite" />
-                        <animate attributeName="y1" values="-100%;100%" dur="3s" repeatCount="indefinite" />
-                        <animate attributeName="y2" values="0%;200%" dur="3s" repeatCount="indefinite" />
+                    <pattern id="dungeon-grid" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse" patternTransform="rotate(-15)">
+                        {/* Main Grid Lines */}
+                        <path d="M 0 100 L 400 100 M 0 200 L 400 200 M 0 300 L 400 300" stroke="rgba(0, 200, 255, 0.15)" strokeWidth="1" fill="none" />
+                        <path d="M 100 0 L 100 400 M 200 0 L 200 400 M 300 0 L 300 400" stroke="rgba(0, 200, 255, 0.15)" strokeWidth="1" fill="none" />
+
+                        {/* Detailed "Rooms" / Geometry */}
+                        <rect x="50" y="50" width="50" height="50" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="rgba(0, 100, 255, 0.05)" />
+                        <rect x="250" y="150" width="100" height="50" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="none" />
+                        <path d="M 150 250 L 180 250 L 180 280 L 150 280 Z" stroke="rgba(0, 200, 255, 0.1)" strokeWidth="1" fill="none" />
+
+                        {/* "Nav Points" */}
+                        <circle cx="200" cy="200" r="2" fill="rgba(0, 255, 255, 0.3)" />
+                        <circle cx="100" cy="300" r="2" fill="rgba(0, 255, 255, 0.3)" />
+                        <circle cx="300" cy="100" r="2" fill="rgba(0, 255, 255, 0.3)" />
+                    </pattern>
+
+                    {/* GRADIENT: "Lightning Pulse" for the active currents */}
+                    <linearGradient id="current-pulse" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
+                        <stop offset="50%" stopColor="#00FFFF" />
+                        <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
                     </linearGradient>
                 </defs>
+
+                {/* LAYER 1: The "Dungeon Map" Background 
+                    Covers the whole screen, angled, static but detailed.
+                */}
+                <rect width="100%" height="100%" fill="url(#dungeon-grid)" />
             </svg>
 
-            {/* LAYER 1: The Mana Storm (Background Energy) 
-                Chaotic blue energy clouds swirling in the deep background.
+            {/* LAYER 2: "Energy Currents" (Traveling Lines) 
+                These are the "energy kind of going in the background".
+                They trace specific parts of the screen.
             */}
-            <div className="absolute inset-0 opacity-40 mix-blend-screen">
-                <svg width="100%" height="100%">
-                    <rect width="100%" height="100%" filter="url(#mana-storm)" fill="#003366" opacity="0.6">
-                        <animate attributeName="opacity" values="0.4;0.6;0.4" dur="6s" repeatCount="indefinite" />
-                    </rect>
-                </svg>
-            </div>
-
-            {/* LAYER 2: Energy Circuit Lines (The "Digital System") 
-                Lines that have a "flowing" look, pulsing with the gradient defined above.
-            */}
-            <svg className="absolute inset-0 w-full h-full" style={{ filter: 'url(#energy-glow)' }}>
-                {/* Large Diagonal Cuts - mimicking the "Notification" box fractures */}
-                <line x1="-10%" y1="60%" x2="60%" y2="-10%" stroke="url(#data-stream)" strokeWidth="1.5" opacity="0.6">
-                    <animate attributeName="stroke-dashoffset" values="1000;0" dur="4s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="4s" repeatCount="indefinite" />
-                </line>
-
-                <line x1="20%" y1="110%" x2="110%" y2="20%" stroke="rgba(0, 140, 255, 0.3)" strokeWidth="1">
-                    <animate attributeName="stroke-width" values="1;2;1" dur="3s" repeatCount="indefinite" />
-                </line>
-
-                {/* Random "Lightning" Cracks - thin, sharp lines that appear and disappear */}
-                <path d="M 100 200 L 150 250 L 120 300 L 200 400" stroke="rgba(180, 220, 255, 0.8)" strokeWidth="1" fill="none" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="5s" repeatCount="indefinite" begin="0s" />
-                    <animate attributeName="d" values="M 100 200 L 150 250 L 120 300 L 200 400; M 105 205 L 140 240 L 130 310 L 210 390" dur="0.2s" repeatCount="indefinite" />
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'url(#ice-glow)' }}>
+                {/* Horizontal fast currents */}
+                <path d="M -100 150 L 2000 150" stroke="url(#current-pulse)" strokeWidth="2" fill="none" strokeDasharray="200 2000">
+                    <animate attributeName="stroke-dashoffset" values="2200;0" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M 800 600 L 750 650 L 780 700 L 700 800" stroke="rgba(180, 220, 255, 0.8)" strokeWidth="1" fill="none" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="7s" repeatCount="indefinite" begin="2s" />
+                <path d="M -200 600 L 2000 600" stroke="url(#current-pulse)" strokeWidth="1.5" fill="none" strokeDasharray="300 2500">
+                    <animate attributeName="stroke-dashoffset" values="2800;0" dur="3.5s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;0.7;0" dur="3.5s" repeatCount="indefinite" />
+                </path>
+
+                {/* Diagonal fast currents */}
+                <path d="M 0 800 L 1000 -200" stroke="url(#current-pulse)" strokeWidth="1" fill="none" strokeDasharray="100 1500">
+                    <animate attributeName="stroke-dashoffset" values="1600;0" dur="3s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;0.5;0" dur="3s" repeatCount="indefinite" />
                 </path>
             </svg>
 
-            {/* LAYER 3: Complex "Magic Circle" Runic Rings (Subtle)
-                The "Necromancer" screen often has these faint rotating rings.
-            */}
-            <svg className="absolute inset-0 w-full h-full animate-slow-rotate opacity-20 pointer-events-none" viewBox="0 0 1000 1000">
-                <circle cx="50%" cy="50%" r="300" stroke="rgba(50, 100, 255, 0.3)" strokeWidth="1" strokeDasharray="10 20 5 30" fill="none" />
-                <circle cx="50%" cy="50%" r="450" stroke="rgba(50, 100, 255, 0.2)" strokeWidth="2" strokeDasharray="50 50" fill="none" />
+            {/* LAYER 3: "Lightning" (Electric Arcs) 
+                Random jagged lines that flash in and out.
+             */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'url(#ice-glow)' }}>
+                <path d="M 100 100 L 120 150 L 90 200 L 130 250" stroke="#FFFFFF" strokeWidth="2" fill="none" opacity="0">
+                    {/* Flash sequence: wait 3s, falsh, wait... */}
+                    <animate attributeName="opacity" values="0;1;0;0" dur="4s" keyTimes="0;0.02;0.05;1" repeatCount="indefinite" />
+                    <animate attributeName="d" values="M 100 100 L 120 150 L 90 200 L 130 250; M 105 105 L 115 145 L 95 205 L 135 245" dur="0.1s" repeatCount="indefinite" />
+                </path>
+
+                <path d="M 800 500 L 850 520 L 820 560 L 860 600" stroke="#FFFFFF" strokeWidth="1.5" fill="none" opacity="0">
+                    <animate attributeName="opacity" values="0;0;1;0;0" dur="6s" keyTimes="0;0.5;0.52;0.55;1" repeatCount="indefinite" />
+                    <animate attributeName="d" values="M 800 500 L 850 520 L 820 560 L 860 600; M 805 505 L 845 525 L 825 555 L 865 605" dur="0.1s" repeatCount="indefinite" />
+                </path>
             </svg>
 
-            {/* LAYER 4: Deep Vignette & Texture Overlay */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,#02050c_90%)]" />
-
-            {/* Fine Grain/Noise Overlay for "Texture" */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-            />
+            {/* LAYER 4: Heavy Vignette and Blue Tint Overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,10,30,0.8)_80%,#000000_100%)]" />
+            <div className="absolute inset-0 bg-[#001133] opacity-20 mix-blend-overlay" />
         </div>
     );
 }
