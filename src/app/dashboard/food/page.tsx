@@ -196,11 +196,12 @@ export default function Dashboard() {
             <header className="border-b border-white/20 p-4">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => router.push('/')}
-                        className="w-10 h-10 border border-white/40 flex items-center justify-center 
-                            hover:bg-white/10 hover:border-white/60 active:scale-95 transition-all"
+                        onClick={() => router.push('/dashboard')}
+                        className="flex items-center gap-2 px-3 py-2 border border-white/20 rounded bg-white/5 
+                            hover:bg-white/10 hover:border-white/40 active:scale-95 transition-all group"
                     >
-                        <ArrowLeft className="w-5 h-5 text-white" />
+                        <ArrowLeft className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-xs font-bold tracking-widest text-white">BACK</span>
                     </button>
                     <div className="flex items-center gap-3">
                         <Utensils className="w-6 h-6 text-white" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
