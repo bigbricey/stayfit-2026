@@ -12,6 +12,7 @@ export default function AnalysisPage() {
             <SystemPanelWithHeader
                 title="ANALYSIS"
                 icon={Activity}
+                className="min-h-full"
                 backButton={
                     <button
                         onClick={() => router.push('/dashboard')}

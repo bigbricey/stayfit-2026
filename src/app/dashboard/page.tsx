@@ -70,7 +70,7 @@ export default function GameHub() {
         <SoloLevelingPage>
             <SystemPanelWithHeader
                 title="SYSTEM CONSOLE"
-                className="relative w-full"
+                className="relative w-full min-h-full"
                 backButton={
                     <button
                         onClick={() => router.push('/')}

@@ -266,10 +266,10 @@ export function SoloLevelingLayout({ children }: { children: ReactNode }) {
     );
 }
 
-// RESTORED CONCEPT: "Standardized Game Console" (v5.5)
+// RESTORED CONCEPT: "Standardized Game Console" (v6.0)
 // This wrapper enforces the "Video Game Screen" look on EVERY page.
 // - Fixed max-width (max-w-2xl)
-// - Fixed max-height (80vh) - like a real game screen
+// - FIXED HEIGHT (600px) - ensures Welcome, Dashboard, and Modules are IDENTICAL size.
 // - Centered in viewport
 // - "Extreme Legibility" text defaults
 // - Internal scrolling for overflow content
@@ -277,15 +277,29 @@ export function SoloLevelingPage({ children, className = '' }: { children: React
     return (
         <SoloLevelingLayout>
             <div className="min-h-screen flex items-center justify-center p-4 md:p-8">
-                <div className={`w-full max-w-2xl max-h-[80vh] flex flex-col animate-in fade-in zoom-in duration-500 ${className}`}>
+                {/* 
+                    FIXED DIMENSIONS:
+                    w-full max-w-2xl (width)
+                    h-[600px] (height) -> This matches the user's "Welcome Page" preference closely (~571px) 
+                                         and forces consistency.
+                */}
+                <div className={`w-full max-w-2xl h-[600px] flex flex-col animate-in fade-in zoom-in duration-500 ${className}`}>
                     {/* 
                         Enforce "Extreme Legibility" by default for all children 
                         unless overridden.
                         The outer container has fixed dimensions.
                         Content inside scrolls if it overflows.
+                        h-full ensures the backgrounds/borders stretch to fill the 600px even if content is small.
                     */}
-                    <div className="text-white [&_*]:text-shadow-legibility flex-1 overflow-y-auto overflow-x-hidden">
-                        {children}
+                    <div className="text-white [&_*]:text-shadow-legibility flex-1 h-full overflow-hidden flex flex-col relative">
+                        {/* 
+                           We wrap children in a flex-1 overflow container so the border/header stays fixed 
+                           if the SystemPanelWithHeader is used correctly (it controls its own sizing).
+                           But effectively, we just want the child to FILL this box.
+                        */}
+                        <div className="w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar">
+                            {children}
+                        </div>
                     </div>
                 </div>
             </div>
