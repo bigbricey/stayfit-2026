@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SoloLevelingLayout, SystemPanelWithHeader, SystemButton } from '@/components/SoloLeveling';
+import { SoloLevelingPage, SystemPanelWithHeader, SystemButton } from '@/components/SoloLeveling';
 import { Sparkles, Target, TrendingUp, Trophy, ChevronRight } from 'lucide-react';
 
 export default function WelcomePage() {
@@ -18,56 +18,54 @@ export default function WelcomePage() {
   if (!mounted) return null;
 
   return (
-    <SoloLevelingLayout>
-      <div className="min-h-screen flex items-center justify-center p-4 md:p-8">
-        <div className={`w-full max-w-2xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+    <SoloLevelingPage>
+      <div className={`transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
-          {/* Main Welcome Panel */}
-          <SystemPanelWithHeader title="SYSTEM NOTIFICATION" icon={Sparkles}>
-            <div className="text-center py-8">
-              <p className="text-white text-lg mb-2 font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>Welcome to</p>
-              <h1
-                className="text-4xl md:text-5xl font-black text-white mb-4 tracking-wide"
-                style={{ textShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(100,200,255,0.6)' }}
-              >
-                STAY FIT WITH AI
-              </h1>
-              <p className="text-white text-sm tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
-                [ FITNESS TRACKING SYSTEM ]
-              </p>
-            </div>
-
-            {/* Feature highlights */}
-            <div className="grid grid-cols-3 gap-4 my-8 border-t border-b border-white/20 py-6">
-              <div className="text-center">
-                <Target className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
-                <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Track Macros</p>
-                <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Log your nutrition</p>
-              </div>
-              <div className="text-center">
-                <TrendingUp className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
-                <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Level Up</p>
-                <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Gain XP daily</p>
-              </div>
-              <div className="text-center">
-                <Trophy className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
-                <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Compete</p>
-                <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Leaderboards (soon)</p>
-              </div>
-            </div>
-
-            {/* Enter Button */}
-            <SystemButton onClick={() => router.push('/dashboard')}>
-              <span>ENTER SYSTEM</span>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-            </SystemButton>
-
-            <p className="text-center text-white text-xs mt-6 tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
-              [ NO ACCOUNT REQUIRED ]
+        {/* Main Welcome Panel */}
+        <SystemPanelWithHeader title="SYSTEM NOTIFICATION" icon={Sparkles}>
+          <div className="text-center py-8">
+            <p className="text-white text-lg mb-2 font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>Welcome to</p>
+            <h1
+              className="text-4xl md:text-5xl font-black text-white mb-4 tracking-wide"
+              style={{ textShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(100,200,255,0.6)' }}
+            >
+              STAY FIT WITH AI
+            </h1>
+            <p className="text-white text-sm tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+              [ FITNESS TRACKING SYSTEM ]
             </p>
-          </SystemPanelWithHeader>
-        </div>
+          </div>
+
+          {/* Feature highlights */}
+          <div className="grid grid-cols-3 gap-4 my-8 border-t border-b border-white/20 py-6">
+            <div className="text-center">
+              <Target className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
+              <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Track Macros</p>
+              <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Log your nutrition</p>
+            </div>
+            <div className="text-center">
+              <TrendingUp className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
+              <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Level Up</p>
+              <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Gain XP daily</p>
+            </div>
+            <div className="text-center">
+              <Trophy className="w-8 h-8 mx-auto text-white mb-2" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
+              <p className="text-white text-sm font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>Compete</p>
+              <p className="text-white/90 text-xs" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>Leaderboards (soon)</p>
+            </div>
+          </div>
+
+          {/* Enter Button */}
+          <SystemButton onClick={() => router.push('/dashboard')}>
+            <span>ENTER SYSTEM</span>
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+          </SystemButton>
+
+          <p className="text-center text-white text-xs mt-6 tracking-widest font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+            [ NO ACCOUNT REQUIRED ]
+          </p>
+        </SystemPanelWithHeader>
       </div>
-    </SoloLevelingLayout>
+    </SoloLevelingPage>
   );
 }

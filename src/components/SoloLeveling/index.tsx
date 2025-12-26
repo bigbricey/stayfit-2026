@@ -243,3 +243,26 @@ export function SoloLevelingLayout({ children }: { children: ReactNode }) {
         </main>
     );
 }
+
+// RESTORED CONCEPT: "Standardized Game Console" (v5.0)
+// This wrapper enforces the "Video Game Screen" look on EVERY page.
+// - Fixed max-width (max-w-2xl)
+// - Centered in viewport
+// - "Extreme Legibility" text defaults
+export function SoloLevelingPage({ children, className = '' }: { children: ReactNode; className?: string }) {
+    return (
+        <SoloLevelingLayout>
+            <div className="min-h-screen flex items-center justify-center p-4 md:p-8">
+                <div className={`w-full max-w-2xl animate-in fade-in zoom-in duration-500 ${className}`}>
+                    {/* 
+                        Enforce "Extreme Legibility" by default for all children 
+                        unless overridden. 
+                    */}
+                    <div className="text-white [&_*]:text-shadow-legibility">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </SoloLevelingLayout>
+    );
+}
