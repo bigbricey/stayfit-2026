@@ -121,11 +121,21 @@ export function SystemPanel({ children, className = '' }: { children: ReactNode;
 }
 
 // Panel with header title
-export function SystemPanelWithHeader({ title, icon: Icon, children, className = '' }: {
+// Panel with header title
+export function SystemPanelWithHeader({ 
+    title, 
+    icon: Icon, 
+    children, 
+    className = '',
+    backButton,
+    rightElement
+}: {
     title: string;
     icon?: React.ElementType;
     children: ReactNode;
     className?: string;
+    backButton?: ReactNode;
+    rightElement?: ReactNode;
 }) {
     const IconComponent = Icon || AlertCircle;
     return (
@@ -133,13 +143,25 @@ export function SystemPanelWithHeader({ title, icon: Icon, children, className =
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
             <div className="relative">
                 {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20">
-                    <div className="w-6 h-6 rounded-full border border-white flex items-center justify-center" style={{ boxShadow: '0 0 10px rgba(255,255,255,0.3)' }}>
-                        <IconComponent className="w-3 h-3 text-white" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
+                    <div className="flex items-center gap-3">
+                        {backButton && (
+                            <div className="mr-2">
+                                {backButton}
+                            </div>
+                        )}
+                        <div className="w-6 h-6 rounded-full border border-white flex items-center justify-center" style={{ boxShadow: '0 0 10px rgba(255,255,255,0.3)' }}>
+                            <IconComponent className="w-3 h-3 text-white" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
+                        </div>
+                        <span className="text-white text-sm tracking-[0.2em] uppercase font-bold" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+                            {title}
+                        </span>
                     </div>
-                    <span className="text-white text-sm tracking-[0.2em] uppercase font-bold" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
-                        {title}
-                    </span>
+                    {rightElement && (
+                        <div>
+                            {rightElement}
+                        </div>
+                    )}
                 </div>
                 {/* Content */}
                 <div className="p-4 md:p-6">

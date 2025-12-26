@@ -74,18 +74,10 @@ export default function GameHub() {
 
     return (
         <SoloLevelingPage>
-            <SystemPanelWithHeader title="SYSTEM CONSOLE" className="relative w-full">
-
-                {/* Header Context */}
-                <div className="absolute top-5 right-6 flex items-center gap-4">
-                    <div className="text-right hidden md:block">
-                        <p className="text-[10px] text-white/50 tracking-[0.2em] font-mono">STATUS</p>
-                        <p className="text-xs text-cyan-400 font-bold tracking-widest animate-pulse shadow-[0_0_10px_rgba(0,255,255,0.4)]">ONLINE</p>
-                    </div>
-                </div>
-
-                {/* Back / Exit Button */}
-                <div className="absolute top-5 left-6">
+            <SystemPanelWithHeader
+                title="SYSTEM CONSOLE"
+                className="relative w-full"
+                backButton={
                     <button
                         onClick={() => router.push('/')}
                         className="flex items-center gap-2 text-white/40 hover:text-white transition-colors group"
@@ -93,8 +85,14 @@ export default function GameHub() {
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                         <span className="text-[10px] tracking-[0.2em] font-mono uppercase">EXIT</span>
                     </button>
-                </div>
-
+                }
+                rightElement={
+                    <div className="text-right hidden md:block">
+                        <p className="text-[10px] text-white/50 tracking-[0.2em] font-mono">STATUS</p>
+                        <p className="text-xs text-cyan-400 font-bold tracking-widest animate-pulse shadow-[0_0_10px_rgba(0,255,255,0.4)]">ONLINE</p>
+                    </div>
+                }
+            >
                 <div className="p-6 md:p-8">
                     <div className="mb-6 text-center">
                         <h2 className="text-white text-xs tracking-[0.3em] uppercase font-light">

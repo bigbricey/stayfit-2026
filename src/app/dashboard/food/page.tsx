@@ -192,160 +192,165 @@ export default function Dashboard() {
                 onRemove={removeNotification}
             />
 
-            {/* Header */}
-            <header className="border-b border-white/20 p-4">
-                <div className="flex items-center gap-4">
+            <SystemPanelWithHeader
+                title="FUEL TRACKER"
+                icon={Utensils}
+                backButton={
                     <button
                         onClick={() => router.push('/dashboard')}
-                        className="flex items-center gap-2 px-3 py-2 border border-white/20 rounded bg-white/5 
-                            hover:bg-white/10 hover:border-white/40 active:scale-95 transition-all group"
+                        className="flex items-center gap-2 text-white/40 hover:text-white transition-colors group"
                     >
-                        <ArrowLeft className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-xs font-bold tracking-widest text-white">BACK</span>
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-[10px] tracking-[0.2em] font-mono uppercase">BACK</span>
                     </button>
-                    <div className="flex items-center gap-3">
-                        <Utensils className="w-6 h-6 text-white" style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' }} />
-                        <h1 className="text-white font-bold text-xl tracking-[0.15em] uppercase"
-                            style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
-                            FUEL TRACKER
-                        </h1>
-                    </div>
-                </div>
-            </header>
+                }
+            >
+                <div className="space-y-6">
 
-            {/* Main Content */}
-            <div className="p-4 space-y-4">
-
-                {/* Daily Stats Panel - Now Animated! */}
-                <SystemPanelWithHeader title="DAILY STATS" icon={Flame}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <AnimatedStat value={totals.calories} icon={Flame} label="CALORIES" color="text-orange-400" />
-                        <AnimatedStat value={totals.protein} icon={Beef} label="PROTEIN" color="text-red-400" />
-                        <AnimatedStat value={totals.carbs} icon={Wheat} label="CARBS" color="text-yellow-400" />
-                        <AnimatedStat value={totals.fat} icon={Droplet} label="FAT" color="text-blue-400" />
-                    </div>
-                </SystemPanelWithHeader>
-
-                {/* Log Meal Panel */}
-                <SystemPanelWithHeader title="LOG MEAL" icon={Plus}>
-                    {/* Meal Type Selector */}
-                    <div className="grid grid-cols-4 gap-2 mb-6">
-                        {mealTypes.map((type) => (
-                            <button
-                                key={type.id}
-                                onClick={() => setSelectedType(type.id)}
-                                className={`py-3 border text-center transition-all duration-150 active:scale-95 ${selectedType === type.id
-                                    ? 'border-white bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                                    : 'border-white/40 text-white/80 hover:border-white/60 hover:text-white'
-                                    }`}
-                                style={{ textShadow: selectedType === type.id ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 5px rgba(255,255,255,0.3)' }}
-                            >
-                                <type.icon className="w-5 h-5 mx-auto mb-1" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
-                                <span className="text-xs tracking-wider uppercase font-medium">{type.label}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Input Fields */}
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Meal Name (optional)</label>
-                            <input
-                                type="text"
-                                value={mealName}
-                                onChange={(e) => setMealName(e.target.value)}
-                                placeholder="e.g. Grilled Chicken Salad"
-                                className="w-full bg-transparent border border-white/30 text-white px-4 py-3 placeholder-white/30 
-                                    focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
-                            />
+                    {/* Daily Stats Panel */}
+                    <div className="border border-white/20 bg-white/5 p-4 rounded">
+                        <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+                            <Flame className="w-4 h-4 text-orange-400" />
+                            <h3 className="text-sm font-bold tracking-widest text-white">DAILY STATS</h3>
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Calories</label>
-                                <input
-                                    type="number"
-                                    value={calories}
-                                    onChange={(e) => setCalories(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full bg-transparent border border-white/30 text-white text-center text-2xl font-bold px-4 py-3 placeholder-white/30 
-                                        focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
-                                    style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Protein (g)</label>
-                                <input
-                                    type="number"
-                                    value={protein}
-                                    onChange={(e) => setProtein(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
-                                        focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Carbs (g)</label>
-                                <input
-                                    type="number"
-                                    value={carbs}
-                                    onChange={(e) => setCarbs(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
-                                        focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Fat (g)</label>
-                                <input
-                                    type="number"
-                                    value={fat}
-                                    onChange={(e) => setFat(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
-                                        focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
-                                />
-                            </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <AnimatedStat value={totals.calories} icon={Flame} label="CALORIES" color="text-orange-400" />
+                            <AnimatedStat value={totals.protein} icon={Beef} label="PROTEIN" color="text-red-400" />
+                            <AnimatedStat value={totals.carbs} icon={Wheat} label="CARBS" color="text-yellow-400" />
+                            <AnimatedStat value={totals.fat} icon={Droplet} label="FAT" color="text-blue-400" />
                         </div>
                     </div>
 
-                    {/* Submit Button */}
-                    <div className="mt-6">
-                        <SystemButton onClick={handleSubmit} disabled={isPending || !calories}>
-                            {isPending ? 'LOGGING...' : 'LOG MEAL'}
-                        </SystemButton>
-                    </div>
-                </SystemPanelWithHeader>
+                    {/* Log Meal Panel */}
+                    <div className="border border-white/20 bg-white/5 p-4 rounded">
+                        <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+                            <Plus className="w-4 h-4 text-cyan-400" />
+                            <h3 className="text-sm font-bold tracking-widest text-white">LOG MEAL</h3>
+                        </div>
 
-                {/* Today's Meals */}
-                {meals.length > 0 && (
-                    <SystemPanelWithHeader title="TODAY'S LOG" icon={Apple}>
-                        <div className="space-y-3">
-                            {meals.map((meal) => (
-                                <div key={meal.id} className="flex items-center justify-between border-b border-white/10 pb-3 
-                                    hover:bg-white/5 -mx-2 px-2 transition-colors">
-                                    <div>
-                                        <p className="text-white font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>{meal.name}</p>
-                                        <p className="text-white/80 text-xs uppercase tracking-wider font-medium" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>{meal.meal_type}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-white font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>
-                                            {meal.calories} cal
-                                        </p>
-                                        <p className="text-white/90 text-xs font-medium" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>
-                                            P:{meal.protein}g C:{meal.carbs}g F:{meal.fat}g
-                                        </p>
-                                    </div>
-                                </div>
+                        {/* Meal Type Selector */}
+                        <div className="grid grid-cols-4 gap-2 mb-6">
+                            {mealTypes.map((type) => (
+                                <button
+                                    key={type.id}
+                                    onClick={() => setSelectedType(type.id)}
+                                    className={`py-3 border text-center transition-all duration-150 active:scale-95 ${selectedType === type.id
+                                        ? 'border-white bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                        : 'border-white/40 text-white/80 hover:border-white/60 hover:text-white'
+                                        }`}
+                                    style={{ textShadow: selectedType === type.id ? '0 0 10px rgba(255,255,255,0.5)' : '0 0 5px rgba(255,255,255,0.3)' }}
+                                >
+                                    <type.icon className="w-5 h-5 mx-auto mb-1" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))' }} />
+                                    <span className="text-xs tracking-wider uppercase font-medium">{type.label}</span>
+                                </button>
                             ))}
                         </div>
-                    </SystemPanelWithHeader>
-                )}
 
-                <p className="text-center text-white text-xs tracking-[0.3em] py-4 font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
-                    [ NUTRITION SYSTEM ONLINE ]
-                </p>
-            </div>
+                        {/* Input Fields */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Meal Name (optional)</label>
+                                <input
+                                    type="text"
+                                    value={mealName}
+                                    onChange={(e) => setMealName(e.target.value)}
+                                    placeholder="e.g. Grilled Chicken Salad"
+                                    className="w-full bg-transparent border border-white/30 text-white px-4 py-3 placeholder-white/30 
+                                        focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Calories</label>
+                                    <input
+                                        type="number"
+                                        value={calories}
+                                        onChange={(e) => setCalories(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-transparent border border-white/30 text-white text-center text-2xl font-bold px-4 py-3 placeholder-white/30 
+                                            focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
+                                        style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Protein (g)</label>
+                                    <input
+                                        type="number"
+                                        value={protein}
+                                        onChange={(e) => setProtein(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
+                                            focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Carbs (g)</label>
+                                    <input
+                                        type="number"
+                                        value={carbs}
+                                        onChange={(e) => setCarbs(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
+                                            focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-white text-xs tracking-wider uppercase mb-2 block font-medium" style={{ textShadow: '0 0 8px rgba(255,255,255,0.4)' }}>Fat (g)</label>
+                                    <input
+                                        type="number"
+                                        value={fat}
+                                        onChange={(e) => setFat(e.target.value)}
+                                        placeholder="0"
+                                        className="w-full bg-transparent border border-white/30 text-white text-center text-xl px-4 py-3 placeholder-white/30 
+                                            focus:border-white/60 focus:outline-none focus:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="mt-6">
+                            <SystemButton onClick={handleSubmit} disabled={isPending || !calories}>
+                                {isPending ? 'LOGGING...' : 'LOG MEAL'}
+                            </SystemButton>
+                        </div>
+                    </div>
+
+                    {/* Today's Meals */}
+                    {meals.length > 0 && (
+                        <div className="border border-white/20 bg-white/5 p-4 rounded">
+                            <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+                                <Apple className="w-4 h-4 text-green-400" />
+                                <h3 className="text-sm font-bold tracking-widest text-white">TODAY'S LOG</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {meals.map((meal) => (
+                                    <div key={meal.id} className="flex items-center justify-between border-b border-white/10 pb-3 
+                                        hover:bg-white/5 -mx-2 px-2 transition-colors">
+                                        <div>
+                                            <p className="text-white font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>{meal.name}</p>
+                                            <p className="text-white/80 text-xs uppercase tracking-wider font-medium" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>{meal.meal_type}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-white font-bold" style={{ textShadow: '0 0 8px rgba(255,255,255,0.5)' }}>
+                                                {meal.calories} cal
+                                            </p>
+                                            <p className="text-white/90 text-xs font-medium" style={{ textShadow: '0 0 5px rgba(255,255,255,0.3)' }}>
+                                                P:{meal.protein}g C:{meal.carbs}g F:{meal.fat}g
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <p className="text-center text-white text-xs tracking-[0.3em] py-4 font-medium" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+                        [ NUTRITION SYSTEM ONLINE ]
+                    </p>
+                </div>
+            </SystemPanelWithHeader>
         </SoloLevelingPage>
     );
 }
