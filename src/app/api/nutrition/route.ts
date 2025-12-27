@@ -159,7 +159,14 @@ export async function GET(request: NextRequest) {
     if (!USDA_API_KEY) {
         console.error('USDA_API_KEY not configured');
         return NextResponse.json(
-            { error: 'Nutrition API not configured' },
+            {
+                error: 'Nutrition API not configured',
+                debug: {
+                    env_key_exists: !!process.env.USDA_API_KEY,
+                    key_length: process.env.USDA_API_KEY?.length || 0,
+                    node_env: process.env.NODE_ENV,
+                }
+            },
             { status: 500 }
         );
     }
