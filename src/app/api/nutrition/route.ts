@@ -189,8 +189,34 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
         const foods: USDAFood[] = data.foods || [];
 
-        // Extract nutrition from results
-        const results: NutritionResult[] = foods
+        // Priority order for data types (lower = higher priority)
+        const dataTypePriority: Record<string, number> = {
+            'SR Legacy': 1,           // Standard Reference - whole foods
+            'Foundation': 2,          // Foundation foods - detailed whole foods
+            'Survey (FNDDS)': 3,      // Survey data - prepared foods
+            'Branded': 4,             // Branded products - often seasonings/sauces
+        };
+
+        // Sort by data type priority, then filter out obvious non-foods
+        const sortedFoods = foods
+            .filter(food => {
+                // Filter out seasonings/spices that might have misleading names
+                const serving = food.servingSize || 100;
+                const unit = food.servingSizeUnit || 'g';
+                // If serving size is tiny (< 5g) and it's branded, it's likely a seasoning
+                if (food.dataType === 'Branded' && serving < 5 && unit === 'g') {
+                    return false;
+                }
+                return true;
+            })
+            .sort((a, b) => {
+                const priorityA = dataTypePriority[a.dataType || 'Branded'] || 5;
+                const priorityB = dataTypePriority[b.dataType || 'Branded'] || 5;
+                return priorityA - priorityB;
+            });
+
+        // Extract nutrition from sorted results
+        const results: NutritionResult[] = sortedFoods
             .slice(0, 10)
             .map(extractNutrients);
 
