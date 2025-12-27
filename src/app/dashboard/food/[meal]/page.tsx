@@ -52,9 +52,19 @@ export default function MealEntryPage() {
     const [searchResults, setSearchResults] = useState<NutritionResult[]>([]);
     const [showResults, setShowResults] = useState(false);
 
+    // Unit conversion options
+    const UNIT_OPTIONS = [
+        { label: 'g', grams: 1, display: 'grams' },
+        { label: 'oz', grams: 28.35, display: 'ounces' },
+        { label: 'lb', grams: 453.6, display: 'pounds' },
+        { label: 'kg', grams: 1000, display: 'kilograms' },
+    ];
+
     // Selected Food State
     const [selectedFood, setSelectedFood] = useState<NutritionResult | null>(null);
-    const [gramAmount, setGramAmount] = useState('100');
+    const [quantity, setQuantity] = useState('100');
+    const [selectedUnit, setSelectedUnit] = useState(UNIT_OPTIONS[0]); // Default to grams
+    const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
     // Feedback State
     const [notifications, setNotifications] = useState<{ id: string; message: string; type?: 'info' | 'success' | 'warning' }[]>([]);
@@ -67,14 +77,18 @@ export default function MealEntryPage() {
         }
     }, [mealType, router]);
 
-    // Calculate nutrition based on gram amount (direct calculation)
+    // Calculate nutrition based on quantity and unit
+    const totalGrams = useMemo(() => {
+        const qty = parseFloat(quantity) || 0;
+        return Math.round(qty * selectedUnit.grams * 10) / 10; // Round to 1 decimal
+    }, [quantity, selectedUnit]);
+
     const calculatedNutrition = useMemo(() => {
         if (!selectedFood) {
             return { calories: 0, protein: 0, carbs: 0, fat: 0 };
         }
 
-        const grams = parseFloat(gramAmount) || 0;
-        const multiplier = grams / 100;
+        const multiplier = totalGrams / 100;
 
         return {
             calories: Math.round(selectedFood.calories * multiplier),
@@ -82,7 +96,7 @@ export default function MealEntryPage() {
             carbs: Math.round(selectedFood.carbs * multiplier),
             fat: Math.round(selectedFood.fat * multiplier),
         };
-    }, [selectedFood, gramAmount]);
+    }, [selectedFood, totalGrams]);
 
     // Debounced nutrition search
     useEffect(() => {
@@ -125,9 +139,10 @@ export default function MealEntryPage() {
         setSelectedFood(food);
         setSearchQuery(food.name);
         setShowResults(false);
-        setGramAmount('100'); // Default to 100g
+        setQuantity('100');
+        setSelectedUnit(UNIT_OPTIONS[0]); // Default to grams
 
-        showNotification('FOOD SELECTED - ENTER GRAMS', 'info');
+        showNotification('FOOD SELECTED - ENTER AMOUNT', 'info');
     };
 
     const showNotification = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -172,7 +187,8 @@ export default function MealEntryPage() {
     const clearSelection = () => {
         setSelectedFood(null);
         setSearchQuery('');
-        setGramAmount('100');
+        setQuantity('100');
+        setSelectedUnit(UNIT_OPTIONS[0]);
     };
 
     if (!mounted) return null;
@@ -277,47 +293,65 @@ export default function MealEntryPage() {
                                 </button>
                             </div>
 
-                            {/* Gram Input - Direct Entry */}
-                            <div>
-                                <label className="text-white/60 text-[10px] tracking-wider uppercase block mb-2">
-                                    AMOUNT (GRAMS)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="1"
-                                    min="1"
-                                    value={gramAmount}
-                                    onChange={(e) => setGramAmount(e.target.value)}
-                                    placeholder="Enter grams"
-                                    className="w-full bg-black/60 border border-white/30 text-white text-center text-3xl font-bold px-4 py-4
-                                        focus:border-cyan-400 focus:outline-none transition-all"
-                                />
+                            {/* Quantity + Unit Selector */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Quantity Input */}
+                                <div>
+                                    <label className="text-white/60 text-[10px] tracking-wider uppercase block mb-2">
+                                        QUANTITY
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0.1"
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(e.target.value)}
+                                        placeholder="Amount"
+                                        className="w-full bg-black/60 border border-white/30 text-white text-center text-3xl font-bold px-4 py-4
+                                            focus:border-cyan-400 focus:outline-none transition-all"
+                                    />
+                                </div>
+
+                                {/* Unit Dropdown */}
+                                <div className="relative">
+                                    <label className="text-white/60 text-[10px] tracking-wider uppercase block mb-2">
+                                        UNIT
+                                    </label>
+                                    <button
+                                        onClick={() => setShowUnitDropdown(!showUnitDropdown)}
+                                        className="w-full bg-black/60 border border-white/30 text-white text-center text-2xl font-bold px-4 py-4
+                                            focus:border-cyan-400 focus:outline-none transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <span>{selectedUnit.label}</span>
+                                        <svg className={`w-5 h-5 transition-transform ${showUnitDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {showUnitDropdown && (
+                                        <div className="absolute z-50 w-full mt-1 bg-black/95 border border-cyan-400/50">
+                                            {UNIT_OPTIONS.map((unit) => (
+                                                <button
+                                                    key={unit.label}
+                                                    onClick={() => {
+                                                        setSelectedUnit(unit);
+                                                        setShowUnitDropdown(false);
+                                                    }}
+                                                    className={`w-full px-4 py-3 text-left hover:bg-cyan-400/20 border-b border-white/10 last:border-0 transition-colors
+                                                        ${selectedUnit.label === unit.label ? 'bg-cyan-400/10 text-cyan-400' : 'text-white'}`}
+                                                >
+                                                    <span className="font-bold">{unit.label}</span>
+                                                    <span className="text-white/50 ml-2">({unit.display})</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Quick Fill Buttons */}
-                            <div>
-                                <label className="text-white/60 text-[10px] tracking-wider uppercase block mb-2">
-                                    QUICK FILL
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {[
-                                        { label: '100g', grams: 100 },
-                                        { label: '200g', grams: 200 },
-                                        { label: '1 oz', grams: 28 },
-                                        { label: '½ lb', grams: 227 },
-                                    ].map((option) => (
-                                        <button
-                                            key={option.label}
-                                            onClick={() => setGramAmount(option.grams.toString())}
-                                            className={`px-2 py-2 text-xs border transition-all
-                                                ${parseFloat(gramAmount) === option.grams
-                                                    ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                                                    : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white'}`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
+                            {/* Gram Equivalent Display */}
+                            <div className="text-center text-white/50 text-sm mt-2">
+                                = {totalGrams}g
                             </div>
                         </div>
                     )}
@@ -326,7 +360,7 @@ export default function MealEntryPage() {
                     {selectedFood && (
                         <div className="border border-white/10 bg-black/30 p-4">
                             <div className="text-center text-white/40 text-xs tracking-wider mb-3">
-                                NUTRITION FOR {gramAmount}g
+                                NUTRITION FOR {quantity} {selectedUnit.label} ({totalGrams}g)
                             </div>
                             <div className="grid grid-cols-4 gap-3">
                                 <div className="text-center">
