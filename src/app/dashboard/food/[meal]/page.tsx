@@ -89,9 +89,11 @@ export default function MealEntryPage() {
 
     // Debounced nutrition search
     useEffect(() => {
-        if (!searchQuery || searchQuery.length < 2) {
-            setSearchResults([]);
-            setShowResults(false);
+        if (!searchQuery || searchQuery.length < 2 || selectedFood) {
+            if (!selectedFood) {
+                setSearchResults([]);
+                setShowResults(false);
+            }
             return;
         }
 
@@ -120,7 +122,7 @@ export default function MealEntryPage() {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [searchQuery]);
+    }, [searchQuery, selectedFood]);
 
     const selectFood = (food: NutritionResult) => {
         setSelectedFood(food);
@@ -235,7 +237,7 @@ export default function MealEntryPage() {
                                     setSearchQuery(e.target.value);
                                     if (selectedFood) clearSelection();
                                 }}
-                                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                                onFocus={() => searchResults.length > 0 && !selectedFood && setShowResults(true)}
                                 placeholder="Type to search (e.g. ribeye steak)"
                                 autoFocus
                                 className="w-full bg-black/40 border border-white/20 text-white px-6 py-4 pr-12 placeholder-white/30 
