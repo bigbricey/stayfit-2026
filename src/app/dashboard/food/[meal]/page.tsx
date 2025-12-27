@@ -265,8 +265,8 @@ export default function MealEntryPage() {
                                         className="w-full px-4 py-3 text-left hover:bg-cyan-400/20 border-b border-white/10 last:border-0 transition-colors"
                                     >
                                         <div className="text-white text-sm truncate">{food.name}</div>
-                                        <div className="text-white/50 text-xs mt-1">
-                                            {Math.round(food.calories)} cal/100g • {food.servingOptions.length} serving options
+                                        <div className="text-cyan-400/70 text-xs mt-1">
+                                            {Math.round(food.calories)} cal/100g → Click to enter amount
                                         </div>
                                     </button>
                                 ))}
