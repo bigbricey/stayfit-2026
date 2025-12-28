@@ -104,4 +104,4 @@ export async function GET(request: Request) {
   // Fallback for errors - include error details
   return NextResponse.redirect(`${origin}/login?error=no_code_provided`)
 }
-}
+
