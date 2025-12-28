@@ -49,12 +49,19 @@ export async function GET(request: Request) {
 
     if (!error) {
       // DEBUG: Add cookie count to URL params
-      const target = `${origin}${next}?t=${Date.now()}`
+      const target = `${origin}${next}?t=${Date.now()}&auth=success`
 
-      // CRITICAL: Pass the headers (containing Set-Cookie) to the redirect response
-      return NextResponse.redirect(target, {
-        headers: dummyResponse.headers
+      // FIX #5: Explicit Cookie Copying
+      // Instead of passing headers (which can be flaky with multiple Set-Cookie),
+      // we create the response object and manually copy the cookies over.
+      const response = NextResponse.redirect(target)
+
+      // Copy all cookies set by Supabase (access_token, refresh_token, etc.)
+      dummyResponse.cookies.getAll().forEach((cookie) => {
+        response.cookies.set(cookie)
       })
+
+      return response
     }
   }
 

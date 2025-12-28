@@ -80,7 +80,7 @@ export default function LoginPage() {
               {/* Corner Accents */}
               <div className="absolute top-0 left-0 w-1 h-1 bg-cyan-500 opacity-50" />
               <div className="absolute bottom-4 text-[10px] text-white/20 font-mono">
-                v8.5.5-FINAL
+                v8.5.6-COOKIE-FIX
               </div>
               <div className="absolute bottom-0 right-0 w-1 h-1 bg-cyan-500 opacity-50" />
             </button>
