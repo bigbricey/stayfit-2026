@@ -47,7 +47,8 @@
 | 36 | Dec 28 01:55 | **🔥 ROOT CAUSE: GitHub #55** | - | `createBrowserClient.signInWithOAuth` doesn't reliably set code-verifier cookie. FIX: server-side API route |
 | 37 | Dec 28 01:57 | **NEW FIX: Server-side OAuth initiation** | `ecbd691` | Created `/auth/login/route.ts` using `createServerClient`, changed login button to link there |
 | 38 | Dec 28 02:04 | **Test: Server-side OAuth** | - | ❌ STILL FAILING - same PKCE error! Need deeper research |
-| 39 | Dec 28 02:06 | **NEW FIX: Switch to Implicit Flow** | (pending) | Bypass PKCE entirely: `flowType: 'implicit'`, client-side callback, using `@supabase/supabase-js` |
+| 39 | Dec 28 02:10 | **NEW FIX: Switch to Implicit Flow** | `449d1cb` | Bypass PKCE: `flowType: 'implicit'`, client-side `page.tsx` callback, `@supabase/supabase-js` |
+| 40 | Dec 28 02:11 | **Test: Implicit Flow** | - | ⚠️ PROGRESS! Google auth worked, callback hit, but "no_auth_data" - hash fragment empty |
 
 ---
 

@@ -10,8 +10,20 @@ export default function AuthCallbackPage() {
 
     useEffect(() => {
         const handleCallback = async () => {
+            // HEAVY DEBUG: Log everything about the URL
+            const fullUrl = window.location.href
+            const hash = window.location.hash
+            const search = window.location.search
+
+            console.log('[AUTH CALLBACK] Full URL:', fullUrl)
+            console.log('[AUTH CALLBACK] Hash:', hash)
+            console.log('[AUTH CALLBACK] Search:', search)
+
+            // Display for debugging
+            setStatus(`DEBUG: URL=${fullUrl.substring(0, 80)}...`)
+            await new Promise(resolve => setTimeout(resolve, 3000))  // Wait so we can see it
+
             // With implicit flow, tokens come in the URL hash fragment
-            // The Supabase client automatically detects and handles this
             const supabase = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,17 +38,11 @@ export default function AuthCallbackPage() {
             )
 
             // Check if we have a hash with tokens
-            const hashParams = new URLSearchParams(window.location.hash.substring(1))
+            const hashParams = new URLSearchParams(hash.substring(1))
             const accessToken = hashParams.get('access_token')
 
-            console.log('[AUTH CALLBACK] Hash params:', {
-                hasAccessToken: !!accessToken,
-                hash: window.location.hash.substring(0, 50) + '...'
-            })
-
             if (accessToken) {
-                // The Supabase client should automatically detect and set the session
-                // Give it a moment to process
+                setStatus('Found access token! Processing...')
                 await new Promise(resolve => setTimeout(resolve, 500))
 
                 const { data: { session }, error } = await supabase.auth.getSession()
@@ -49,7 +55,6 @@ export default function AuthCallbackPage() {
                 }
 
                 if (error) {
-                    console.error('[AUTH CALLBACK] Session error:', error.message)
                     setStatus(`Error: ${error.message}`)
                     setTimeout(() => router.push(`/login?error=${encodeURIComponent(error.message)}`), 2000)
                     return
@@ -57,27 +62,27 @@ export default function AuthCallbackPage() {
             }
 
             // Check for error in hash
-            const error = hashParams.get('error')
-            const errorDescription = hashParams.get('error_description')
-            if (error) {
-                console.error('[AUTH CALLBACK] OAuth error:', error, errorDescription)
-                setStatus(`Error: ${errorDescription || error}`)
-                setTimeout(() => router.push(`/login?error=${encodeURIComponent(errorDescription || error)}`), 2000)
+            const hashError = hashParams.get('error')
+            const hashErrorDescription = hashParams.get('error_description')
+            if (hashError) {
+                setStatus(`OAuth Error: ${hashErrorDescription || hashError}`)
+                setTimeout(() => router.push(`/login?error=${encodeURIComponent(hashErrorDescription || hashError)}`), 2000)
                 return
             }
 
-            // Check for code in query params (PKCE fallback)
-            const code = new URLSearchParams(window.location.search).get('code')
+            // Check for code in query params (PKCE - Supabase ignoring our implicit request?)
+            const code = new URLSearchParams(search).get('code')
             if (code) {
-                console.log('[AUTH CALLBACK] Got code, but using implicit flow - this should not happen')
-                setStatus('Unexpected code parameter. Redirecting...')
-                setTimeout(() => router.push('/login?error=unexpected_code'), 2000)
+                console.log('[AUTH CALLBACK] Got PKCE code - Supabase ignored implicit flow request!')
+                setStatus(`Got code param - PKCE still active! code=${code.substring(0, 20)}...`)
+                // Try to exchange it anyway using the standard SSR approach
+                setTimeout(() => router.push(`/login?error=pkce_code_received`), 3000)
                 return
             }
 
-            // No tokens, no error, no code - something's wrong
-            setStatus('No authentication data received. Redirecting...')
-            setTimeout(() => router.push('/login?error=no_auth_data'), 2000)
+            // No tokens, no error, no code
+            setStatus(`No auth data. hash=${hash.substring(0, 30)} search=${search.substring(0, 30)}`)
+            setTimeout(() => router.push('/login?error=no_auth_data'), 3000)
         }
 
         handleCallback()
