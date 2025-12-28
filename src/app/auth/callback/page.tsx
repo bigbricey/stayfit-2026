@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient } from '@supabase/ssr'
 
 export default function AuthCallbackPage() {
@@ -16,36 +17,7 @@ export default function AuthCallbackPage() {
             console.log('[CALLBACK] Hash:', window.location.hash)
             console.log('[CALLBACK] Search:', window.location.search)
 
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
-
-            // Check for PKCE code in query params first
-            const urlParams = new URLSearchParams(window.location.search)
-            const code = urlParams.get('code')
-
-            if (code) {
-                console.log('[CALLBACK] Found PKCE code, attempting exchange')
-                setStatus('Exchanging authorization code...')
-
-                const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-
-                if (error) {
-                    console.error('[CALLBACK] Exchange error:', error.message)
-                    setError(error.message)
-                    return
-                }
-
-                if (data.session) {
-                    console.log('[CALLBACK] Session established via PKCE:', data.session.user.email)
-                    setStatus('Login successful! Redirecting...')
-                    setTimeout(() => router.push('/dashboard'), 100)
-                    return
-                }
-            }
-
-            // Check for implicit flow tokens in hash
+            // Check for implicit flow tokens in hash FIRST
             const hash = window.location.hash.substring(1)
             if (hash) {
                 console.log('[CALLBACK] Found hash fragment, parsing tokens')
@@ -62,27 +34,94 @@ export default function AuthCallbackPage() {
                     console.log('[CALLBACK] Setting session with tokens')
                     setStatus('Establishing session...')
 
-                    const { data, error } = await supabase.auth.setSession({
+                    // Use the SSR browser client to set the session (syncs to cookies)
+                    const supabase = createBrowserClient(
+                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                    )
+
+                    const { data, error: sessionError } = await supabase.auth.setSession({
                         access_token: accessToken,
                         refresh_token: refreshToken
                     })
 
-                    if (error) {
-                        console.error('[CALLBACK] setSession error:', error.message)
-                        setError(error.message)
+                    if (sessionError) {
+                        console.error('[CALLBACK] setSession error:', sessionError.message)
+                        setError(sessionError.message)
                         return
                     }
 
                     if (data.session) {
                         console.log('[CALLBACK] Session established via implicit flow:', data.session.user.email)
                         setStatus('Login successful! Redirecting...')
-                        setTimeout(() => router.push('/dashboard'), 100)
+
+                        // Clear the hash from URL for cleanliness
+                        window.history.replaceState(null, '', '/auth/callback')
+
+                        // Navigate to dashboard
+                        setTimeout(() => router.push('/dashboard'), 500)
                         return
                     }
                 }
             }
 
-            // No auth data found
+            // Check for PKCE code in query params (fallback)
+            const urlParams = new URLSearchParams(window.location.search)
+            const code = urlParams.get('code')
+
+            if (code) {
+                console.log('[CALLBACK] Found PKCE code, attempting exchange')
+                setStatus('Exchanging authorization code...')
+
+                const supabase = createBrowserClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                )
+
+                const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+                if (exchangeError) {
+                    console.error('[CALLBACK] Exchange error:', exchangeError.message)
+                    setError(exchangeError.message)
+                    return
+                }
+
+                if (data.session) {
+                    console.log('[CALLBACK] Session established via PKCE:', data.session.user.email)
+                    setStatus('Login successful! Redirecting...')
+                    setTimeout(() => router.push('/dashboard'), 100)
+                    return
+                }
+            }
+
+            // No auth data found - wait a moment for detectSessionInUrl
+            console.log('[CALLBACK] No immediate auth data, waiting for auto-detection...')
+            setStatus('Detecting session...')
+
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    auth: {
+                        detectSessionInUrl: true,
+                        flowType: 'implicit'
+                    }
+                }
+            )
+
+            // Wait for session detection
+            await new Promise(resolve => setTimeout(resolve, 1000))
+
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (session) {
+                console.log('[CALLBACK] Session detected via auto-detection:', session.user.email)
+                setStatus('Login successful! Redirecting...')
+                setTimeout(() => router.push('/dashboard'), 100)
+                return
+            }
+
+            // Still no auth data
             console.error('[CALLBACK] No authentication data found')
             setError('No authentication data received. Please try logging in again.')
         }
@@ -100,7 +139,7 @@ export default function AuthCallbackPage() {
                         <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
                         <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">AUTHENTICATING</span>
                     </div>
-                    <div className="text-[10px] text-cyan-700/70">v10.0.0-IMPLICIT</div>
+                    <div className="text-[10px] text-cyan-700/70">v11.0.0-IMPLICIT</div>
                 </div>
 
                 {/* Content Area */}

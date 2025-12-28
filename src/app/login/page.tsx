@@ -1,14 +1,23 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
   const handleLogin = async () => {
     console.log('[LOGIN] Starting Implicit Flow OAuth')
 
-    const supabase = createBrowserClient(
+    // Use base supabase-js client with explicit implicit flow
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          flowType: 'implicit',
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true
+        }
+      }
     )
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -17,8 +26,7 @@ export default function LoginPage() {
         redirectTo: 'https://stayfitwithai.com/auth/callback',
         queryParams: {
           prompt: 'select_account'
-        },
-        skipBrowserRedirect: false
+        }
       }
     })
 
@@ -41,7 +49,7 @@ export default function LoginPage() {
             <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
             <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">SYSTEM_LOGIN</span>
           </div>
-          <div className="text-[10px] text-cyan-700/70">v10.0.0-IMPLICIT-FLOW</div>
+          <div className="text-[10px] text-cyan-700/70">v11.0.0-IMPLICIT</div>
         </div>
 
         {/* Content Area */}
@@ -62,7 +70,7 @@ export default function LoginPage() {
 
             <div className="p-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent w-full max-w-xs mx-auto" />
 
-            {/* Client-side OAuth with implicit flow */}
+            {/* Client-side OAuth with true implicit flow */}
             <button
               onClick={handleLogin}
               className="group relative px-8 py-3 bg-cyan-950/30 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-100 transition-all duration-300 mx-auto block cursor-pointer"
