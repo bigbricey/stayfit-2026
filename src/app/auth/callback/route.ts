@@ -6,20 +6,17 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
-  // FIX #1: The Protocol Lie (Deep Think 2.0)
-  // Trust the 'x-forwarded-host' header from Netlify over request.url to FORCE https://
+  // Trusted Origin Logic
   const forwardedHost = request.headers.get('x-forwarded-host')
   const origin = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin
 
-  // Default to dashboard if no 'next' param
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
   if (code) {
-    // FIX #3: Deep Think 3.0 "Manual Relay"
-    // Create the response object UP FRONT so we can attach cookies to it.
-    // We add the timestamp busting here too.
-    const forwardedUrl = `${origin}${next}?t=${Date.now()}`
-    const response = NextResponse.redirect(forwardedUrl)
+    // FIX #4: Low-Level Redirect + Debugging
+    // We use a dummy response to collect cookies via setAll
+    let cookieCount = 0;
+    const dummyResponse = NextResponse.next()
 
     const cookieStore = await cookies()
 
@@ -28,14 +25,13 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          // READ from the incoming request (so Supabase can find the Code Verifier)
           getAll() {
             return cookieStore.getAll()
           },
-          // WRITE to the outgoing response (so Browser gets the Session Token)
           setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
             cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, {
+              cookieCount++;
+              dummyResponse.cookies.set(name, value, {
                 ...options,
                 path: '/',
                 sameSite: 'lax',
@@ -50,7 +46,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      return response
+      // DEBUG: Add cookie count to URL params
+      const target = `${origin}${next}?t=${Date.now()}&debug_cookies=${cookieCount}`
+
+      // CRITICAL: Pass the headers (containing Set-Cookie) to the redirect response
+      return NextResponse.redirect(target, {
+        headers: dummyResponse.headers
+      })
     }
   }
 

@@ -44,6 +44,7 @@ export default function DashboardPage() {
         <div className="text-xs text-gray-500 font-mono">
           Diagnostics: <br />
           User: {JSON.stringify(user)} <br />
+          URL Params: {typeof window !== 'undefined' ? window.location.search : ''} <br />
           Cookies: {typeof document !== 'undefined' ? document.cookie : 'server-side'}
         </div>
         <a href="/login" className="px-4 py-2 border border-cyan-500 text-cyan-500 hover:bg-cyan-500/10 transition-colors mt-4">
