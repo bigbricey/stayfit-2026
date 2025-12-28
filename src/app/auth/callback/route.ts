@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
                 getAll() {
                     return cookieStore.getAll()
                 },
-                setAll(cookiesToSet) {
+                setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
                     cookiesToSet.forEach(({ name, value, options }) => {
                         console.log('[AUTH/CALLBACK] Setting cookie:', name)
                         cookieStore.set(name, value, {
