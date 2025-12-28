@@ -10,20 +10,10 @@ export default function AuthCallbackPage() {
 
     useEffect(() => {
         const handleCallback = async () => {
-            // HEAVY DEBUG: Log everything about the URL
-            const fullUrl = window.location.href
-            const hash = window.location.hash
-            const search = window.location.search
+            console.log('[AUTH CALLBACK] Starting - URL:', window.location.href)
+            console.log('[AUTH CALLBACK] Hash:', window.location.hash)
 
-            console.log('[AUTH CALLBACK] Full URL:', fullUrl)
-            console.log('[AUTH CALLBACK] Hash:', hash)
-            console.log('[AUTH CALLBACK] Search:', search)
-
-            // Display for debugging
-            setStatus(`DEBUG: URL=${fullUrl.substring(0, 80)}...`)
-            await new Promise(resolve => setTimeout(resolve, 3000))  // Wait so we can see it
-
-            // With implicit flow, tokens come in the URL hash fragment
+            // Create client with detectSessionInUrl - this should auto-parse hash tokens
             const supabase = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -37,64 +27,59 @@ export default function AuthCallbackPage() {
                 }
             )
 
-            // Check if we have a hash with tokens
-            const hashParams = new URLSearchParams(hash.substring(1))
-            const accessToken = hashParams.get('access_token')
-            const refreshToken = hashParams.get('refresh_token')
+            setStatus('Detecting session from URL...')
 
-            if (accessToken && refreshToken) {
-                console.log('[AUTH CALLBACK] Found tokens in hash, setting session...')
-                setStatus('Found tokens! Establishing session...')
+            // Give Supabase a moment to detect and parse the session from URL
+            await new Promise(resolve => setTimeout(resolve, 500))
 
-                // With implicit flow, we need to manually set the session from hash tokens
-                const { data, error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
+            // Now check if session was established
+            const { data: { session }, error } = await supabase.auth.getSession()
+
+            console.log('[AUTH CALLBACK] getSession result:', {
+                hasSession: !!session,
+                user: session?.user?.email,
+                error: error?.message
+            })
+
+            if (error) {
+                console.error('[AUTH CALLBACK] Session error:', error.message)
+                setStatus(`Error: ${error.message}`)
+                setTimeout(() => router.push(`/login?error=${encodeURIComponent(error.message)}`), 2000)
+                return
+            }
+
+            if (session) {
+                console.log('[AUTH CALLBACK] Session found! Redirecting to dashboard...')
+                setStatus('Success! Redirecting to dashboard...')
+                router.push('/dashboard')
+                return
+            }
+
+            // No session detected - check if we have hash params we can use
+            const hash = window.location.hash
+            if (hash && hash.includes('access_token')) {
+                console.log('[AUTH CALLBACK] Hash has tokens but getSession failed. Checking auth state...')
+                setStatus('Tokens found, verifying auth state...')
+
+                // Try onAuthStateChange listener approach
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+                    console.log('[AUTH CALLBACK] Auth state change:', event, newSession?.user?.email)
+                    if (event === 'SIGNED_IN' && newSession) {
+                        setStatus('Signed in! Redirecting...')
+                        subscription.unsubscribe()
+                        router.push('/dashboard')
+                    }
                 })
 
-                if (error) {
-                    console.error('[AUTH CALLBACK] setSession error:', error.message)
-                    setStatus(`Session Error: ${error.message}`)
-                    setTimeout(() => router.push(`/login?error=${encodeURIComponent(error.message)}`), 2000)
-                    return
-                }
-
-                if (data.session) {
-                    console.log('[AUTH CALLBACK] Session established successfully!')
-                    setStatus('Authentication successful! Redirecting to dashboard...')
-                    await new Promise(resolve => setTimeout(resolve, 500))
-                    router.push('/dashboard')
-                    return
-                }
-
-                // Fallback if no session returned
-                setStatus('Session not established')
-                setTimeout(() => router.push('/login?error=session_not_established'), 2000)
-                return
+                // Give it a bit more time
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                subscription.unsubscribe()
             }
 
-            // Check for error in hash
-            const hashError = hashParams.get('error')
-            const hashErrorDescription = hashParams.get('error_description')
-            if (hashError) {
-                setStatus(`OAuth Error: ${hashErrorDescription || hashError}`)
-                setTimeout(() => router.push(`/login?error=${encodeURIComponent(hashErrorDescription || hashError)}`), 2000)
-                return
-            }
-
-            // Check for code in query params (PKCE - Supabase ignoring our implicit request?)
-            const code = new URLSearchParams(search).get('code')
-            if (code) {
-                console.log('[AUTH CALLBACK] Got PKCE code - Supabase ignored implicit flow request!')
-                setStatus(`Got code param - PKCE still active! code=${code.substring(0, 20)}...`)
-                // Try to exchange it anyway using the standard SSR approach
-                setTimeout(() => router.push(`/login?error=pkce_code_received`), 3000)
-                return
-            }
-
-            // No tokens, no error, no code
-            setStatus(`No auth data. hash=${hash.substring(0, 30)} search=${search.substring(0, 30)}`)
-            setTimeout(() => router.push('/login?error=no_auth_data'), 3000)
+            // Still no session
+            setStatus(`No session established. Hash: ${hash.substring(0, 50)}...`)
+            console.log('[AUTH CALLBACK] No session after all attempts')
+            setTimeout(() => router.push('/login?error=no_session'), 2000)
         }
 
         handleCallback()
@@ -105,6 +90,7 @@ export default function AuthCallbackPage() {
             <div className="text-center space-y-4">
                 <div className="h-8 w-8 border-2 border-cyan-500/50 border-t-cyan-400 rounded-full animate-spin mx-auto" />
                 <p className="text-cyan-400 text-sm tracking-wider">{status}</p>
+                <p className="text-[10px] text-cyan-900">v8.7.0-AUTO-DETECT</p>
             </div>
         </div>
     )
