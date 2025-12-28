@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   const forwardedHost = request.headers.get('x-forwarded-host')
   const origin = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin
 
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+  // TRACER BULLET: Ignore 'next' param. Force redirect to /debug.
+  const next = '/debug'
 
   if (code) {
     // FIX #4: Low-Level Redirect + Debugging
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
 
     if (!error) {
       // DEBUG: Add cookie count to URL params
-      const target = `${origin}${next}?t=${Date.now()}&debug_cookies=${cookieCount}`
+      const target = `${origin}${next}?t=${Date.now()}&debug_cookies=${cookieCount}&tracer=bullet`
 
       // CRITICAL: Pass the headers (containing Set-Cookie) to the redirect response
       return NextResponse.redirect(target, {
@@ -57,5 +58,5 @@ export async function GET(request: Request) {
   }
 
   // Return the user to login with error
-  return NextResponse.redirect(`${origin}/login?error=auth_error`)
+  return NextResponse.redirect(`${origin}/login?error=auth_error_tracer_failed`)
 }
