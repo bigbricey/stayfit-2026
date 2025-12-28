@@ -6,6 +6,11 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
+  // ============= TRACER BULLET =============
+  // TEMPORARY: Uncomment to verify this route is being hit
+  return NextResponse.redirect('https://stayfitwithai.com/login?tracer=callback_hit')
+  // ==========================================
+
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
