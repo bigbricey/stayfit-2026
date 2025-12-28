@@ -8,6 +8,10 @@ export async function GET() {
     console.log('[AUTH/LOGIN] Server-side OAuth initiation starting')
 
     const cookieStore = await cookies()
+    const origin = 'https://stayfitwithai.com'
+
+    // Create a response object to hold cookies
+    const response = NextResponse.next()
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +24,8 @@ export async function GET() {
                 setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
                     cookiesToSet.forEach(({ name, value, options }) => {
                         console.log('[AUTH/LOGIN] Setting cookie:', name, 'length:', value.length)
-                        cookieStore.set(name, value, {
+                        // Set on both the cookieStore AND the response object
+                        response.cookies.set(name, value, {
                             ...options,
                             path: '/',
                             sameSite: 'lax',
@@ -31,8 +36,6 @@ export async function GET() {
             }
         }
     )
-
-    const origin = 'https://stayfitwithai.com'
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -51,6 +54,15 @@ export async function GET() {
         return NextResponse.redirect(`${origin}/login?error=no_oauth_url`)
     }
 
-    console.log('[AUTH/LOGIN] Redirecting to Google OAuth')
-    return NextResponse.redirect(data.url)
+    console.log('[AUTH/LOGIN] Cookies to transfer:', response.cookies.getAll().map(c => c.name))
+
+    // CRITICAL: Create redirect response and TRANSFER cookies from the dummy response
+    const redirectResponse = NextResponse.redirect(data.url)
+    response.cookies.getAll().forEach((cookie) => {
+        console.log('[AUTH/LOGIN] Transferring cookie to redirect:', cookie.name)
+        redirectResponse.cookies.set(cookie)
+    })
+
+    console.log('[AUTH/LOGIN] Redirecting to Google OAuth with transferred cookies')
+    return redirectResponse
 }
