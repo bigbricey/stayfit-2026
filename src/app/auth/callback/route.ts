@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() { return cookieStore.getAll() },
-          setAll(cookies) {
+          setAll(cookies: { name: string; value: string; options: any }[]) {
             cookies.forEach(({ name, value, options }) => {
               // 1. Set in internal store (standard)
               cookieStore.set(name, value, options)
