@@ -55,7 +55,7 @@ export default function WelcomePage() {
           </div>
 
           {/* Enter Button */}
-          <SystemButton onClick={() => router.push('/dashboard')}>
+          <SystemButton onClick={() => router.push('/login')}>
             <span>ENTER SYSTEM</span>
             <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
           </SystemButton>

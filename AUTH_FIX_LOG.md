@@ -32,6 +32,9 @@
 | 21 | Dec 28 01:15 | **Fresh Login Test (Incognito)** | - | ❌ STILL FAILS - No tracer, no cookies, lands on /dashboard |
 | 22 | Dec 28 01:18 | **Check FULL landing URL after OAuth** | - | Just `/dashboard` - NO hash, NO query params |
 | 23 | Dec 28 01:22 | **🚨 CRITICAL: OAuth NOT initiating** | - | Button click goes DIRECTLY to /dashboard, skipping Google entirely! |
+| 24 | Dec 28 01:23 | **Add debug logging to login page** | `5383346` | Console logs + alerts for signInWithOAuth errors |
+| 25 | Dec 28 01:26 | **Research: OAuth skip scenarios** | - | Research shows OAuth should NOT skip redirect even with session |
+| 26 | Dec 28 01:30 | **🔥🔥 ACTUAL ROOT CAUSE FOUND** | - | "ENTER SYSTEM" button on `/` goes to `/dashboard`, NOT `/login`! User never initiates OAuth! |
 
 ---
 
