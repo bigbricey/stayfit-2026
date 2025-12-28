@@ -38,6 +38,8 @@
 | 27 | Dec 28 01:31 | **FIX: ENTER SYSTEM → /login** | `f0cd633` | Welcome page now links to /login, tracer bullet disabled |
 | 28 | Dec 28 01:34 | **OAuth now initiates!** | - | ✅ Google auth works, but loops back to /login after callback |
 | 29 | Dec 28 01:35 | **Error revealed: PKCE storage mismatch** | - | Login uses localStorage, callback uses cookies - different storage! |
+| 30 | Dec 28 01:37 | **Debug: Log cookies in callback** | `9fb6dda` | Will show if code-verifier cookie is reaching server |
+| 31 | Dec 28 01:40 | **🔥 ROOT CAUSE: Cookie is double-quoted** | - | Netlify logs show cookie IS present, but value has extra `"` quotes causing parse failure |
 
 ---
 

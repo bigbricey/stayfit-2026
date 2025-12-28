@@ -36,7 +36,14 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() { return cookieStore.getAll() },
+          getAll() {
+            // FIX: Strip double quotes from cookie values
+            // The browser sometimes wraps cookie values in quotes, causing parse failures
+            return cookieStore.getAll().map(cookie => ({
+              ...cookie,
+              value: cookie.value.replace(/^"|"$/g, '')
+            }))
+          },
           setAll(cookies: { name: string; value: string; options: any }[]) {
             cookies.forEach(({ name, value, options }) => {
               // 1. Set in internal store (standard)
