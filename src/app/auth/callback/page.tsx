@@ -40,25 +40,37 @@ export default function AuthCallbackPage() {
             // Check if we have a hash with tokens
             const hashParams = new URLSearchParams(hash.substring(1))
             const accessToken = hashParams.get('access_token')
+            const refreshToken = hashParams.get('refresh_token')
 
-            if (accessToken) {
-                setStatus('Found access token! Processing...')
-                await new Promise(resolve => setTimeout(resolve, 500))
+            if (accessToken && refreshToken) {
+                console.log('[AUTH CALLBACK] Found tokens in hash, setting session...')
+                setStatus('Found tokens! Establishing session...')
 
-                const { data: { session }, error } = await supabase.auth.getSession()
+                // With implicit flow, we need to manually set the session from hash tokens
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                })
 
-                if (session) {
-                    console.log('[AUTH CALLBACK] Session established!')
-                    setStatus('Authentication successful! Redirecting...')
+                if (error) {
+                    console.error('[AUTH CALLBACK] setSession error:', error.message)
+                    setStatus(`Session Error: ${error.message}`)
+                    setTimeout(() => router.push(`/login?error=${encodeURIComponent(error.message)}`), 2000)
+                    return
+                }
+
+                if (data.session) {
+                    console.log('[AUTH CALLBACK] Session established successfully!')
+                    setStatus('Authentication successful! Redirecting to dashboard...')
+                    await new Promise(resolve => setTimeout(resolve, 500))
                     router.push('/dashboard')
                     return
                 }
 
-                if (error) {
-                    setStatus(`Error: ${error.message}`)
-                    setTimeout(() => router.push(`/login?error=${encodeURIComponent(error.message)}`), 2000)
-                    return
-                }
+                // Fallback if no session returned
+                setStatus('Session not established')
+                setTimeout(() => router.push('/login?error=session_not_established'), 2000)
+                return
             }
 
             // Check for error in hash

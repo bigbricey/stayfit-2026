@@ -49,6 +49,10 @@
 | 38 | Dec 28 02:04 | **Test: Server-side OAuth** | - | ❌ STILL FAILING - same PKCE error! Need deeper research |
 | 39 | Dec 28 02:10 | **NEW FIX: Switch to Implicit Flow** | `449d1cb` | Bypass PKCE: `flowType: 'implicit'`, client-side `page.tsx` callback, `@supabase/supabase-js` |
 | 40 | Dec 28 02:11 | **Test: Implicit Flow** | - | ⚠️ PROGRESS! Google auth worked, callback hit, but "no_auth_data" - hash fragment empty |
+| 41 | Dec 28 02:14 | **Debug: Heavy URL logging** | `d271881` | Added 3-second delay to show full URL/hash/search on screen |
+| 42 | Dec 28 17:35 | **Test: After break** | - | User sees "no authorization token" message, still loops back |
+| 43 | Dec 28 22:45 | **🔍 Browser test: Tokens ARE in hash!** | - | access_token present but getSession() returns null. Need setSession() |
+| 44 | Dec 28 22:47 | **FIX: Use setSession() for implicit flow** | (pending) | Changed callback to extract tokens from hash and call setSession() |
 
 ---
 
