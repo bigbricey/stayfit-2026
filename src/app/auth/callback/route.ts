@@ -26,7 +26,15 @@ export async function GET(request: Request) {
     // DEBUG: Log all cookies received
     const allCookies = cookieStore.getAll()
     console.log('[AUTH CALLBACK] All cookies received:', allCookies.map(c => c.name))
-    console.log('[AUTH CALLBACK] Code verifier cookie:', allCookies.find(c => c.name.includes('code-verifier'))?.name || 'NOT FOUND')
+    const codeVerifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
+    if (codeVerifierCookie) {
+      console.log('[AUTH CALLBACK] Code verifier cookie found:', codeVerifierCookie.name)
+      console.log('[AUTH CALLBACK] Raw value (first 50 chars):', codeVerifierCookie.value.substring(0, 50))
+      console.log('[AUTH CALLBACK] Value starts with quote:', codeVerifierCookie.value.startsWith('"'))
+      console.log('[AUTH CALLBACK] Value ends with quote:', codeVerifierCookie.value.endsWith('"'))
+    } else {
+      console.log('[AUTH CALLBACK] Code verifier cookie: NOT FOUND')
+    }
 
     // Capture cookies to manually set them on the 200 response
     const cookiesToSet: { name: string; value: string; options: any }[] = []

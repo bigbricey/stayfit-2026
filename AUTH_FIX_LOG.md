@@ -40,6 +40,8 @@
 | 29 | Dec 28 01:35 | **Error revealed: PKCE storage mismatch** | - | Login uses localStorage, callback uses cookies - different storage! |
 | 30 | Dec 28 01:37 | **Debug: Log cookies in callback** | `9fb6dda` | Will show if code-verifier cookie is reaching server |
 | 31 | Dec 28 01:40 | **🔥 ROOT CAUSE: Cookie is double-quoted** | - | Netlify logs show cookie IS present, but value has extra `"` quotes causing parse failure |
+| 32 | Dec 28 01:42 | **FIX: Strip quotes from cookie values** | `f1f6905` | Modified getAll() to strip leading/trailing quotes from cookie values |
+| 33 | Dec 28 01:47 | **Test: Quote stripping** | - | ❌ STILL FAILING - same PKCE error |
 
 ---
 
