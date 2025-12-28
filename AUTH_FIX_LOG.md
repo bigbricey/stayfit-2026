@@ -35,6 +35,9 @@
 | 24 | Dec 28 01:23 | **Add debug logging to login page** | `5383346` | Console logs + alerts for signInWithOAuth errors |
 | 25 | Dec 28 01:26 | **Research: OAuth skip scenarios** | - | Research shows OAuth should NOT skip redirect even with session |
 | 26 | Dec 28 01:30 | **🔥🔥 ACTUAL ROOT CAUSE FOUND** | - | "ENTER SYSTEM" button on `/` goes to `/dashboard`, NOT `/login`! User never initiates OAuth! |
+| 27 | Dec 28 01:31 | **FIX: ENTER SYSTEM → /login** | `f0cd633` | Welcome page now links to /login, tracer bullet disabled |
+| 28 | Dec 28 01:34 | **OAuth now initiates!** | - | ✅ Google auth works, but loops back to /login after callback |
+| 29 | Dec 28 01:35 | **Error revealed: PKCE storage mismatch** | - | Login uses localStorage, callback uses cookies - different storage! |
 
 ---
 

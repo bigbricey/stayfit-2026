@@ -23,6 +23,11 @@ export async function GET(request: Request) {
   if (code) {
     const cookieStore = await cookies()
 
+    // DEBUG: Log all cookies received
+    const allCookies = cookieStore.getAll()
+    console.log('[AUTH CALLBACK] All cookies received:', allCookies.map(c => c.name))
+    console.log('[AUTH CALLBACK] Code verifier cookie:', allCookies.find(c => c.name.includes('code-verifier'))?.name || 'NOT FOUND')
+
     // Capture cookies to manually set them on the 200 response
     const cookiesToSet: { name: string; value: string; options: any }[] = []
 
