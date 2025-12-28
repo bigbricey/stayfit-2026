@@ -8,22 +8,40 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     setLoading(true)
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
 
-    // Force explicit production URL to rule out 'origin' issues
-    const origin = window.location.hostname.includes('localhost')
-      ? 'http://localhost:3000'
-      : 'https://stayfitwithai.com'
+      // Force explicit production URL to rule out 'origin' issues
+      const origin = window.location.hostname.includes('localhost')
+        ? 'http://localhost:3000'
+        : 'https://stayfitwithai.com'
 
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${origin}/auth/callback`,
-      },
-    })
+      console.log('[LOGIN] Calling signInWithOAuth with redirectTo:', `${origin}/auth/callback`)
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${origin}/auth/callback`,
+        },
+      })
+
+      console.log('[LOGIN] signInWithOAuth result:', { data, error })
+
+      if (error) {
+        console.error('[LOGIN] OAuth error:', error.message)
+        alert(`OAuth Error: ${error.message}`)
+        setLoading(false)
+      }
+      // If no error and no redirect happened, something is wrong
+      // The browser should have navigated away by now
+    } catch (err: any) {
+      console.error('[LOGIN] Exception:', err)
+      alert(`Exception: ${err.message}`)
+      setLoading(false)
+    }
   }
 
   return (
