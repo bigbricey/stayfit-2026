@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       }
     )
 
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code!)
 
     // DIAGNOSTIC: Log the exchange result
     console.log('[AUTH CALLBACK] Exchange result:', {
