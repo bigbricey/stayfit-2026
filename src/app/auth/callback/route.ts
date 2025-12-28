@@ -15,27 +15,33 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
   if (code) {
+    // FIX #3: Deep Think 3.0 "Manual Relay"
+    // Create the response object UP FRONT so we can attach cookies to it.
+    // We add the timestamp busting here too.
+    const forwardedUrl = `${origin}${next}?t=${Date.now()}`
+    const response = NextResponse.redirect(forwardedUrl)
+
     const cookieStore = await cookies()
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() { return cookieStore.getAll() },
+          // READ from the incoming request (so Supabase can find the Code Verifier)
+          getAll() {
+            return cookieStore.getAll()
+          },
+          // WRITE to the outgoing response (so Browser gets the Session Token)
           setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, {
-                  ...options,
-                  // FIX #3: Force Cookie Scope (Deep Think 2.0)
-                  path: '/',
-                  sameSite: 'lax',
-                  secure: process.env.NODE_ENV === 'production',
-                })
-              )
-            } catch {
-              // Ignored
-            }
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, {
+                ...options,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+              })
+            })
           },
         },
       }
@@ -44,11 +50,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // FIX #2: The Zombie Router Cache (Deep Think 2.0)
-      // Add timestamp to force browser to treat this as a NEW navigation
-      const forwardedUrl = `${origin}${next}?t=${Date.now()}`
-
-      return NextResponse.redirect(forwardedUrl)
+      return response
     }
   }
 
