@@ -21,12 +21,12 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
           // Sync cookies to request (for downstream Server Components)
-          cookiesToSet.forEach(({ name, value }) => 
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          
+
           // Sync cookies to response (for Browser to persist)
           response = NextResponse.next({
             request,
