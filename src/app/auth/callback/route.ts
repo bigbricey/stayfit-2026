@@ -39,9 +39,16 @@ export async function GET(request: Request) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) {
+    // DIAGNOSTIC: Log the exchange result
+    console.log('[AUTH CALLBACK] Exchange result:', {
+      hasSession: !!data.session,
+      hasUser: !!data.user,
+      error: error?.message
+    })
+
+    if (!error && data.session) {
       // INVISIBLE VARIABLE #2 FIX: The Zombie Cache
       // Add a timestamp to the redirect URL. This forces the Next.js Router 
       // to treat this as a NEW navigation, ignoring the cached "Redirect to Login" instruction.
@@ -88,8 +95,13 @@ export async function GET(request: Request) {
 
       return response
     }
+
+    // Exchange failed - redirect with error details
+    const errorMsg = encodeURIComponent(error?.message || 'exchange_failed_no_session')
+    return NextResponse.redirect(`${origin}/login?error=${errorMsg}`)
   }
 
-  // Fallback for errors
-  return NextResponse.redirect(`${origin}/login?error=auth_error`)
+  // Fallback for errors - include error details
+  return NextResponse.redirect(`${origin}/login?error=no_code_provided`)
+}
 }
