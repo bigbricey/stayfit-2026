@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { createBrowserClient } from '@supabase/ssr'
 
 export default function AuthCallbackPage() {
     const router = useRouter()
@@ -17,113 +16,73 @@ export default function AuthCallbackPage() {
             console.log('[CALLBACK] Hash:', window.location.hash)
             console.log('[CALLBACK] Search:', window.location.search)
 
-            // Check for implicit flow tokens in hash FIRST
-            const hash = window.location.hash.substring(1)
-            if (hash) {
-                console.log('[CALLBACK] Found hash fragment, parsing tokens')
-                const hashParams = new URLSearchParams(hash)
-                const accessToken = hashParams.get('access_token')
-                const refreshToken = hashParams.get('refresh_token')
-                const tokenType = hashParams.get('token_type')
-
-                console.log('[CALLBACK] Token type:', tokenType)
-                console.log('[CALLBACK] Access token present:', !!accessToken)
-                console.log('[CALLBACK] Refresh token present:', !!refreshToken)
-
-                if (accessToken && refreshToken) {
-                    console.log('[CALLBACK] Setting session with tokens')
-                    setStatus('Establishing session...')
-
-                    // Use the SSR browser client to set the session (syncs to cookies)
-                    const supabase = createBrowserClient(
-                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-                    )
-
-                    const { data, error: sessionError } = await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken
-                    })
-
-                    if (sessionError) {
-                        console.error('[CALLBACK] setSession error:', sessionError.message)
-                        setError(sessionError.message)
-                        return
-                    }
-
-                    if (data.session) {
-                        console.log('[CALLBACK] Session established via implicit flow:', data.session.user.email)
-                        setStatus('Login successful! Redirecting...')
-
-                        // Clear the hash from URL for cleanliness
-                        window.history.replaceState(null, '', '/auth/callback')
-
-                        // Navigate to dashboard
-                        setTimeout(() => router.push('/dashboard'), 500)
-                        return
-                    }
-                }
-            }
-
-            // Check for PKCE code in query params (fallback)
-            const urlParams = new URLSearchParams(window.location.search)
-            const code = urlParams.get('code')
-
-            if (code) {
-                console.log('[CALLBACK] Found PKCE code, attempting exchange')
-                setStatus('Exchanging authorization code...')
-
-                const supabase = createBrowserClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-                )
-
-                const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-                if (exchangeError) {
-                    console.error('[CALLBACK] Exchange error:', exchangeError.message)
-                    setError(exchangeError.message)
-                    return
-                }
-
-                if (data.session) {
-                    console.log('[CALLBACK] Session established via PKCE:', data.session.user.email)
-                    setStatus('Login successful! Redirecting...')
-                    setTimeout(() => router.push('/dashboard'), 100)
-                    return
-                }
-            }
-
-            // No auth data found - wait a moment for detectSessionInUrl
-            console.log('[CALLBACK] No immediate auth data, waiting for auto-detection...')
-            setStatus('Detecting session...')
-
+            // Create client with detectSessionInUrl to auto-hydrate from hash
             const supabase = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
                 {
                     auth: {
                         detectSessionInUrl: true,
-                        flowType: 'implicit'
+                        flowType: 'implicit',
+                        persistSession: true,
+                        autoRefreshToken: true
                     }
                 }
             )
 
-            // Wait for session detection
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            // Listen for auth state changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                console.log('[CALLBACK] Auth state change:', event, session?.user?.email)
 
-            const { data: { session } } = await supabase.auth.getSession()
+                if (event === 'SIGNED_IN' && session) {
+                    setStatus('Login successful! Redirecting...')
+                    // Clear the hash from URL
+                    window.history.replaceState(null, '', '/auth/callback')
+                    setTimeout(() => router.push('/dashboard'), 500)
+                }
+            })
 
-            if (session) {
-                console.log('[CALLBACK] Session detected via auto-detection:', session.user.email)
-                setStatus('Login successful! Redirecting...')
-                setTimeout(() => router.push('/dashboard'), 100)
+            // Wait a moment for auto-detection to kick in
+            setStatus('Detecting session...')
+            await new Promise(resolve => setTimeout(resolve, 1500))
+
+            // Check if we have a session now
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+            if (sessionError) {
+                console.error('[CALLBACK] getSession error:', sessionError.message)
+                setError(sessionError.message)
                 return
             }
 
-            // Still no auth data
-            console.error('[CALLBACK] No authentication data found')
-            setError('No authentication data received. Please try logging in again.')
+            if (session) {
+                console.log('[CALLBACK] Session found:', session.user.email)
+                setStatus('Login successful! Redirecting...')
+                window.history.replaceState(null, '', '/auth/callback')
+                setTimeout(() => router.push('/dashboard'), 500)
+                return
+            }
+
+            // Check if hash still exists (not processed yet)
+            if (window.location.hash.includes('access_token')) {
+                console.log('[CALLBACK] Hash still present, waiting more...')
+                setStatus('Establishing session...')
+                await new Promise(resolve => setTimeout(resolve, 2000))
+
+                // Try one more time
+                const { data: { session: retrySession } } = await supabase.auth.getSession()
+                if (retrySession) {
+                    console.log('[CALLBACK] Session found on retry:', retrySession.user.email)
+                    setStatus('Login successful! Redirecting...')
+                    window.history.replaceState(null, '', '/auth/callback')
+                    setTimeout(() => router.push('/dashboard'), 500)
+                    return
+                }
+            }
+
+            // No auth data found
+            console.error('[CALLBACK] No authentication data found after waiting')
+            setError('Could not establish session. Please try logging in again.')
         }
 
         handleCallback()
@@ -139,7 +98,7 @@ export default function AuthCallbackPage() {
                         <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
                         <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">AUTHENTICATING</span>
                     </div>
-                    <div className="text-[10px] text-cyan-700/70">v11.0.0-IMPLICIT</div>
+                    <div className="text-[10px] text-cyan-700/70">v12.0.0-AUTO-DETECT</div>
                 </div>
 
                 {/* Content Area */}
