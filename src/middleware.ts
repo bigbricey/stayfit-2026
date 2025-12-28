@@ -1,56 +1,77 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() { return request.cookies.getAll(); },
-                setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-                    cookiesToSet.forEach(({ name, value, options }) => {
-                        request.cookies.set(name, value);
-                        supabaseResponse.cookies.set(name, value, options);
-                    });
-                },
-            },
-        }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Protected routes - require login
-    const protectedPaths = ['/dashboard'];
-    const isProtectedPath = protectedPaths.some(path =>
-        request.nextUrl.pathname.startsWith(path)
-    );
-
-    // Auth pages - redirect to dashboard if already logged in
-    const authPaths = ['/login', '/signup'];
-    const isAuthPath = authPaths.some(path =>
-        request.nextUrl.pathname === path
-    );
-
-    if (isProtectedPath && !user) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
+  // 1. Initialize Supabase Client to refresh session
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          // This is the CRITICAL part for Next.js 15 + Middleware
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+          })
+          response = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
+  )
 
-    if (isAuthPath && user) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/dashboard';
-        return NextResponse.redirect(url);
-    }
+  // 2. Refresh the session (this updates the cookie in the response if needed)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    return supabaseResponse;
+  // 3. Protected Routes Logic
+  // If NO user, and trying to access protected route -> Redirect to Login
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/') && // Landing page is public
+    !request.nextUrl.pathname.startsWith('/manifest') // PWA
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // If USER exists, and trying to access Login -> Redirect to Dashboard
+  if (user && request.nextUrl.pathname.startsWith('/login')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+  }
+
+  // Important: You must return the response object created by the supabase client above
+  return response
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|auth/callback|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
-};
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
