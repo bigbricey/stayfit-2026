@@ -42,6 +42,10 @@
 | 31 | Dec 28 01:40 | **🔥 ROOT CAUSE: Cookie is double-quoted** | - | Netlify logs show cookie IS present, but value has extra `"` quotes causing parse failure |
 | 32 | Dec 28 01:42 | **FIX: Strip quotes from cookie values** | `f1f6905` | Modified getAll() to strip leading/trailing quotes from cookie values |
 | 33 | Dec 28 01:47 | **Test: Quote stripping** | - | ❌ STILL FAILING - same PKCE error |
+| 34 | Dec 28 01:48 | **Debug: More detailed cookie logging** | `a39a6e9` | Will show actual cookie value format |
+| 35 | Dec 28 01:51 | **Test: Detailed logging** | - | ❌ STILL FAILING - need to check logs and do deep research |
+| 36 | Dec 28 01:55 | **🔥 ROOT CAUSE: GitHub #55** | - | `createBrowserClient.signInWithOAuth` doesn't reliably set code-verifier cookie. FIX: server-side API route |
+| 37 | Dec 28 01:57 | **NEW FIX: Server-side OAuth initiation** | (pending) | Created `/auth/login/route.ts` using `createServerClient`, changed login button to link there |
 
 ---
 
