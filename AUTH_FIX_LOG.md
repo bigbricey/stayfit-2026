@@ -45,7 +45,9 @@
 | 34 | Dec 28 01:48 | **Debug: More detailed cookie logging** | `a39a6e9` | Will show actual cookie value format |
 | 35 | Dec 28 01:51 | **Test: Detailed logging** | - | ❌ STILL FAILING - need to check logs and do deep research |
 | 36 | Dec 28 01:55 | **🔥 ROOT CAUSE: GitHub #55** | - | `createBrowserClient.signInWithOAuth` doesn't reliably set code-verifier cookie. FIX: server-side API route |
-| 37 | Dec 28 01:57 | **NEW FIX: Server-side OAuth initiation** | (pending) | Created `/auth/login/route.ts` using `createServerClient`, changed login button to link there |
+| 37 | Dec 28 01:57 | **NEW FIX: Server-side OAuth initiation** | `ecbd691` | Created `/auth/login/route.ts` using `createServerClient`, changed login button to link there |
+| 38 | Dec 28 02:04 | **Test: Server-side OAuth** | - | ❌ STILL FAILING - same PKCE error! Need deeper research |
+| 39 | Dec 28 02:06 | **NEW FIX: Switch to Implicit Flow** | (pending) | Bypass PKCE entirely: `flowType: 'implicit'`, client-side callback, using `@supabase/supabase-js` |
 
 ---
 

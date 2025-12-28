@@ -1,46 +1,33 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
-import { useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false)
-
   const handleLogin = async () => {
-    setLoading(true)
-    try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-
-      // Force explicit production URL to rule out 'origin' issues
-      const origin = window.location.hostname.includes('localhost')
-        ? 'http://localhost:3000'
-        : 'https://stayfitwithai.com'
-
-      console.log('[LOGIN] Calling signInWithOAuth with redirectTo:', `${origin}/auth/callback`)
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${origin}/auth/callback`,
-        },
-      })
-
-      console.log('[LOGIN] signInWithOAuth result:', { data, error })
-
-      if (error) {
-        console.error('[LOGIN] OAuth error:', error.message)
-        alert(`OAuth Error: ${error.message}`)
-        setLoading(false)
+    // Use supabase-js directly with implicit flow (no PKCE)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          flowType: 'implicit',  // BYPASS PKCE
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true,
+        }
       }
-      // If no error and no redirect happened, something is wrong
-      // The browser should have navigated away by now
-    } catch (err: any) {
-      console.error('[LOGIN] Exception:', err)
-      alert(`Exception: ${err.message}`)
-      setLoading(false)
+    )
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      console.error('[LOGIN] OAuth error:', error.message)
+      alert(`OAuth Error: ${error.message}`)
     }
   }
 
@@ -55,7 +42,7 @@ export default function LoginPage() {
             <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
             <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">SYSTEM_LOGIN</span>
           </div>
-          <div className="text-[10px] text-cyan-700/70">v8.5.3-DEBUG</div>
+          <div className="text-[10px] text-cyan-700/70">v8.6.0-IMPLICIT</div>
         </div>
 
         {/* Content Area */}
@@ -76,9 +63,8 @@ export default function LoginPage() {
 
             <div className="p-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent w-full max-w-xs mx-auto" />
 
-            {/* Use server-side route instead of client-side signInWithOAuth */}
-            <a
-              href="/auth/login"
+            <button
+              onClick={handleLogin}
               className="group relative px-8 py-3 bg-cyan-950/30 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-100 transition-all duration-300 mx-auto block"
             >
               <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -88,11 +74,8 @@ export default function LoginPage() {
               </span>
               {/* Corner Accents */}
               <div className="absolute top-0 left-0 w-1 h-1 bg-cyan-500 opacity-50" />
-              <div className="absolute bottom-4 text-[10px] text-white/20 font-mono">
-                v8.5.6-COOKIE-FIX
-              </div>
               <div className="absolute bottom-0 right-0 w-1 h-1 bg-cyan-500 opacity-50" />
-            </a>
+            </button>
           </div>
         </div>
 
