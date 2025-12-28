@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -10,8 +12,7 @@ export async function GET(request: Request) {
   const forwardedHost = request.headers.get('x-forwarded-host')
   const origin = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin
 
-  // TRACER BULLET: Ignore 'next' param. Force redirect to /debug.
-  const next = '/debug'
+  const next = requestUrl.searchParams.get('next') || '/dashboard'
 
   if (code) {
     // FIX #4: Low-Level Redirect + Debugging
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
 
     if (!error) {
       // DEBUG: Add cookie count to URL params
-      const target = `${origin}${next}?t=${Date.now()}&debug_cookies=${cookieCount}&tracer=bullet`
+      const target = `${origin}${next}?t=${Date.now()}`
 
       // CRITICAL: Pass the headers (containing Set-Cookie) to the redirect response
       return NextResponse.redirect(target, {

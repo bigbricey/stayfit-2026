@@ -50,10 +50,16 @@ export default function SignupPage() {
 
     const handleGoogleSignup = async () => {
         const supabase = createClient();
+
+        // Force explicit production URL to rule out 'origin' issues
+        const origin = window.location.hostname.includes('localhost')
+            ? 'http://localhost:3000'
+            : 'https://stayfitwithai.com' // HARDCODED FIX
+
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${origin}/auth/callback`,
             },
         });
     };

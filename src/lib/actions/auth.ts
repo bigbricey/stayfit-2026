@@ -7,11 +7,12 @@ import { headers } from 'next/headers';
 export async function signInWithGoogle() {
     const supabase = await createClient();
     const headersList = await headers();
-    const origin = headersList.get('origin') || headersList.get('host');
+    const host = headersList.get('host') || '';
 
-    // Use https for production, http for localhost
-    const protocol = origin?.includes('localhost') ? 'http' : 'https';
-    const baseUrl = origin?.startsWith('http') ? origin : `${protocol}://${origin}`;
+    // Force explicit production URL to rule out 'x-forwarded-host' issues
+    const baseUrl = host.includes('localhost')
+        ? 'http://localhost:3000'
+        : 'https://stayfitwithai.com'; // HARDCODED FIX
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -55,9 +56,12 @@ export async function signInWithEmail(formData: FormData) {
 export async function signUp(formData: FormData) {
     const supabase = await createClient();
     const headersList = await headers();
-    const origin = headersList.get('origin') || headersList.get('host');
-    const protocol = origin?.includes('localhost') ? 'http' : 'https';
-    const baseUrl = origin?.startsWith('http') ? origin : `${protocol}://${origin}`;
+    const host = headersList.get('host') || '';
+
+    // Force explicit production URL to rule out 'x-forwarded-host' issues
+    const baseUrl = host.includes('localhost')
+        ? 'http://localhost:3000'
+        : 'https://stayfitwithai.com'; // HARDCODED FIX
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
