@@ -20,52 +20,63 @@ export async function GET(request: Request) {
         const allCookies = cookieStore.getAll()
         console.log('[AUTH/CALLBACK] All cookies:', allCookies.map(c => c.name))
 
-        // Find and FIX the code verifier cookie BEFORE creating Supabase client
+        // Find and clean the code verifier cookie
         const verifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
 
-        if (verifierCookie) {
-            let cleanValue = verifierCookie.value
-            console.log('[AUTH/CALLBACK] Original verifier value:', cleanValue.substring(0, 30) + '...')
-
-            // Decode URL encoding first
-            try {
-                cleanValue = decodeURIComponent(cleanValue)
-                console.log('[AUTH/CALLBACK] After URL decode:', cleanValue.substring(0, 30) + '...')
-            } catch {
-                console.log('[AUTH/CALLBACK] URL decode failed, using original')
-            }
-
-            // Strip leading/trailing quotes
-            if (cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
-                cleanValue = cleanValue.slice(1, -1)
-                console.log('[AUTH/CALLBACK] After quote strip:', cleanValue.substring(0, 30) + '...')
-            }
-
-            // Overwrite the cookie with the cleaned value directly in the cookie store
-            console.log('[AUTH/CALLBACK] Overwriting cookie with cleaned value')
-            try {
-                cookieStore.set(verifierCookie.name, cleanValue, {
-                    path: '/',
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'lax'
-                })
-                console.log('[AUTH/CALLBACK] Cookie overwritten successfully')
-            } catch (e) {
-                console.error('[AUTH/CALLBACK] Failed to overwrite cookie:', e)
-            }
-        } else {
-            console.log('[AUTH/CALLBACK] No verifier cookie found')
+        if (!verifierCookie) {
+            console.error('[AUTH/CALLBACK] No verifier cookie found!')
+            return NextResponse.redirect('https://stayfitwithai.com/login?error=no_verifier_cookie')
         }
 
-        // Create server client for exchange AFTER fixing the cookie
+        // Clean the verifier value (remove URL encoding and quotes)
+        let cleanVerifier = verifierCookie.value
+        console.log('[AUTH/CALLBACK] Original verifier:', cleanVerifier.substring(0, 30) + '...')
+
+        try {
+            cleanVerifier = decodeURIComponent(cleanVerifier)
+        } catch {
+            // Not URL encoded
+        }
+
+        // Strip quotes
+        if (cleanVerifier.startsWith('"') && cleanVerifier.endsWith('"')) {
+            cleanVerifier = cleanVerifier.slice(1, -1)
+        }
+        console.log('[AUTH/CALLBACK] Cleaned verifier:', cleanVerifier.substring(0, 30) + '...')
+
+        // MANUAL TOKEN EXCHANGE - bypass the SDK's broken cookie reading
+        console.log('[AUTH/CALLBACK] Performing MANUAL token exchange')
+
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({
+                auth_code: code,
+                code_verifier: cleanVerifier,
+            }),
+        })
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text()
+            console.error('[AUTH/CALLBACK] Token exchange failed:', tokenResponse.status, errorText)
+            return NextResponse.redirect(`https://stayfitwithai.com/login?error=${encodeURIComponent(errorText)}`)
+        }
+
+        const tokens = await tokenResponse.json()
+        console.log('[AUTH/CALLBACK] Token exchange successful!')
+        console.log('[AUTH/CALLBACK] Got access_token:', !!tokens.access_token)
+        console.log('[AUTH/CALLBACK] Got refresh_token:', !!tokens.refresh_token)
+
+        // Now create a Supabase client and set the session with the tokens we got
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
                     getAll() {
-                        // Return cookies as-is now since we already cleaned the verifier
                         return cookieStore.getAll()
                     },
                     setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
@@ -75,24 +86,34 @@ export async function GET(request: Request) {
                                 cookieStore.set(name, value, options)
                             })
                         } catch {
-                            // The `setAll` method was called from a Server Component.
+                            // Ignore
                         }
                     },
                 },
             }
         )
 
-        // Exchange code for session
-        console.log('[AUTH/CALLBACK] Exchanging code for session...')
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        // Set the session with our manually obtained tokens
+        const { error } = await supabase.auth.setSession({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+        })
 
-        if (!error) {
-            console.log('[AUTH/CALLBACK] Exchange successful! Redirecting to:', next)
-            return NextResponse.redirect(`https://stayfitwithai.com${next}`)
+        if (error) {
+            console.error('[AUTH/CALLBACK] setSession error:', error.message)
+            return NextResponse.redirect(`https://stayfitwithai.com/login?error=${encodeURIComponent(error.message)}`)
         }
 
-        console.error('[AUTH/CALLBACK] Exchange error:', error.message)
-        return NextResponse.redirect(`https://stayfitwithai.com/login?error=${encodeURIComponent(error.message)}`)
+        console.log('[AUTH/CALLBACK] Session set successfully! Redirecting to:', next)
+
+        // Delete the verifier cookie since we're done with it
+        try {
+            cookieStore.delete(verifierCookie.name)
+        } catch {
+            // Ignore
+        }
+
+        return NextResponse.redirect(`https://stayfitwithai.com${next}`)
     }
 
     // No code provided
