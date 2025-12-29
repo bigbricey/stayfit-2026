@@ -24,6 +24,18 @@ export async function GET(request: Request) {
         const verifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
         console.log('[AUTH/CALLBACK] Code verifier found:', !!verifierCookie)
 
+        // Detailed value logging to diagnose quote/encoding issues
+        if (verifierCookie) {
+            const v = verifierCookie.value
+            console.log('[AUTH/CALLBACK] Verifier value length:', v.length)
+            console.log('[AUTH/CALLBACK] Verifier first char:', v.charAt(0), 'code:', v.charCodeAt(0))
+            console.log('[AUTH/CALLBACK] Verifier last char:', v.charAt(v.length - 1), 'code:', v.charCodeAt(v.length - 1))
+            console.log('[AUTH/CALLBACK] Starts with quote:', v.startsWith('"'))
+            console.log('[AUTH/CALLBACK] Ends with quote:', v.endsWith('"'))
+            console.log('[AUTH/CALLBACK] Starts with %22:', v.startsWith('%22'))
+            console.log('[AUTH/CALLBACK] Sample value:', v.substring(0, 20) + '...')
+        }
+
         // Create server client for exchange
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +43,20 @@ export async function GET(request: Request) {
             {
                 cookies: {
                     getAll() {
-                        return cookieStore.getAll()
+                        // Strip quotes and decode URL encoding from cookie values
+                        // This fixes the "PKCE code verifier not found" issue
+                        return cookieStore.getAll().map(cookie => {
+                            let value = cookie.value
+                            // Decode URL encoding first
+                            try {
+                                value = decodeURIComponent(value)
+                            } catch {
+                                // Value wasn't URL encoded
+                            }
+                            // Strip leading/trailing quotes
+                            value = value.replace(/^"|"$/g, '')
+                            return { ...cookie, value }
+                        })
                     },
                     setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
                         try {
