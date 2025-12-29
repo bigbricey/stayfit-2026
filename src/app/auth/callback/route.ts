@@ -47,17 +47,20 @@ export async function GET(request: Request) {
         // MANUAL TOKEN EXCHANGE - bypass the SDK's broken cookie reading
         console.log('[AUTH/CALLBACK] Performing MANUAL token exchange')
 
-        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+        // Use form-urlencoded as per Supabase Auth API spec
+        const tokenBody = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            code_verifier: cleanVerifier,
+        })
+
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
             },
-            body: JSON.stringify({
-                auth_code: code,
-                code_verifier: cleanVerifier,
-            }),
+            body: tokenBody.toString(),
         })
 
         if (!tokenResponse.ok) {
