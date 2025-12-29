@@ -65,6 +65,8 @@ export async function GET(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 
     console.log('[AUTH/CALLBACK] API key length:', apiKey.length)
+    console.log('[AUTH/CALLBACK] API key starts:', apiKey.substring(0, 15))
+    console.log('[AUTH/CALLBACK] API key ends:', apiKey.substring(apiKey.length - 15))
     console.log('[AUTH/CALLBACK] Supabase URL:', supabaseUrl)
 
     const tokenBody = new URLSearchParams({

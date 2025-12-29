@@ -62,21 +62,27 @@
 | 51 | Dec 28 19:05 | **Test: Quote stripping** | - | ❌ STILL FAILS! Logs show: first char `"`, last char `"`, starts with quote: true |
 | 52 | Dec 28 19:10 | **Add debug logging inside getAll()** | `a180c34` | Log original vs processed value to verify stripping works |
 | 53 | Dec 28 19:15 | **Test: getAll logging** | - | 🔥 **CRITICAL FINDING**: Logs NEVER appear! SDK is NOT calling my getAll() function! |
+| 54 | Dec 28 19:45 | **Manual PKCE Token Exchange** | `5569a48` | Bypass SDK entirely - fetch Supabase `/auth/v1/token` directly with cleaned verifier |
+| 55 | Dec 28 20:00 | **Fix Token API format** | - | Use `grant_type=authorization_code`, `application/x-www-form-urlencoded`, `code` field |
+| 56 | Dec 28 20:15 | **Test: Manual Exchange** | - | ❌ 401 "Invalid API key" error |
+| 57 | Dec 28 20:20 | **Add API key logging** | - | API key length: 31 chars, starts with "NEXT_PUBLIC_SUPABASE" |
+| 58 | Dec 28 21:19 | **🔥 ENV VAR SET TO OWN NAME!** | - | Netlify `NEXT_PUBLIC_SUPABASE_ANON_KEY` was set to `"NEXT_PUBLIC_SUPABASE_ANON_KEY"` (its own name!) |
+| 59 | Dec 28 21:20 | **Fixed env var (or so we thought)** | - | Updated to actual JWT key |
+| 60 | Dec 28 20:37 | **Deep Think: Middleware Trap** | - | Already fixed - `auth/callback` excluded in matcher |
+| 61 | Dec 28 20:40 | **Added trailing slash redirect URL** | - | Added `https://stayfitwithai.com/auth/callback/` to Supabase |
+| 62 | Dec 28 20:51 | **Deep Think: Debug Trap** | `18037ac` | Show errors as JSON instead of redirecting (break the loop) |
+| 63 | Dec 29 04:15 | **Test: After sleep** | - | ❌ STILL "Invalid API key" |
+| 64 | Dec 29 04:18 | **🔥🔥 ENV VAR CORRUPTED!** | - | JWT had `NEXT_PUBLIC_SUPABASE_ANON_KEY` appended to end! |
+| 65 | Dec 29 04:20 | **Fixed env var PROPERLY** | - | Cleared and pasted clean JWT, verified starts with `eyJ` ends with `Zvk` |
+| 66 | Dec 29 04:21 | **Triggered clean deploy** | - | Deploy without cache to pick up corrected env var |
 
 ---
 
-## 🔥 CURRENT BLOCKER (Dec 28 19:36)
+## 🔥 CURRENT STATUS (Dec 29 04:23)
 
-**The Supabase SDK (`@supabase/ssr`) is NOT calling the custom `getAll()` function provided to `createServerClient`.**
+**Awaiting test after deploy completes.** The `NEXT_PUBLIC_SUPABASE_ANON_KEY` was corrupted with extra text appended. Now fixed.
 
-Evidence:
-- Debug logs inside `getAll()` never appear in Netlify function logs
-- Cookie IS received by server (shown in manual `cookieStore.getAll()` call)
-- Cookie IS quote-wrapped: `"verifier_value_here"`
-- Manual logging shows `Code verifier found: true`
-- But `exchangeCodeForSession` fails with "PKCE code verifier not found in storage"
-
-This means the SDK is using some internal cookie access mechanism that bypasses our configuration.
+The callback route is in "debug trap" mode - shows JSON errors instead of redirecting, so we can see exactly what fails.
 
 ---
 
@@ -85,18 +91,17 @@ This means the SDK is using some internal cookie access mechanism that bypasses 
 | Item | Value | Verified |
 |------|-------|----------|
 | **Supabase Site URL** | `https://stayfitwithai.com` | Dec 28 00:15 |
-| **Supabase Redirect URLs** | `https://stayfitwithai.com/auth/callback`, `https://stayfitwithai.com/**` | Dec 28 00:15 |
+| **Supabase Redirect URLs** | Includes trailing slash version | Dec 28 20:40 |
 | **Google Console Redirect** | Points to Supabase (`[project].supabase.co/auth/v1/callback`) | Dec 27 |
 | **Middleware excludes callback** | `auth/callback` in matcher exclusion | Dec 28 00:00 |
 | **No conflicting page.tsx** | Only `route.ts` in `/auth/callback/` | Dec 28 00:12 |
-| **Netlify env vars** | `NEXT_PUBLIC_SUPABASE_URL` and `ANON_KEY` present | Dec 28 19:19 |
-| **Supabase Implicit Flow** | NOT enabled (no checkbox exists) | Dec 28 19:19 |
+| **Netlify env vars** | Both present AND correctly valued | Dec 29 04:21 ✅ |
 
 ---
 
-## Next Steps
+## Key Learnings
 
-1. **Bypass SDK cookie reading entirely** - Manually preprocess the cookie value BEFORE creating the Supabase client
-2. **Override the verifier in the request** - Inject the cleaned value into storage/request
-3. **Escalate to Supabase** - This may be an SDK bug with Next.js 14 / Netlify
+1. **Variable Name Trap**: Netlify env var was set to its own name as value
+2. **Corrupted Value**: Even after "fixing", extra text got appended to JWT
+3. **Debug Trap Pattern**: Show errors as JSON instead of redirecting breaks the loop
 
