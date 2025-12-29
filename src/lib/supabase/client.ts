@@ -6,10 +6,12 @@ export function createClient() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             auth: {
-                // Use implicit flow to avoid PKCE code_verifier issues
-                flowType: 'implicit',
-                // Detect session from URL hash after OAuth redirect
-                detectSessionInUrl: true,
+                // Use PKCE flow (default)
+                flowType: 'pkce',
+                // Store session in localStorage
+                persistSession: true,
+                // Debug mode
+                debug: true,
             },
         }
     );
