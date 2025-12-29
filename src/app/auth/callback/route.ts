@@ -46,6 +46,12 @@ export async function GET(request: Request) {
 
         // MANUAL TOKEN EXCHANGE - bypass the SDK's broken cookie reading
         console.log('[AUTH/CALLBACK] Performing MANUAL token exchange')
+        const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        console.log('[AUTH/CALLBACK] API key length:', apiKey.length)
+        console.log('[AUTH/CALLBACK] API key first 10 chars:', apiKey.substring(0, 10))
+        console.log('[AUTH/CALLBACK] API key last 10 chars:', apiKey.substring(apiKey.length - 10))
+        console.log('[AUTH/CALLBACK] Supabase URL:', supabaseUrl)
 
         // Use form-urlencoded as per Supabase Auth API spec
         const tokenBody = new URLSearchParams({
