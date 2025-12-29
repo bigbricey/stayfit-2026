@@ -1,7 +1,7 @@
 # Stay Fit with AI: Auth Fix Attempt Log
 
 > **Purpose**: Track EVERY fix attempt to prevent repeating failed solutions.
-> **Started**: Dec 26, 2025 | **Hours Spent**: 30+
+> **Started**: Dec 26, 2025 | **Hours Spent**: 45+
 
 ---
 
@@ -52,7 +52,31 @@
 | 41 | Dec 28 02:14 | **Debug: Heavy URL logging** | `d271881` | Added 3-second delay to show full URL/hash/search on screen |
 | 42 | Dec 28 17:35 | **Test: After break** | - | User sees "no authorization token" message, still loops back |
 | 43 | Dec 28 22:45 | **🔍 Browser test: Tokens ARE in hash!** | - | access_token present but getSession() returns null. Need setSession() |
-| 44 | Dec 28 22:47 | **FIX: Use setSession() for implicit flow** | (pending) | Changed callback to extract tokens from hash and call setSession() |
+| 44 | Dec 28 22:47 | **FIX: Use setSession() for implicit flow** | - | Changed callback to extract tokens from hash and call setSession() |
+| 45 | Dec 28 18:30 | **True Implicit Flow with @supabase/supabase-js** | `d9f3274` | Used `createClient` with `flowType: 'implicit'`. Tokens NOW in hash! But 401 Unauthorized error |
+| 46 | Dec 28 18:35 | **Use detectSessionInUrl auto-detection** | `2e843f8` | Removed manual setSession, let SDK auto-detect. Still fails - 401 error |
+| 47 | Dec 28 18:45 | **Deep Think Consult** | - | Expert says: Implicit Flow hash is NEVER sent to server. Use PKCE with @supabase/ssr correctly |
+| 48 | Dec 28 18:50 | **Correct PKCE Pattern**: client init + server callback | `d2977b3` | Client `createBrowserClient` for init, server `createServerClient` for exchange |
+| 49 | Dec 28 18:55 | **Test: Correct PKCE** | - | ❌ STILL FAILS! Cookie is set, server receives it, but SDK says "not found in storage" |
+| 50 | Dec 28 19:00 | **Add quote-stripping to getAll()** | `9cce1ed` | Strip `"` and URL-decode cookie values. Cookie value confirmed: `"verifier"` format |
+| 51 | Dec 28 19:05 | **Test: Quote stripping** | - | ❌ STILL FAILS! Logs show: first char `"`, last char `"`, starts with quote: true |
+| 52 | Dec 28 19:10 | **Add debug logging inside getAll()** | `a180c34` | Log original vs processed value to verify stripping works |
+| 53 | Dec 28 19:15 | **Test: getAll logging** | - | 🔥 **CRITICAL FINDING**: Logs NEVER appear! SDK is NOT calling my getAll() function! |
+
+---
+
+## 🔥 CURRENT BLOCKER (Dec 28 19:36)
+
+**The Supabase SDK (`@supabase/ssr`) is NOT calling the custom `getAll()` function provided to `createServerClient`.**
+
+Evidence:
+- Debug logs inside `getAll()` never appear in Netlify function logs
+- Cookie IS received by server (shown in manual `cookieStore.getAll()` call)
+- Cookie IS quote-wrapped: `"verifier_value_here"`
+- Manual logging shows `Code verifier found: true`
+- But `exchangeCodeForSession` fails with "PKCE code verifier not found in storage"
+
+This means the SDK is using some internal cookie access mechanism that bypasses our configuration.
 
 ---
 
@@ -65,36 +89,14 @@
 | **Google Console Redirect** | Points to Supabase (`[project].supabase.co/auth/v1/callback`) | Dec 27 |
 | **Middleware excludes callback** | `auth/callback` in matcher exclusion | Dec 28 00:00 |
 | **No conflicting page.tsx** | Only `route.ts` in `/auth/callback/` | Dec 28 00:12 |
-| **Supabase Provider Callback** | `https://xyqdmmhgztyncthnngmw.supabase.co/auth/v1/callback` | Dec 28 00:58 |
-| **Login page redirectTo** | `${origin}/auth/callback` (origin = `https://stayfitwithai.com`) | Dec 28 00:58 |
-| **WWW Redirect URL in allowlist** | `https://www.stayfitwithai.com/auth/callback` - PRESENT | Dec 28 01:14 |
-
----
-
-## Root Cause Hypotheses (Remaining)
-
-| # | Hypothesis | Status |
-|---|------------|--------|
-| 1 | ~~Supabase ignoring redirectTo~~ | ❌ RULED OUT - All configs verified correct |
-| 2 | ~~Netlify build not deploying latest code~~ | ❌ RULED OUT - `8f5d0ab` now deployed |
-| 3 | **Tracer bullet should fire but doesn't** | 🔍 CRITICAL - route.ts deployed but not executing |
-| 4 | exchangeCodeForSession failing silently | 🔍 Can't test until route executes |
-| 5 | Cookie not readable during exchange | 🔍 Can't test until route executes |
-
----
-
-## What We Know For Sure
-
-- `code-verifier` cookie IS being set during login.
-- `access_token` and `refresh_token` cookies are NOT being set after callback.
-- User lands on `/dashboard` with no session.
-- Tracer bullet IS in deployed code but does NOT fire.
-- All Supabase configs verified correct (www and non-www versions present).
+| **Netlify env vars** | `NEXT_PUBLIC_SUPABASE_URL` and `ANON_KEY` present | Dec 28 19:19 |
+| **Supabase Implicit Flow** | NOT enabled (no checkbox exists) | Dec 28 19:19 |
 
 ---
 
 ## Next Steps
 
-1. **Complete Tracer Bullet Test** → Confirm if callback route is hit.
-2. If NOT hit → Problem is Supabase config (redirectTo being ignored).
-3. If hit → Problem is exchangeCodeForSession failing.
+1. **Bypass SDK cookie reading entirely** - Manually preprocess the cookie value BEFORE creating the Supabase client
+2. **Override the verifier in the request** - Inject the cleaned value into storage/request
+3. **Escalate to Supabase** - This may be an SDK bug with Next.js 14 / Netlify
+

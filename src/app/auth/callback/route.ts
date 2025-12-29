@@ -20,52 +20,53 @@ export async function GET(request: Request) {
         const allCookies = cookieStore.getAll()
         console.log('[AUTH/CALLBACK] All cookies:', allCookies.map(c => c.name))
 
-        // Check for code verifier
+        // Find and FIX the code verifier cookie BEFORE creating Supabase client
         const verifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
-        console.log('[AUTH/CALLBACK] Code verifier found:', !!verifierCookie)
 
-        // Detailed value logging to diagnose quote/encoding issues
         if (verifierCookie) {
-            const v = verifierCookie.value
-            console.log('[AUTH/CALLBACK] Verifier value length:', v.length)
-            console.log('[AUTH/CALLBACK] Verifier first char:', v.charAt(0), 'code:', v.charCodeAt(0))
-            console.log('[AUTH/CALLBACK] Verifier last char:', v.charAt(v.length - 1), 'code:', v.charCodeAt(v.length - 1))
-            console.log('[AUTH/CALLBACK] Starts with quote:', v.startsWith('"'))
-            console.log('[AUTH/CALLBACK] Ends with quote:', v.endsWith('"'))
-            console.log('[AUTH/CALLBACK] Starts with %22:', v.startsWith('%22'))
-            console.log('[AUTH/CALLBACK] Sample value:', v.substring(0, 20) + '...')
+            let cleanValue = verifierCookie.value
+            console.log('[AUTH/CALLBACK] Original verifier value:', cleanValue.substring(0, 30) + '...')
+
+            // Decode URL encoding first
+            try {
+                cleanValue = decodeURIComponent(cleanValue)
+                console.log('[AUTH/CALLBACK] After URL decode:', cleanValue.substring(0, 30) + '...')
+            } catch {
+                console.log('[AUTH/CALLBACK] URL decode failed, using original')
+            }
+
+            // Strip leading/trailing quotes
+            if (cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
+                cleanValue = cleanValue.slice(1, -1)
+                console.log('[AUTH/CALLBACK] After quote strip:', cleanValue.substring(0, 30) + '...')
+            }
+
+            // Overwrite the cookie with the cleaned value directly in the cookie store
+            console.log('[AUTH/CALLBACK] Overwriting cookie with cleaned value')
+            try {
+                cookieStore.set(verifierCookie.name, cleanValue, {
+                    path: '/',
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'lax'
+                })
+                console.log('[AUTH/CALLBACK] Cookie overwritten successfully')
+            } catch (e) {
+                console.error('[AUTH/CALLBACK] Failed to overwrite cookie:', e)
+            }
+        } else {
+            console.log('[AUTH/CALLBACK] No verifier cookie found')
         }
 
-        // Create server client for exchange
+        // Create server client for exchange AFTER fixing the cookie
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
                     getAll() {
-                        // Strip quotes and decode URL encoding from cookie values
-                        // This fixes the "PKCE code verifier not found" issue
-                        const processed = cookieStore.getAll().map(cookie => {
-                            let value = cookie.value
-                            const originalValue = value
-                            // Decode URL encoding first
-                            try {
-                                value = decodeURIComponent(value)
-                            } catch {
-                                // Value wasn't URL encoded
-                            }
-                            // Strip leading/trailing quotes
-                            value = value.replace(/^"|"$/g, '')
-
-                            if (cookie.name.includes('code-verifier')) {
-                                console.log('[AUTH/CALLBACK] getAll processing verifier:')
-                                console.log('[AUTH/CALLBACK]   Original:', originalValue.substring(0, 30) + '...')
-                                console.log('[AUTH/CALLBACK]   Processed:', value.substring(0, 30) + '...')
-                                console.log('[AUTH/CALLBACK]   Still has quotes:', value.startsWith('"'))
-                            }
-                            return { ...cookie, value }
-                        })
-                        return processed
+                        // Return cookies as-is now since we already cleaned the verifier
+                        return cookieStore.getAll()
                     },
                     setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
                         try {
@@ -75,20 +76,18 @@ export async function GET(request: Request) {
                             })
                         } catch {
                             // The `setAll` method was called from a Server Component.
-                            // This can be ignored if you have middleware refreshing user sessions.
                         }
                     },
                 },
             }
         )
 
-        // Exchange code for session - this reads the verifier cookie automatically
+        // Exchange code for session
         console.log('[AUTH/CALLBACK] Exchanging code for session...')
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
             console.log('[AUTH/CALLBACK] Exchange successful! Redirecting to:', next)
-            // Use production URL explicitly
             return NextResponse.redirect(`https://stayfitwithai.com${next}`)
         }
 
