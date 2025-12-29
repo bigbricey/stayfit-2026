@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get('code')
     const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-    console.log('[AUTH/CALLBACK] ========== DEBUG VERSION ==========')
+    console.log('[AUTH/CALLBACK] ========== SUPABASE SSR VERSION ==========')
     console.log('[AUTH/CALLBACK] Full URL:', request.url)
     console.log('[AUTH/CALLBACK] Origin:', requestUrl.origin)
     console.log('[AUTH/CALLBACK] Code present:', !!code)
@@ -30,82 +30,17 @@ export async function GET(request: Request) {
     const allCookies = cookieStore.getAll()
     console.log('[AUTH/CALLBACK] All cookies:', allCookies.map(c => c.name))
 
-    // Find the code verifier cookie
-    const verifierCookie = allCookies.find(c => c.name.includes('code-verifier'))
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-    if (!verifierCookie) {
-        // THE TRAP: Show error as JSON, don't redirect
-        return NextResponse.json({
-            message: 'Authentication Failed - No Verifier Cookie',
-            error: 'PKCE code verifier cookie not found',
-            cookies_found: allCookies.map(c => c.name),
-            hint: 'This usually means www vs non-www domain mismatch, or cookies were blocked',
-        }, { status: 400 })
-    }
-
-    // Clean the verifier value
-    let cleanVerifier = verifierCookie.value
-    console.log('[AUTH/CALLBACK] Original verifier (first 20):', cleanVerifier.substring(0, 20))
-
-    try {
-        cleanVerifier = decodeURIComponent(cleanVerifier)
-    } catch {
-        // Not URL encoded
-    }
-
-    // Strip quotes
-    if (cleanVerifier.startsWith('"') && cleanVerifier.endsWith('"')) {
-        cleanVerifier = cleanVerifier.slice(1, -1)
-    }
-    console.log('[AUTH/CALLBACK] Cleaned verifier (first 20):', cleanVerifier.substring(0, 20))
-
-    // MANUAL TOKEN EXCHANGE
-    console.log('[AUTH/CALLBACK] Performing MANUAL token exchange')
-    const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-
-    console.log('[AUTH/CALLBACK] API key length:', apiKey.length)
-    console.log('[AUTH/CALLBACK] API key starts:', apiKey.substring(0, 15))
-    console.log('[AUTH/CALLBACK] API key ends:', apiKey.substring(apiKey.length - 15))
     console.log('[AUTH/CALLBACK] Supabase URL:', supabaseUrl)
+    console.log('[AUTH/CALLBACK] API key length:', supabaseKey?.length)
+    console.log('[AUTH/CALLBACK] API key starts:', supabaseKey?.substring(0, 15))
 
-    const tokenBody = new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        code_verifier: cleanVerifier,
-    })
-
-    const tokenResponse = await fetch(`${supabaseUrl}/auth/v1/token`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'apikey': apiKey,
-        },
-        body: tokenBody.toString(),
-    })
-
-    if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text()
-        console.error('[AUTH/CALLBACK] Token exchange failed:', tokenResponse.status, errorText)
-
-        // THE TRAP: Show error as JSON, don't redirect
-        return NextResponse.json({
-            message: 'Authentication Failed - Token Exchange Error',
-            status: tokenResponse.status,
-            error: errorText,
-            hint: 'Check if the code was already used (invalid_grant) or verifier mismatch',
-        }, { status: 400 })
-    }
-
-    const tokens = await tokenResponse.json()
-    console.log('[AUTH/CALLBACK] Token exchange successful!')
-    console.log('[AUTH/CALLBACK] Got access_token:', !!tokens.access_token)
-    console.log('[AUTH/CALLBACK] Got refresh_token:', !!tokens.refresh_token)
-
-    // Create Supabase client and set the session
+    // Create Supabase client with cookie handling
     const supabase = createServerClient(
         supabaseUrl,
-        apiKey,
+        supabaseKey,
         {
             cookies: {
                 getAll() {
@@ -118,40 +53,35 @@ export async function GET(request: Request) {
                             cookieStore.set(name, value, options)
                         })
                     } catch {
-                        // Ignore
+                        // This can be ignored in Server Components
                     }
                 },
             },
         }
     )
 
-    // Set the session
-    const { error } = await supabase.auth.setSession({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-    })
+    // USE THE OFFICIAL SUPABASE METHOD - this handles PKCE internally
+    console.log('[AUTH/CALLBACK] Calling exchangeCodeForSession...')
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-        console.error('[AUTH/CALLBACK] setSession error:', error.message)
+        console.error('[AUTH/CALLBACK] exchangeCodeForSession error:', error.message)
+        console.error('[AUTH/CALLBACK] Full error:', JSON.stringify(error, null, 2))
 
         // THE TRAP: Show error as JSON, don't redirect
         return NextResponse.json({
-            message: 'Authentication Failed - Session Error',
+            message: 'Authentication Failed - Code Exchange Error',
             error: error.message,
             details: error,
+            hint: 'This uses Supabase official exchangeCodeForSession method',
         }, { status: 400 })
     }
 
-    console.log('[AUTH/CALLBACK] Session set successfully!')
+    console.log('[AUTH/CALLBACK] Session exchange successful!')
+    console.log('[AUTH/CALLBACK] User ID:', data.session?.user?.id)
+    console.log('[AUTH/CALLBACK] Has access_token:', !!data.session?.access_token)
 
-    // Delete the verifier cookie
-    try {
-        cookieStore.delete(verifierCookie.name)
-    } catch {
-        // Ignore
-    }
-
-    // SUCCESS - Use requestUrl.origin to stay on same domain
+    // SUCCESS - Redirect to dashboard
     console.log('[AUTH/CALLBACK] Redirecting to:', `${requestUrl.origin}${next}`)
     return NextResponse.redirect(`${requestUrl.origin}${next}`)
 }
