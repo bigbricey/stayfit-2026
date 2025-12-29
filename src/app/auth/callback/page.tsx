@@ -1,69 +1,83 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AuthCallbackPage() {
     const [status, setStatus] = useState('Initializing...')
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
-    const searchParams = useSearchParams()
 
     useEffect(() => {
         const handleCallback = async () => {
-            console.log('[AUTH/CALLBACK] Client-side callback handler starting')
+            console.log('[AUTH/CALLBACK] Implicit flow callback handler starting')
+            console.log('[AUTH/CALLBACK] Full URL:', window.location.href)
+            console.log('[AUTH/CALLBACK] Hash:', window.location.hash)
 
-            const code = searchParams.get('code')
-            const next = searchParams.get('next') ?? '/dashboard'
+            setStatus('Processing authentication...')
 
-            console.log('[AUTH/CALLBACK] Code present:', !!code)
-            console.log('[AUTH/CALLBACK] Next:', next)
+            // Create client with implicit flow configuration
+            const supabase = createClient()
 
-            if (!code) {
-                setError('No authorization code in URL')
-                setStatus('Failed - No Code')
+            // For implicit flow, the session is in the URL hash
+            // The supabase client with detectSessionInUrl: true will handle it
+            // We just need to get the session
+
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+            if (sessionError) {
+                console.error('[AUTH/CALLBACK] Session error:', sessionError.message)
+                setError(sessionError.message)
+                setStatus('Failed - Session Error')
                 return
             }
 
-            setStatus('Exchanging code for session...')
-
-            // Use the BROWSER client - this CAN read the code verifier from localStorage
-            const supabase = createClient()
-
-            try {
-                const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-                if (exchangeError) {
-                    console.error('[AUTH/CALLBACK] Exchange error:', exchangeError.message)
-                    setError(exchangeError.message)
-                    setStatus('Failed - Exchange Error')
-                    return
-                }
-
-                console.log('[AUTH/CALLBACK] Session exchange successful!')
-                console.log('[AUTH/CALLBACK] User ID:', data.session?.user?.id)
+            if (session) {
+                console.log('[AUTH/CALLBACK] Session found!')
+                console.log('[AUTH/CALLBACK] User ID:', session.user?.id)
                 setStatus('Success! Redirecting...')
 
-                // Give a moment for the session to be stored, then redirect
+                // Redirect to dashboard
                 setTimeout(() => {
-                    router.push(next)
+                    router.push('/dashboard')
                 }, 500)
-
-            } catch (err: any) {
-                console.error('[AUTH/CALLBACK] Unexpected error:', err)
-                setError(err.message || 'Unknown error')
-                setStatus('Failed - Unexpected Error')
+                return
             }
+
+            // If no session yet, maybe we need to wait for the auth state change
+            console.log('[AUTH/CALLBACK] No session found, setting up auth listener')
+            setStatus('Waiting for authentication...')
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+                console.log('[AUTH/CALLBACK] Auth state change:', event)
+
+                if (event === 'SIGNED_IN' && currentSession) {
+                    console.log('[AUTH/CALLBACK] Sign in detected!')
+                    setStatus('Success! Redirecting...')
+                    subscription.unsubscribe()
+                    setTimeout(() => {
+                        router.push('/dashboard')
+                    }, 500)
+                }
+            })
+
+            // Give it 5 seconds before timing out
+            setTimeout(() => {
+                console.log('[AUTH/CALLBACK] Timeout reached')
+                setError('Authentication timed out. Please try again.')
+                setStatus('Failed - Timeout')
+                subscription.unsubscribe()
+            }, 5000)
         }
 
         handleCallback()
-    }, [searchParams, router])
+    }, [router])
 
     return (
         <div className="flex h-screen items-center justify-center bg-black text-white font-mono">
             <div className="text-center space-y-4 p-8 border border-cyan-900/50 bg-gray-950/80 max-w-md">
-                <div className="text-xs text-cyan-700/70 uppercase tracking-widest">v15.0.0-CLIENT-CALLBACK</div>
+                <div className="text-xs text-cyan-700/70 uppercase tracking-widest">v16.0.0-IMPLICIT-FLOW</div>
                 <h1 className="text-xl text-cyan-400">Authentication</h1>
                 <div className="text-cyan-500/80">{status}</div>
                 {error && (
