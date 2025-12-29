@@ -1,16 +1,13 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const handleLogin = async () => {
     console.log('[LOGIN] Starting PKCE OAuth flow')
 
-    // Use createBrowserClient from @supabase/ssr - this properly stores PKCE verifier in cookies
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    // Use the shared client utility - this ensures consistent cookie handling
+    const supabase = createClient()
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -42,7 +39,7 @@ export default function LoginPage() {
             <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
             <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">SYSTEM_LOGIN</span>
           </div>
-          <div className="text-[10px] text-cyan-700/70">v13.0.0-PKCE-CORRECT</div>
+          <div className="text-[10px] text-cyan-700/70">v14.0.0-SHARED-CLIENT</div>
         </div>
 
         {/* Content Area */}
@@ -63,7 +60,7 @@ export default function LoginPage() {
 
             <div className="p-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent w-full max-w-xs mx-auto" />
 
-            {/* Client-side OAuth with PKCE (via createBrowserClient) */}
+            {/* Client-side OAuth with PKCE (via shared client) */}
             <button
               onClick={handleLogin}
               className="group relative px-8 py-3 bg-cyan-950/30 hover:bg-cyan-900/40 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-100 transition-all duration-300 mx-auto block cursor-pointer"

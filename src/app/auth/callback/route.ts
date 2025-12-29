@@ -1,6 +1,5 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 // CRITICAL: Force Netlify to run this fresh every time.
 export const dynamic = 'force-dynamic'
@@ -10,7 +9,7 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get('code')
     const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-    console.log('[AUTH/CALLBACK] ========== SUPABASE SSR VERSION ==========')
+    console.log('[AUTH/CALLBACK] ========== SHARED CLIENT VERSION ==========')
     console.log('[AUTH/CALLBACK] Full URL:', request.url)
     console.log('[AUTH/CALLBACK] Origin:', requestUrl.origin)
     console.log('[AUTH/CALLBACK] Code present:', !!code)
@@ -24,41 +23,8 @@ export async function GET(request: Request) {
         }, { status: 400 })
     }
 
-    const cookieStore = await cookies()
-
-    // Log all cookies for debugging
-    const allCookies = cookieStore.getAll()
-    console.log('[AUTH/CALLBACK] All cookies:', allCookies.map(c => c.name))
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-    console.log('[AUTH/CALLBACK] Supabase URL:', supabaseUrl)
-    console.log('[AUTH/CALLBACK] API key length:', supabaseKey?.length)
-    console.log('[AUTH/CALLBACK] API key starts:', supabaseKey?.substring(0, 15))
-
-    // Create Supabase client with cookie handling
-    const supabase = createServerClient(
-        supabaseUrl,
-        supabaseKey,
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) => {
-                            console.log('[AUTH/CALLBACK] Setting cookie:', name)
-                            cookieStore.set(name, value, options)
-                        })
-                    } catch {
-                        // This can be ignored in Server Components
-                    }
-                },
-            },
-        }
-    )
+    // Use the shared server client utility
+    const supabase = await createClient()
 
     // USE THE OFFICIAL SUPABASE METHOD - this handles PKCE internally
     console.log('[AUTH/CALLBACK] Calling exchangeCodeForSession...')
@@ -73,7 +39,7 @@ export async function GET(request: Request) {
             message: 'Authentication Failed - Code Exchange Error',
             error: error.message,
             details: error,
-            hint: 'This uses Supabase official exchangeCodeForSession method',
+            hint: 'This uses Supabase official exchangeCodeForSession method with shared server client',
         }, { status: 400 })
     }
 
