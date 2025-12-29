@@ -45,8 +45,9 @@ export async function GET(request: Request) {
                     getAll() {
                         // Strip quotes and decode URL encoding from cookie values
                         // This fixes the "PKCE code verifier not found" issue
-                        return cookieStore.getAll().map(cookie => {
+                        const processed = cookieStore.getAll().map(cookie => {
                             let value = cookie.value
+                            const originalValue = value
                             // Decode URL encoding first
                             try {
                                 value = decodeURIComponent(value)
@@ -55,8 +56,16 @@ export async function GET(request: Request) {
                             }
                             // Strip leading/trailing quotes
                             value = value.replace(/^"|"$/g, '')
+
+                            if (cookie.name.includes('code-verifier')) {
+                                console.log('[AUTH/CALLBACK] getAll processing verifier:')
+                                console.log('[AUTH/CALLBACK]   Original:', originalValue.substring(0, 30) + '...')
+                                console.log('[AUTH/CALLBACK]   Processed:', value.substring(0, 30) + '...')
+                                console.log('[AUTH/CALLBACK]   Still has quotes:', value.startsWith('"'))
+                            }
                             return { ...cookie, value }
                         })
+                        return processed
                     },
                     setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
                         try {
