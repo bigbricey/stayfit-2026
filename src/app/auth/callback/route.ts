@@ -52,6 +52,7 @@ export async function GET(request: Request) {
             headers: {
                 'Content-Type': 'application/json',
                 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
             },
             body: JSON.stringify({
                 auth_code: code,
