@@ -6,8 +6,14 @@ export default function LoginPage() {
   const handleLogin = async () => {
     console.log('[LOGIN] Starting PKCE OAuth flow')
 
-    // Use the shared client utility - this ensures consistent cookie handling
+    // Debug: Check localStorage BEFORE
+    console.log('[LOGIN] localStorage BEFORE:', Object.keys(localStorage))
+
+    // Use the shared client utility
     const supabase = createClient()
+
+    // Log to confirm client is created
+    console.log('[LOGIN] Supabase client created')
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -15,7 +21,9 @@ export default function LoginPage() {
         redirectTo: 'https://stayfitwithai.com/auth/callback',
         queryParams: {
           prompt: 'select_account'
-        }
+        },
+        // Explicitly skip automatic redirect to check storage first
+        skipBrowserRedirect: true,
       }
     })
 
@@ -25,7 +33,20 @@ export default function LoginPage() {
       return
     }
 
+    // Debug: Check localStorage AFTER signInWithOAuth (before redirect)
+    console.log('[LOGIN] localStorage AFTER signInWithOAuth:', Object.keys(localStorage))
+    const supabaseKeys = Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('pkce') || k.includes('code'))
+    console.log('[LOGIN] Supabase-related keys:', supabaseKeys)
+    supabaseKeys.forEach(key => {
+      console.log(`[LOGIN] ${key} = ${localStorage.getItem(key)?.substring(0, 50)}...`)
+    })
+
     console.log('[LOGIN] OAuth initiated, redirecting to:', data?.url)
+
+    // Now manually redirect
+    if (data?.url) {
+      window.location.href = data.url
+    }
   }
 
   return (
@@ -39,7 +60,7 @@ export default function LoginPage() {
             <div className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />
             <span className="text-xs font-bold tracking-widest text-cyan-500/90 uppercase">SYSTEM_LOGIN</span>
           </div>
-          <div className="text-[10px] text-cyan-700/70">v14.0.0-SHARED-CLIENT</div>
+          <div className="text-[10px] text-cyan-700/70">v18.0.0-VERIFY-STORAGE</div>
         </div>
 
         {/* Content Area */}
