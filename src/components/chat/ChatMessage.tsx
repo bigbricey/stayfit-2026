@@ -1,7 +1,7 @@
 'use client';
 
 import ReactMarkdown from 'react-markdown';
-import { User, Sparkles } from 'lucide-react';
+import { User, Sparkles, Quote, Info } from 'lucide-react';
 import NutritionLabel from './NutritionLabel';
 
 interface Message {
@@ -48,6 +48,16 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                             thead: ({ node, ...props }) => <thead className="bg-[#2e2f30] text-gray-200 font-medium" {...props} />,
                             th: ({ node, ...props }) => <th className="px-5 py-3" {...props} />,
                             td: ({ node, ...props }) => <td className="px-5 py-3 border-t border-gray-800" {...props} />,
+                            blockquote: ({ node, children, ...props }) => (
+                                <div className="relative my-6 px-6 py-4 bg-emerald-500/5 border-l-4 border-emerald-500 rounded-r-xl group/quote">
+                                    <div className="absolute -top-3 left-4 bg-[#0a0b0d] px-2 text-emerald-500">
+                                        <Quote size={14} className="fill-emerald-500/20" />
+                                    </div>
+                                    <div className="text-gray-300 italic text-[0.95rem] leading-relaxed">
+                                        {children}
+                                    </div>
+                                </div>
+                            ),
                             pre: ({ node, children, ...props }) => {
                                 // Check if this is a nutrition code block
                                 const codeChild = node?.children?.[0] as any;

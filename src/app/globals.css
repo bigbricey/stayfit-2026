@@ -12,6 +12,9 @@
   --accent-primary: #22c55e;
   --accent-secondary: #f97316;
   --text-muted: #9ca3af;
+  --coach-confirm: #22c55e;
+  --coach-action: #3b82f6;
+  --coach-warning: #ef4444;
 }
 
 body {
@@ -55,16 +58,53 @@ body {
   margin-bottom: 0;
 }
 
+/* Scientific Insight Blockquotes */
+.prose blockquote {
+  border-left: 4px solid #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 1rem 1.25rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+  font-size: 0.9375rem;
+  color: #9ca3af;
+  margin: 1.5rem 0;
+}
+
+.prose blockquote p {
+  margin-bottom: 0 !important;
+}
+
+.prose blockquote p::before,
+.prose blockquote p::after {
+  content: none;
+}
+
 .prose strong {
   color: #f3f4f6;
 }
 
 /* Numbered section headers (bold paragraphs starting with numbers) */
-.prose p strong:first-child {
-  display: block;
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
+.prose h3 {
   color: #22c55e;
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.01em;
+}
+
+.prose h4 {
+  color: #f97316;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 1em;
+}
+
+.prose strong {
+  color: #fff;
+  font-weight: 600;
 }
 
 /* First paragraph doesn't need top margin */
@@ -73,7 +113,8 @@ body {
 }
 
 /* List items spacing */
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   margin-top: 0.75em;
   margin-bottom: 0.75em;
 }
