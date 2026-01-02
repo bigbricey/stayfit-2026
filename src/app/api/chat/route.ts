@@ -50,7 +50,8 @@ export async function POST(req: Request) {
     });
 
     // Model is configurable via OPENAI_MODEL env var (e.g., "google/gemini-2.5-pro")
-    const modelId = process.env.OPENAI_MODEL || 'openai/gpt-4o';
+    // Model is configurable via OPENAI_MODEL env var
+    const modelId = process.env.OPENAI_MODEL || 'x-ai/grok-4.1-fast';
 
     const result = await streamText({
         model: openrouter(modelId),
