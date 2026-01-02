@@ -57,7 +57,7 @@ export default function LoginPage() {
                 ? 'Invalid email or password. Do you need to create an account?'
                 : error.message);
         } else {
-            router.push('/dashboard');
+            router.push('/');
         }
         setLoading(false);
     };
@@ -80,7 +80,7 @@ export default function LoginPage() {
             // Let's check session or try standard login just to be safe/speedy
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                router.push('/dashboard');
+                router.push('/');
             } else {
                 setSuccessMsg("Account created! Please check your email for a confirmation link.");
             }
