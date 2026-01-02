@@ -18,6 +18,11 @@ export default function SettingsPage() {
     const [safetyFlags, setSafetyFlags] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Password Reset State
+    const [newPassword, setNewPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
     const supabase = createClient();
 
     useEffect(() => {
@@ -73,6 +78,23 @@ export default function SettingsPage() {
             alert('Settings saved (Demo Mode)');
         }
         setSaving(false);
+    };
+
+    const handleUpdatePassword = async () => {
+        if (!newPassword || newPassword.length < 6) {
+            alert("Password must be at least 6 characters");
+            return;
+        }
+        setPasswordLoading(true);
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+        if (error) {
+            alert(`Error updating password: ${error.message}`);
+        } else {
+            alert("✅ Password updated successfully!");
+            setNewPassword('');
+        }
+        setPasswordLoading(false);
     };
 
     if (loading) {
@@ -145,16 +167,46 @@ export default function SettingsPage() {
                         ))}
                     </div>
                 </div>
-
-                {/* Save Button */}
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
-                >
-                    {saving ? 'Saving...' : 'Save Settings'}
-                </button>
             </div>
+
+            {/* Account Security (Password Reset) */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                <h2 className="text-xl font-bold mb-4">🔐 Account Security</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">New Password</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="password"
+                                placeholder="Enter new password"
+                                className="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                            <button
+                                onClick={handleUpdatePassword}
+                                disabled={passwordLoading || !newPassword}
+                                className="bg-gray-800 hover:bg-gray-700 text-white font-bold px-6 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {passwordLoading ? 'Updating...' : 'Update'}
+                            </button>
+                        </div>
+                        <p className="text-gray-500 text-xs mt-2">
+                            If you just reset your password via email, enter your new desired password here to finalize the change.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
+            >
+                {saving ? 'Saving...' : 'Save Settings'}
+            </button>
         </div>
+        </div >
     );
 }

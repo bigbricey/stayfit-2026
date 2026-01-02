@@ -20,18 +20,24 @@ export default function LoginPage() {
         setSuccessMsg(null);
     };
 
-    const handleMagicLink = async () => {
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setErrorMsg("Please enter your email address first.");
+            return;
+        }
         setLoading(true);
         clearMessages();
-        console.log("Attempting Magic Link for:", email);
+        console.log("Requesting password reset for:", email);
 
-        const { error } = await supabase.auth.signInWithOtp({ email });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/auth/callback?next=/settings',
+        });
+
         if (error) {
-            console.error("Magic Link Error:", error);
+            console.error("Reset Password Error:", error);
             setErrorMsg(error.message);
         } else {
-            console.log("Magic Link sent.");
-            setSuccessMsg('✨ Magic Link sent! Check your email.');
+            setSuccessMsg('✅ Password reset email sent. Click the link in the email to set a new password.');
         }
         setLoading(false);
     };
@@ -98,8 +104,8 @@ export default function LoginPage() {
                         <button
                             onClick={() => { setView('login'); clearMessages(); }}
                             className={`flex-1 pb-3 text-lg font-semibold transition-colors ${view === 'login'
-                                    ? 'text-blue-500 border-b-2 border-blue-500'
-                                    : 'text-gray-500 hover:text-gray-300'
+                                ? 'text-blue-500 border-b-2 border-blue-500'
+                                : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
                             Log In
@@ -107,8 +113,8 @@ export default function LoginPage() {
                         <button
                             onClick={() => { setView('signup'); clearMessages(); }}
                             className={`flex-1 pb-3 text-lg font-semibold transition-colors ${view === 'signup'
-                                    ? 'text-emerald-500 border-b-2 border-emerald-500'
-                                    : 'text-gray-500 hover:text-gray-300'
+                                ? 'text-emerald-500 border-b-2 border-emerald-500'
+                                : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
                             Create Account
@@ -161,7 +167,7 @@ export default function LoginPage() {
                                     <input type="checkbox" defaultChecked className="mr-2 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500" />
                                     Remember me
                                 </label>
-                                <button type="button" onClick={handleMagicLink} className="text-blue-400 hover:text-blue-300">
+                                <button type="button" onClick={handleForgotPassword} className="text-blue-400 hover:text-blue-300">
                                     Forgot password?
                                 </button>
                             </div>
@@ -171,8 +177,8 @@ export default function LoginPage() {
                             type="submit"
                             disabled={loading || !email || !password}
                             className={`w-full font-bold py-3.5 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 ${view === 'login'
-                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
-                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(5,150,105,0.3)]'
+                                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(5,150,105,0.3)]'
                                 }`}
                         >
                             {loading ? 'Processing...' : (view === 'login' ? 'Log In' : 'Create Account')}
@@ -181,31 +187,22 @@ export default function LoginPage() {
 
                     {/* Footer / Demo Mode */}
                     <div className="mt-8 pt-6 border-t border-gray-800 text-center">
-                        <div className="text-xs text-gray-500 mb-4">OR</div>
-                        <div className="flex flex-col gap-3">
-                            <button
-                                type="button"
-                                onClick={handleMagicLink}
-                                disabled={loading || !email}
-                                className="w-full bg-gray-800/50 border border-gray-700 hover:bg-gray-800 text-gray-300 py-2.5 px-4 rounded-lg text-sm transition-colors"
-                            >
-                                ✨ Email Magic Link
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => router.push('/')} // Middleware might block this if not logged in, but useful for explicit demo intent if we enable it
-                                className="text-gray-500 hover:text-gray-300 text-xs mt-2"
-                            >
-                                Just looking? Ask for Demo Access
-                            </button>
-                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => router.push('/')} // Middleware might block this if not logged in, but useful for explicit demo intent if we enable it
+                            className="text-gray-500 hover:text-gray-300 text-xs mt-2"
+                        >
+                            Just looking? Ask for Demo Access
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                <div className="text-center text-xs text-gray-600">
-                    Protected by Supabase Auth and Netlify Edge.
-                </div>
+            <div className="text-center text-xs text-gray-600">
+                Protected by Supabase Auth and Netlify Edge.
             </div>
         </div>
+        </div >
     );
 }
