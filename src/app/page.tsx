@@ -78,6 +78,7 @@ export default function Chat() {
             // Fix: Use ref to get the LATEST conversation ID, not the one from closure capture
             const activeId = conversationIdRef.current;
             console.log('[onFinish] Called with activeId:', activeId, 'userId:', userId);
+            setDebugStatus(`onFinish: id=${activeId?.slice(0, 8) || 'null'}, user=${!!userId}, msgs=${messagesRef.current.length}`);
 
             if (activeId && userId) {
                 // Fix: Pass the current messages from ref, not stale closure
@@ -87,6 +88,7 @@ export default function Chat() {
                 loadConversations(userId);
             } else {
                 console.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
+                setDebugStatus(`SKIP: id=${activeId?.slice(0, 8) || 'null'}, user=${!!userId}`);
             }
         },
         onError: (e) => {
