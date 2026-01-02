@@ -237,25 +237,32 @@ export default function Chat() {
 
         console.log('[saveMessagesToDb] Saving', currentMessages.length, 'messages to conversation', conversationId);
 
-        // Get existing message IDs for this conversation
+        // Get existing messages for this conversation to check for duplicates by content
         const { data: existingMessages } = await supabase
             .from('messages')
-            .select('id')
+            .select('role, content')
             .eq('conversation_id', conversationId);
 
-        const existingIds = new Set(existingMessages?.map(m => m.id) || []);
+        // Create set of content signatures to detect duplicates
+        const existingSignatures = new Set(
+            existingMessages?.map(m => `${m.role}:${m.content?.slice(0, 100)}`) || []
+        );
 
-        // Filter to only new messages
-        const newMessages = currentMessages.filter(m => !existingIds.has(m.id));
+        // Filter to only new messages (not already saved, based on content)
+        const newMessages = currentMessages.filter(m =>
+            !existingSignatures.has(`${m.role}:${m.content?.slice(0, 100)}`)
+        );
 
         if (newMessages.length === 0) {
             console.log('[saveMessagesToDb] No new messages to save');
+            setDebugStatus('No new msgs to save');
             return;
         }
 
-        // Insert new messages
+        // Insert new messages - generate proper UUIDs since useChat IDs aren't valid UUIDs
+        // Track by content hash instead of ID to avoid duplicates
         const toInsert = newMessages.map(m => ({
-            id: m.id,
+            id: crypto.randomUUID(), // Generate proper UUID
             conversation_id: conversationId,
             role: m.role,
             content: m.content,
