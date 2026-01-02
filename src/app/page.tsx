@@ -65,16 +65,21 @@ export default function Chat() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
+    // Ref for stable message access in callbacks (prevents stale closure bug)
+    const messagesRef = useRef<typeof messages>([]);
+
     // AI Hook
     const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
         maxSteps: 3,
-        body: { demoConfig, conversationId: currentConversationId },
+        // Fix: Use function to get fresh conversationId on each request
+        body: () => ({ demoConfig, conversationId: conversationIdRef.current }),
         onFinish: async (message) => {
             // Fix: Use ref to get the LATEST conversation ID, not the one from closure capture
             const activeId = conversationIdRef.current;
 
             if (activeId && userId) {
-                await saveMessagesToDb(activeId);
+                // Fix: Pass the current messages from ref, not stale closure
+                await saveMessagesToDb(activeId, messagesRef.current);
                 // Refresh list
                 loadConversations(userId);
             } else {
@@ -137,6 +142,11 @@ export default function Chat() {
             });
         }
     }, [messages, userId, demoConfig]);
+
+    // Keep messagesRef in sync with messages state (prevents stale closure)
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Auto-scroll
     useEffect(() => {
@@ -201,8 +211,14 @@ export default function Chat() {
     };
 
     // Save messages to DB
-    const saveMessagesToDb = async (conversationId: string) => {
-        if (!userId || messages.length === 0) return;
+    // Fix: Accept messages as parameter to avoid stale closure issues
+    const saveMessagesToDb = async (conversationId: string, currentMessages: typeof messages) => {
+        if (!userId || currentMessages.length === 0) {
+            console.warn('[saveMessagesToDb] Skip: no user or no messages', { userId, msgCount: currentMessages.length });
+            return;
+        }
+
+        console.log('[saveMessagesToDb] Saving', currentMessages.length, 'messages to conversation', conversationId);
 
         // Get existing message IDs for this conversation
         const { data: existingMessages } = await supabase
@@ -213,9 +229,12 @@ export default function Chat() {
         const existingIds = new Set(existingMessages?.map(m => m.id) || []);
 
         // Filter to only new messages
-        const newMessages = messages.filter(m => !existingIds.has(m.id));
+        const newMessages = currentMessages.filter(m => !existingIds.has(m.id));
 
-        if (newMessages.length === 0) return;
+        if (newMessages.length === 0) {
+            console.log('[saveMessagesToDb] No new messages to save');
+            return;
+        }
 
         // Insert new messages
         const toInsert = newMessages.map(m => ({
@@ -226,10 +245,15 @@ export default function Chat() {
             tool_calls: m.toolInvocations || null,
         }));
 
-        await supabase.from('messages').insert(toInsert);
+        const { error } = await supabase.from('messages').insert(toInsert);
+        if (error) {
+            console.error('[saveMessagesToDb] Insert error:', error);
+        } else {
+            console.log('[saveMessagesToDb] Saved', toInsert.length, 'new messages');
+        }
 
         // Update conversation title if first user message (with weekday prefix)
-        const firstUserMessage = messages.find(m => m.role === 'user');
+        const firstUserMessage = currentMessages.find(m => m.role === 'user');
         if (firstUserMessage) {
             const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
             const snippet = firstUserMessage.content.slice(0, 35) + (firstUserMessage.content.length > 35 ? '...' : '');
