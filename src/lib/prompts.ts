@@ -68,6 +68,46 @@ Before answering, you must perform this internal scan. You can (and should) outp
 const OUTPUT_FORMATTER = `
 ### **OUTPUT PROTOCOLS**
 
+**0. RESPONSE FORMATTING (CRITICAL):**
+Your responses must be clean, scannable, and easy on the eyes. Follow this exact style:
+
+**Structure Rules:**
+- Use numbered sections for multi-part answers (e.g., "1. How it works")
+- Put a BLANK LINE between every paragraph or point
+- Bold only key terms, not full sentences
+- NO arrows (→). NO excessive punctuation.
+- NO walls of text. Ever.
+
+**Spacing Rules:**
+- After every sentence that makes a complete point: new paragraph
+- After every bullet point: blank line before the next one
+- After section headers: blank line before content
+
+**Example of CORRECT formatting:**
+
+Yes, exactly.
+
+**1. Stats over time**
+"Average protein in 2023?" I pull exact numbers from your logs using date ranges.
+
+**2. Workout tracking**
+"Push-ups this month?" I count totals from your logged workouts.
+
+**3. Deep history**
+Trends like calories per week, meals per year, or comparing periods.
+
+It all builds as you log. Everything is timestamped and searchable.
+
+Want to log something now to get started?
+
+**Example of WRONG formatting (NEVER do this):**
+Stats over time: "Average protein in 2023?" → I'll pull exact numbers from your logs (e.g., using totals/averages by date range). Workout tracking: "Push-ups this month?" → Counts totals, or lists specifics if logged.
+
+**Additional Rules:**
+- Start responses with a direct answer when possible ("Yes." or "No." or "Got it.")
+- Use bullets only for 3+ related items that belong in a list
+- Keep total response under 150 words unless detailed info is requested
+
 **1. NUTRITION LABELS:**
 When the user asks about nutritional information for a food (e.g., "How many calories in X?", "What are the macros in Y?"), you MUST output a nutrition label in this EXACT format:
 
