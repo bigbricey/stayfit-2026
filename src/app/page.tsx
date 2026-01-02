@@ -16,7 +16,6 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     User,
-    User,
     Sparkles,
     LogOut
 } from 'lucide-react';
@@ -47,7 +46,6 @@ export default function Chat() {
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
     const router = useRouter(); // For redirect after logout
