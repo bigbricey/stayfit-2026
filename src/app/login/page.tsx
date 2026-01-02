@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+    const [view, setView] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,11 +15,14 @@ export default function LoginPage() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    const handleMagicLink = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const clearMessages = () => {
         setErrorMsg(null);
         setSuccessMsg(null);
+    };
+
+    const handleMagicLink = async () => {
+        setLoading(true);
+        clearMessages();
         console.log("Attempting Magic Link for:", email);
 
         const { error } = await supabase.auth.signInWithOtp({ email });
@@ -27,124 +31,179 @@ export default function LoginPage() {
             setErrorMsg(error.message);
         } else {
             console.log("Magic Link sent.");
-            setSuccessMsg('Check your email for the login link!');
+            setSuccessMsg('✨ Magic Link sent! Check your email.');
         }
         setLoading(false);
     };
 
-    const handlePasswordLogin = async () => {
+    const handleLogin = async () => {
         setLoading(true);
-        setErrorMsg(null);
+        clearMessages();
 
-        // Try Login First
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
 
-        if (signInError) {
-            // If login fails, try Sign Up
-            console.log("Login failed, trying signup...", signInError.message);
-            const { error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-            });
-
-            if (signUpError) {
-                setErrorMsg(signUpError.message);
-            } else {
-                setSuccessMsg("Account created! Check email if confirmation is needed.");
-            }
+        if (error) {
+            console.error("Login Error:", error);
+            setErrorMsg(error.message === 'Invalid login credentials'
+                ? 'Invalid email or password. Do you need to create an account?'
+                : error.message);
         } else {
-            // Login Success
             router.push('/dashboard');
         }
         setLoading(false);
     };
 
+    const handleSignUp = async () => {
+        setLoading(true);
+        clearMessages();
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+        });
+
+        if (error) {
+            console.error("Signup Error:", error);
+            setErrorMsg(error.message);
+        } else {
+            setSuccessMsg("🎉 Account created! Loging you in...");
+            // Supabase sometimes logs in immediately after signup if email confirm is off
+            // Let's check session or try standard login just to be safe/speedy
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                router.push('/dashboard');
+            } else {
+                setSuccessMsg("Account created! Please check your email for a confirmation link.");
+            }
+        }
+        setLoading(false);
+    };
+
     return (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 text-white">
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 text-white font-sans">
             <div className="w-full max-w-md space-y-8">
-                {/* Header Omitted for brevity, assumed same */}
                 <div className="text-center">
-                    <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-emerald-500 mb-2">
+                    <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-emerald-500 mb-2 font-tracking-tighter">
                         StayFitWithAI
                     </h1>
                     <p className="text-gray-400 text-lg">The Metabolic Truth Engine</p>
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl">
+                <div className="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl overflow-hidden relative">
+                    {/* Tab Headers */}
+                    <div className="flex border-b border-gray-800 mb-6">
+                        <button
+                            onClick={() => { setView('login'); clearMessages(); }}
+                            className={`flex-1 pb-3 text-lg font-semibold transition-colors ${view === 'login'
+                                    ? 'text-blue-500 border-b-2 border-blue-500'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                        >
+                            Log In
+                        </button>
+                        <button
+                            onClick={() => { setView('signup'); clearMessages(); }}
+                            className={`flex-1 pb-3 text-lg font-semibold transition-colors ${view === 'signup'
+                                    ? 'text-emerald-500 border-b-2 border-emerald-500'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                        >
+                            Create Account
+                        </button>
+                    </div>
+
                     {/* Error/Success Feedback */}
                     {errorMsg && (
-                        <div id="error-message" className="mb-4 p-3 bg-red-900/50 border border-red-700 text-red-200 rounded text-sm">
-                            ⚠️ {errorMsg}
+                        <div className="mb-4 p-3 bg-red-900/40 border border-red-800 text-red-200 rounded text-sm flex items-center gap-2">
+                            ⚠️ <span>{errorMsg}</span>
                         </div>
                     )}
                     {successMsg && (
-                        <div id="success-message" className="mb-4 p-3 bg-green-900/50 border border-green-700 text-green-200 rounded text-sm">
-                            ✅ {successMsg}
+                        <div className="mb-4 p-3 bg-green-900/40 border border-green-800 text-green-200 rounded text-sm flex items-center gap-2">
+                            ✅ <span>{successMsg}</span>
                         </div>
                     )}
 
-                    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-5" onSubmit={(e) => {
+                        e.preventDefault();
+                        view === 'login' ? handleLogin() : handleSignUp();
+                    }}>
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
                             <input
                                 type="email"
                                 required
-                                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-600"
                                 placeholder="you@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Password (Optional for Magic Link)</label>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
                             <input
                                 type="password"
-                                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                required
+                                minLength={6}
+                                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder-gray-600"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
 
-                        <div className="flex flex-col gap-3">
-                            <button
-                                onClick={handleMagicLink}
-                                disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-all"
-                            >
-                                {loading ? 'Processing...' : '✨ Magic Link Login'}
-                            </button>
-
-                            <button
-                                onClick={handlePasswordLogin}
-                                disabled={loading || !password}
-                                className="w-full bg-gray-800 border border-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-all disabled:opacity-50"
-                            >
-                                🔑 Password Login / Sign Up
-                            </button>
-
-                            <div className="relative flex py-2 items-center">
-                                <div className="flex-grow border-t border-gray-800"></div>
-                                <span className="flex-shrink-0 mx-4 text-gray-600 text-xs">OR</span>
-                                <div className="flex-grow border-t border-gray-800"></div>
+                        {view === 'login' && (
+                            <div className="flex items-center justify-between text-sm">
+                                <label className="flex items-center text-gray-400 cursor-pointer">
+                                    <input type="checkbox" defaultChecked className="mr-2 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500" />
+                                    Remember me
+                                </label>
+                                <button type="button" onClick={handleMagicLink} className="text-blue-400 hover:text-blue-300">
+                                    Forgot password?
+                                </button>
                             </div>
+                        )}
 
-                            <button
-                                type="button"
-                                onClick={() => router.push('/')}
-                                className="w-full bg-gray-900 border border-gray-700 hover:bg-gray-800 text-gray-300 font-semibold py-3 px-4 rounded-lg transition-all hover:text-white"
-                            >
-                                👀 Just Looking? Try Demo Mode
-                            </button>
-                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading || !email || !password}
+                            className={`w-full font-bold py-3.5 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 ${view === 'login'
+                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(5,150,105,0.3)]'
+                                }`}
+                        >
+                            {loading ? 'Processing...' : (view === 'login' ? 'Log In' : 'Create Account')}
+                        </button>
                     </form>
 
-                    <div className="mt-6 text-center text-xs text-gray-500">
-                        By entering, you agree to the <span className="underline cursor-pointer">Science Protocols</span>.
+                    {/* Footer / Demo Mode */}
+                    <div className="mt-8 pt-6 border-t border-gray-800 text-center">
+                        <div className="text-xs text-gray-500 mb-4">OR</div>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                type="button"
+                                onClick={handleMagicLink}
+                                disabled={loading || !email}
+                                className="w-full bg-gray-800/50 border border-gray-700 hover:bg-gray-800 text-gray-300 py-2.5 px-4 rounded-lg text-sm transition-colors"
+                            >
+                                ✨ Email Magic Link
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/')} // Middleware might block this if not logged in, but useful for explicit demo intent if we enable it
+                                className="text-gray-500 hover:text-gray-300 text-xs mt-2"
+                            >
+                                Just looking? Ask for Demo Access
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                <div className="text-center text-xs text-gray-600">
+                    Protected by Supabase Auth and Netlify Edge.
                 </div>
             </div>
         </div>
