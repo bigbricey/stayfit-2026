@@ -76,14 +76,16 @@ export default function Chat() {
         onFinish: async (message) => {
             // Fix: Use ref to get the LATEST conversation ID, not the one from closure capture
             const activeId = conversationIdRef.current;
+            console.log('[onFinish] Called with activeId:', activeId, 'userId:', userId);
 
             if (activeId && userId) {
                 // Fix: Pass the current messages from ref, not stale closure
+                console.log('[onFinish] Saving messages, count:', messagesRef.current.length);
                 await saveMessagesToDb(activeId, messagesRef.current);
                 // Refresh list
                 loadConversations(userId);
             } else {
-                console.warn('Save skipped: missing ID or User', { activeId, userId });
+                console.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
             }
         },
         onError: (e) => {
@@ -278,17 +280,23 @@ export default function Chat() {
         e.preventDefault();
         if (!input.trim()) return;
 
+        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current });
+
         // Create conversation if needed
         let convId = currentConversationId;
         if (!convId && userId) {
+            console.log('[onSubmit] Creating new conversation...');
             convId = await createNewConversation();
+            console.log('[onSubmit] Created conversation:', convId);
             if (convId) {
                 setCurrentConversationId(convId);
                 // update ref immediately for this cycle
                 conversationIdRef.current = convId;
+                console.log('[onSubmit] Ref updated to:', conversationIdRef.current);
             }
         }
 
+        console.log('[onSubmit] Calling handleSubmit with convId:', convId, 'ref:', conversationIdRef.current);
         handleSubmit(e);
     };
 
