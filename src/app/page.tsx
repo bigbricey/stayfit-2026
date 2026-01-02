@@ -13,7 +13,7 @@ export default function Chat() {
         if (saved) setDemoConfig(JSON.parse(saved));
     }, []);
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
         maxSteps: 3,
         body: { demoConfig }, // Pass config to API
     });
@@ -253,6 +253,11 @@ export default function Chat() {
                         </svg>
                     </button>
                 </form>
+                {error && (
+                    <div className="mt-3 bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded-lg text-sm text-center max-w-3xl mx-auto">
+                        ⚠️ Error: {error.message || "An error occurred. Please try again."}
+                    </div>
+                )}
                 <div className="text-center mt-3 text-xs text-gray-600">
                     Powered by Metabolic Science • Not Medical Advice
                 </div>
