@@ -3,265 +3,527 @@
 import { useChat } from 'ai/react';
 import { useRef, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import ReactMarkdown from 'react-markdown';
+import Link from 'next/link';
+import {
+    SendHorizontal,
+    Mic,
+    Image as ImageIcon,
+    Plus,
+    MessageSquare,
+    Settings,
+    Search,
+    PanelLeftClose,
+    PanelLeftOpen,
+    User,
+    Sparkles
+} from 'lucide-react';
+
+// Types
+interface Conversation {
+    id: string;
+    title: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+interface DbMessage {
+    id: string;
+    conversation_id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    tool_calls: any;
+    created_at: string;
+}
 
 export default function Chat() {
+    // State
+    const [userId, setUserId] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string | null>(null);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
 
-    useEffect(() => {
-        // Load demo config on mount
-        const saved = localStorage.getItem('stayfit_demo_config');
-        if (saved) setDemoConfig(JSON.parse(saved));
-    }, []);
-
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
-        maxSteps: 3,
-        body: { demoConfig }, // Pass config to API
-    });
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [showHistory, setShowHistory] = useState(false);
-    const [history, setHistory] = useState<any[]>([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
     const supabase = createClient();
 
-    const [isDemo, setIsDemo] = useState(false);
+    // AI Hook
+    const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
+        maxSteps: 3,
+        body: { demoConfig, conversationId: currentConversationId },
+        onFinish: async (message) => {
+            // Save messages to DB after AI response completes
+            if (currentConversationId && userId) {
+                await saveMessagesToDb(currentConversationId);
+            }
+        }
+    });
 
+    // Initialize
+    useEffect(() => {
+        const init = async () => {
+            const saved = localStorage.getItem('stayfit_demo_config');
+            if (saved) setDemoConfig(JSON.parse(saved));
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setUserId(user.id);
+                // Fetch user name
+                const { data: profile } = await supabase
+                    .from('users_secure')
+                    .select('name')
+                    .eq('id', user.id)
+                    .single();
+                if (profile?.name) setUserName(profile.name);
+                await loadConversations(user.id);
+            }
+            setIsLoadingConversations(false);
+        };
+        init();
+    }, []);
+
+    // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    useEffect(() => {
-        checkUser();
-    }, []);
-
-    const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) setIsDemo(true);
-    };
-
-    const loadHistory = async () => {
-        if (isDemo) {
-            alert("History is disabled in Guest/Demo Mode. Sign in to access the Vault.");
-            return;
-        }
-        setLoadingHistory(true);
+    // Load conversations
+    const loadConversations = async (uid: string) => {
         const { data } = await supabase
-            .from('metabolic_logs')
+            .from('conversations')
             .select('*')
-            .order('logged_at', { ascending: false })
-            .limit(20);
-        setHistory(data || []);
-        setLoadingHistory(false);
-        setShowHistory(true);
+            .eq('user_id', uid)
+            .order('updated_at', { ascending: false });
+        setConversations(data || []);
     };
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/login';
+    // Create new conversation
+    const createNewConversation = async (): Promise<string | null> => {
+        if (!userId) return null;
+
+        const { data, error } = await supabase
+            .from('conversations')
+            .insert({ user_id: userId })
+            .select()
+            .single();
+
+        if (error || !data) {
+            console.error('Failed to create conversation:', error);
+            return null;
+        }
+
+        setConversations(prev => [data, ...prev]);
+        return data.id;
     };
+
+    // Load messages for a conversation
+    const loadConversation = async (conversationId: string) => {
+        setCurrentConversationId(conversationId);
+
+        const { data } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: true });
+
+        if (data) {
+            // Convert DB messages to useChat format
+            const chatMessages = data.map((m: DbMessage) => ({
+                id: m.id,
+                role: m.role as 'user' | 'assistant',
+                content: m.content,
+                toolInvocations: m.tool_calls,
+            }));
+            setMessages(chatMessages);
+        }
+    };
+
+    // Start new chat
+    const handleNewChat = () => {
+        setCurrentConversationId(null);
+        setMessages([]);
+    };
+
+    // Save messages to DB
+    const saveMessagesToDb = async (conversationId: string) => {
+        if (!userId || messages.length === 0) return;
+
+        // Get existing message IDs for this conversation
+        const { data: existingMessages } = await supabase
+            .from('messages')
+            .select('id')
+            .eq('conversation_id', conversationId);
+
+        const existingIds = new Set(existingMessages?.map(m => m.id) || []);
+
+        // Filter to only new messages
+        const newMessages = messages.filter(m => !existingIds.has(m.id));
+
+        if (newMessages.length === 0) return;
+
+        // Insert new messages
+        const toInsert = newMessages.map(m => ({
+            id: m.id,
+            conversation_id: conversationId,
+            role: m.role,
+            content: m.content,
+            tool_calls: m.toolInvocations || null,
+        }));
+
+        await supabase.from('messages').insert(toInsert);
+
+        // Update conversation title if first user message
+        const firstUserMessage = messages.find(m => m.role === 'user');
+        if (firstUserMessage) {
+            const title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '');
+            await supabase
+                .from('conversations')
+                .update({ title, updated_at: new Date().toISOString() })
+                .eq('id', conversationId);
+
+            // Update local state
+            setConversations(prev => prev.map(c =>
+                c.id === conversationId ? { ...c, title, updated_at: new Date().toISOString() } : c
+            ));
+        }
+    };
+
+    // Custom submit handler
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+
+        // Create conversation if needed
+        let convId = currentConversationId;
+        if (!convId && userId) {
+            convId = await createNewConversation();
+            if (convId) setCurrentConversationId(convId);
+        }
+
+        handleSubmit(e);
+    };
+
+    // Suggestion chips handler
+    const handleSuggestionClick = (text: string) => {
+        setInput(text);
+        // We can't automatically submit here easily because useChat hooks don't expose a 'submit custom text' easily without hacking input state. 
+        // But setting input allows user to just hit enter. 
+        // Actually, we can just call append if we want to bypass input, but let's stick to standard flow.
+        // Or better, let's auto focus and let them hit enter? Or mock the event. 
+        // For now, just set input is safer UXwise so they can edit.
+    };
+
+
+    // Group conversations by time (unchanged logic)
+    const groupConversations = (convs: Conversation[]) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today.getTime() - 86400000);
+        const weekAgo = new Date(today.getTime() - 7 * 86400000);
+        const monthAgo = new Date(today.getTime() - 30 * 86400000);
+
+        const groups: Record<string, Conversation[]> = {
+            'Today': [],
+            'Yesterday': [],
+            'Previous 7 days': [],
+            'Previous 30 days': [],
+            'Older': [],
+        };
+
+        convs.forEach(conv => {
+            const date = new Date(conv.updated_at);
+            if (date >= today) groups['Today'].push(conv);
+            else if (date >= yesterday) groups['Yesterday'].push(conv);
+            else if (date >= weekAgo) groups['Previous 7 days'].push(conv);
+            else if (date >= monthAgo) groups['Previous 30 days'].push(conv);
+            else groups['Older'].push(conv);
+        });
+
+        return groups;
+    };
+
+    const filteredConversations = searchQuery
+        ? conversations.filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+        : conversations;
+
+    const groupedConversations = groupConversations(filteredConversations);
+
+    // Sidebar Component
+    const Sidebar = () => (
+        <div className={`
+            ${showSidebar ? 'w-[300px]' : 'w-0'} 
+            bg-[#1e1f20] flex-shrink-0 transition-all duration-300 ease-in-out flex flex-col overflow-hidden
+        `}>
+            {/* New Chat & Toggle */}
+            <div className="p-4 flex items-center justify-between">
+                <button
+                    onClick={() => setShowSidebar(false)}
+                    className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-[#2e2f30]"
+                >
+                    <PanelLeftClose size={20} />
+                </button>
+                <div onClick={handleNewChat} className="cursor-pointer hover:bg-[#2e2f30] p-2 rounded-full text-gray-400 hover:text-white">
+                    <MessageSquare size={20} />
+                </div>
+            </div>
+
+            {/* New Chat Button Large */}
+            <div className="px-4 pb-2">
+                <button
+                    onClick={handleNewChat}
+                    className="w-full bg-[#2e2f30] hover:bg-[#3e3f40] text-gray-200 py-3 rounded-full flex items-center gap-3 px-4 transition-colors"
+                >
+                    <Plus size={18} />
+                    <span className="text-sm font-medium">New Chat</span>
+                </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-2">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 pl-10 focus:ring-0 focus:outline-none text-sm"
+                    />
+                </div>
+            </div>
+
+            {/* History List */}
+            <div className="flex-1 overflow-y-auto px-2 py-2">
+                {isLoadingConversations ? (
+                    <div className="text-center text-gray-600 text-xs py-4">Loading...</div>
+                ) : filteredConversations.length === 0 ? (
+                    <div className="text-center text-gray-600 text-xs py-4">No recent chats</div>
+                ) : (
+                    Object.entries(groupedConversations).map(([group, convs]) => (
+                        convs.length > 0 && (
+                            <div key={group} className="mb-4">
+                                <div className="text-[11px] font-medium text-gray-500 px-4 py-2 uppercase tracking-wide">
+                                    {group}
+                                </div>
+                                {convs.map(conv => (
+                                    <button
+                                        key={conv.id}
+                                        onClick={() => loadConversation(conv.id)}
+                                        className={`w-full text-left px-4 py-2 rounded-full text-sm truncate transition-colors ${currentConversationId === conv.id
+                                                ? 'bg-[#004a77] text-blue-100'
+                                                : 'text-gray-400 hover:bg-[#2e2f30] hover:text-gray-200'
+                                            }`}
+                                    >
+                                        {conv.title || 'New conversation'}
+                                    </button>
+                                ))}
+                            </div>
+                        )
+                    ))
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 mt-auto">
+                <Link href="/settings" className="flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#2e2f30] transition-colors text-sm">
+                    <Settings size={18} />
+                    <span>Settings</span>
+                </Link>
+                <div className="mt-2 flex items-center gap-3 text-gray-400 px-2 py-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="truncate">{userName || 'Guest User'}</span>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="flex flex-col h-screen bg-black text-gray-100 font-sans">
-            {/* Header */}
-            <header className="p-4 border-b border-gray-800 flex justify-between items-center">
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                    StayFitWithAI
-                </h1>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={loadHistory}
-                        className="text-xs text-gray-400 hover:text-white transition-colors px-3 py-1 border border-gray-700 rounded-full hover:border-gray-500"
-                    >
-                        📜 History
-                    </button>
-                    <button
-                        onClick={handleLogout}
-                        className="text-xs text-gray-500 hover:text-red-400 transition-colors"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </header>
+        <div className="flex h-screen bg-[#131314] text-[#e3e3e3] font-sans selection:bg-blue-500/30">
+            <Sidebar />
 
-            {/* Main Content */}
-            <div className="flex-1 overflow-hidden flex">
-                {/* Chat Area */}
-                <div className={`flex-1 overflow-y-auto p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-6 transition-all ${showHistory ? 'pr-80' : ''}`}>
-                    {messages.length === 0 && !showHistory && (
-                        <div className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-70">
-                            <div className="text-7xl">🧬</div>
-                            <div className="space-y-2">
-                                <p className="text-2xl font-light">What did you fuel your body with today?</p>
-                                <p className="text-sm text-gray-500">Try: "I had a 10oz ribeye with butter" or "Switch me to Keto mode"</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 mt-6 text-sm">
-                                <button
-                                    onClick={() => handleSubmit({ preventDefault: () => { }, target: { elements: { input: { value: 'Show me my macros for today' } } } } as any)}
-                                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:bg-gray-800 transition-colors text-left"
-                                >
-                                    <div className="text-blue-400 mb-1">📊</div>
-                                    <div className="font-medium">Today's Macros</div>
-                                </button>
-                                <button
-                                    onClick={() => handleSubmit({ preventDefault: () => { }, target: { elements: { input: { value: 'Set a goal: 150g protein daily' } } } } as any)}
-                                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:bg-gray-800 transition-colors text-left"
-                                >
-                                    <div className="text-emerald-400 mb-1">🎯</div>
-                                    <div className="font-medium">Set a Goal</div>
-                                </button>
-                                <button
-                                    onClick={() => handleSubmit({ preventDefault: () => { }, target: { elements: { input: { value: 'What diet mode am I on?' } } } } as any)}
-                                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:bg-gray-800 transition-colors text-left"
-                                >
-                                    <div className="text-yellow-400 mb-1">⚙️</div>
-                                    <div className="font-medium">My Profile</div>
-                                </button>
-                                <button
-                                    onClick={loadHistory}
-                                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:bg-gray-800 transition-colors text-left"
-                                >
-                                    <div className="text-purple-400 mb-1">📜</div>
-                                    <div className="font-medium">View Vault</div>
-                                </button>
-                            </div>
-                        </div>
-                    )}
+            {/* Main Canvas */}
+            <main className="flex-1 flex flex-col relative min-w-0">
 
-                    {messages.map((m) => (
-                        <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] ${m.role === 'user' ? '' : 'w-full'}`}>
-                                <div className={`rounded-2xl px-5 py-3 ${m.role === 'user'
-                                    ? 'bg-gray-800 text-white'
-                                    : 'bg-transparent text-gray-100 border border-gray-800'
-                                    }`}>
-                                    {m.content && (
-                                        <div className="whitespace-pre-wrap prose prose-invert prose-sm max-w-none">
-                                            {m.content}
+                {/* Mobile Header / Sidebar Toggle */}
+                {!showSidebar && (
+                    <div className="absolute top-4 left-4 z-10">
+                        <button
+                            onClick={() => setShowSidebar(true)}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-[#2e2f30] rounded-full transition-colors"
+                        >
+                            <PanelLeftOpen size={24} />
+                        </button>
+                    </div>
+                )}
+
+                {/* Chat Scroll Area */}
+                <div className="flex-1 overflow-y-auto scroll-smooth">
+                    <div className="max-w-4xl mx-auto px-4 w-full h-full flex flex-col">
+
+                        {/* Empty State / Welcome */}
+                        {messages.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] space-y-8 animate-in fade-in duration-700">
+                                <div className="space-y-2 text-center">
+                                    <h1 className="text-5xl font-medium tracking-tight bg-gradient-to-br from-[#4285f4] to-[#d96570] bg-clip-text text-transparent pb-1">
+                                        Hello, {userName?.split(' ')[0] || 'Friend'}
+                                    </h1>
+                                    <p className="text-2xl text-[#c4c7c5] font-light">
+                                        How can I help you optimize today?
+                                    </p>
+                                </div>
+
+                                {/* Suggestion Chips */}
+                                <div className="flex gap-3 overflow-x-auto max-w-full pb-2 px-2 no-scrollbar">
+                                    {[
+                                        { icon: '🥗', text: 'Log my breakfast' },
+                                        { icon: '💪', text: 'Plan a workout' },
+                                        { icon: '🥩', text: 'Is this keto safe?' },
+                                        { icon: '📊', text: 'Check my macros' }
+                                    ].map((chip, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleSuggestionClick(chip.text)}
+                                            className="flex items-center gap-2 px-5 py-3 bg-[#1e1f20] hover:bg-[#2e2f30] rounded-xl text-sm text-gray-200 transition-colors whitespace-nowrap border border-transparent hover:border-gray-700"
+                                        >
+                                            <span>{chip.icon}</span>
+                                            <span>{chip.text}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="pt-20 pb-40 space-y-8">
+                                {messages.map((m) => (
+                                    <div key={m.id} className="flex gap-4 group">
+                                        {/* Avatar */}
+                                        <div className="flex-shrink-0 mt-1">
+                                            {m.role === 'user' ? (
+                                                <div className="w-8 h-8 rounded-full bg-[#2e2f30] flex items-center justify-center overflow-hidden">
+                                                    {userId ? <User size={16} className="text-gray-300" /> : <span className="text-xs">You</span>}
+                                                </div>
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4285f4] to-[#9b72cb] flex items-center justify-center animate-in zoom-in duration-300">
+                                                    <Sparkles size={16} className="text-white" />
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
 
-                                    {m.toolInvocations?.map((toolInvocation) => {
-                                        const toolCallId = toolInvocation.toolCallId;
-                                        if (toolInvocation.toolName === 'log_activity') {
-                                            if (!('result' in toolInvocation)) {
-                                                return (
-                                                    <div key={toolCallId} className="mt-3 flex items-center gap-2 text-yellow-500 text-sm animate-pulse">
-                                                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-ping"></div>
-                                                        VAULTING DATA...
-                                                    </div>
-                                                );
-                                            } else {
-                                                return (
-                                                    <div key={toolCallId} className="mt-3 flex items-center gap-2 text-emerald-500 text-sm font-mono">
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                        DATA SECURED IN VAULT
-                                                    </div>
-                                                );
-                                            }
-                                        }
-                                        if (toolInvocation.toolName === 'update_profile') {
-                                            if ('result' in toolInvocation) {
-                                                return (
-                                                    <div key={toolCallId} className="mt-3 flex items-center gap-2 text-blue-400 text-sm font-mono">
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                                                        </svg>
-                                                        PROFILE UPDATED
-                                                    </div>
-                                                );
-                                            }
-                                        }
-                                        return null;
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="font-medium text-sm text-gray-400">
+                                                {m.role === 'user' ? 'You' : 'StayFit Coach'}
+                                            </div>
+                                            <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-[#1e1e1e] max-w-none text-[#e3e3e3]">
+                                                <ReactMarkdown
+                                                    components={{
+                                                        table: ({ node, ...props }) => (
+                                                            <div className="overflow-x-auto my-4 rounded-xl border border-gray-800">
+                                                                <table className="w-full text-sm text-left bg-[#1e1f20]" {...props} />
+                                                            </div>
+                                                        ),
+                                                        thead: ({ node, ...props }) => <thead className="bg-[#2e2f30] text-gray-200 font-medium" {...props} />,
+                                                        th: ({ node, ...props }) => <th className="px-5 py-3" {...props} />,
+                                                        td: ({ node, ...props }) => <td className="px-5 py-3 border-t border-gray-800" {...props} />,
+                                                        code: ({ node, ...props }) => {
+                                                            // @ts-ignore
+                                                            const inline = props.inline
+                                                            return inline
+                                                                ? <code className="bg-[#2e2f30] px-1.5 py-0.5 rounded text-sm font-mono text-pink-300" {...props} />
+                                                                : <code {...props} />
+                                                        }
+                                                    }}
+                                                >
+                                                    {m.content}
+                                                </ReactMarkdown>
+                                            </div>
 
-                    {isLoading && (
-                        <div className="flex justify-start">
-                            <div className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-3 text-gray-400 text-sm flex items-center gap-2">
-                                <div className="flex gap-1">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                                </div>
-                                Analyzing metabolism...
-                            </div>
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* History Sidebar */}
-                {showHistory && (
-                    <div className="w-80 border-l border-gray-800 bg-gray-950 overflow-y-auto">
-                        <div className="p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-gray-950">
-                            <h2 className="font-bold text-lg">📜 Data Vault</h2>
-                            <button onClick={() => setShowHistory(false)} className="text-gray-500 hover:text-white">✕</button>
-                        </div>
-                        <div className="p-4 space-y-3">
-                            {loadingHistory && <div className="text-gray-500 text-sm animate-pulse">Loading...</div>}
-                            {history.map((log) => (
-                                <div key={log.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-sm">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${log.log_type === 'meal' ? 'bg-green-900 text-green-300' :
-                                            log.log_type === 'workout' ? 'bg-blue-900 text-blue-300' :
-                                                'bg-gray-800 text-gray-400'
-                                            }`}>
-                                            {log.log_type.toUpperCase()}
-                                        </span>
-                                        <span className="text-gray-600 text-xs">
-                                            {new Date(log.logged_at).toLocaleDateString()}
-                                        </span>
+                                            {/* Tool Logs */}
+                                            {m.toolInvocations?.map((tool: any) => (
+                                                <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">
+                                                    {tool.toolName === 'log_activity' && 'result' in tool && (
+                                                        <div className="text-xs text-emerald-400 flex items-center gap-1.5 opacity-75">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                            Log secured
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <p className="text-gray-300 line-clamp-2">{log.content_raw}</p>
-                                    {log.data_structured?.calories && (
-                                        <div className="mt-2 text-xs text-gray-500">
-                                            {log.data_structured.calories} kcal • {log.data_structured.protein || 0}g P
+                                ))}
+                                {isLoading && (
+                                    <div className="flex gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4285f4] to-[#9b72cb] flex items-center justify-center animate-pulse">
+                                            <Sparkles size={16} className="text-white" />
                                         </div>
+                                        <div className="flex items-center gap-1 h-8">
+                                            <div className="w-2 h-2 rounded-full bg-gray-600 animate-bounce"></div>
+                                            <div className="w-2 h-2 rounded-full bg-gray-600 animate-bounce [animation-delay:-.3s]"></div>
+                                            <div className="w-2 h-2 rounded-full bg-gray-600 animate-bounce [animation-delay:-.5s]"></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Floating Input Area */}
+                <div className="pb-6 px-4 pt-2 bg-gradient-to-t from-[#131314] via-[#131314] to-transparent z-20">
+                    <div className="max-w-3xl mx-auto">
+                        <form onSubmit={onSubmit} className="relative group">
+                            <div className={`
+                                flex items-center gap-2 bg-[#1e1f20] rounded-[28px] px-2 py-2 
+                                transition-all duration-200 border border-transparent
+                                ${input.trim() ? 'ring-1 ring-gray-700' : 'group-hover:bg-[#2e2f30]'}
+                                focus-within:bg-[#2e2f30] focus-within:ring-1 focus-within:ring-gray-600
+                            `}>
+                                {/* Left actions (Upload) */}
+                                <button type="button" className="p-3 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors">
+                                    <Plus size={20} />
+                                </button>
+
+                                {/* Input */}
+                                <input
+                                    className="flex-1 bg-transparent border-none text-[16px] text-white placeholder-gray-400 focus:outline-none focus:ring-0 px-2 py-3"
+                                    value={input}
+                                    onChange={handleInputChange}
+                                    placeholder="Ask StayFit Coach..."
+                                    autoFocus
+                                />
+
+                                {/* Right actions (Mic, Image, Send) */}
+                                <div className="flex items-center gap-1 pr-1">
+                                    <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors">
+                                        <ImageIcon size={20} />
+                                    </button>
+                                    <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors">
+                                        <Mic size={20} />
+                                    </button>
+                                    {input.trim() && (
+                                        <button
+                                            type="submit"
+                                            className="p-2.5 bg-white text-black rounded-full hover:opacity-90 transition-opacity ml-1 animate-in zoom-in duration-200"
+                                        >
+                                            <SendHorizontal size={20} />
+                                        </button>
                                     )}
                                 </div>
-                            ))}
-                            {history.length === 0 && !loadingHistory && (
-                                <div className="text-gray-500 text-sm text-center py-8">
-                                    Your vault is empty.<br />Start logging to build your history.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
+                            </div>
 
-            {/* Input Area */}
-            <div className="p-4 border-t border-gray-800 bg-black">
-                <form onSubmit={handleSubmit} className="relative max-w-3xl mx-auto w-full">
-                    <input
-                        className="w-full bg-gray-900 border border-gray-700 text-white rounded-full py-4 px-6 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-lg text-lg placeholder-gray-500"
-                        value={input}
-                        onChange={handleInputChange}
-                        placeholder="Log a meal, set a goal, or ask a question..."
-                    />
-                    <button
-                        type="submit"
-                        disabled={isLoading || !input.trim()}
-                        className="absolute right-2 top-2 p-2.5 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full hover:from-blue-500 hover:to-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                        </svg>
-                    </button>
-                </form>
-                {error && (
-                    <div className="mt-3 bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded-lg text-sm text-center max-w-3xl mx-auto">
-                        ⚠️ Error: {error.message || "An error occurred. Please try again."}
+                            {/* Legal / Disclaimer */}
+                            <div className="text-center mt-3 text-[11px] text-gray-500">
+                                AI can make mistakes. Check important info.
+                            </div>
+                        </form>
                     </div>
-                )}
-                <div className="text-center mt-3 text-xs text-gray-600">
-                    Powered by Metabolic Science • Not Medical Advice • v1.1
                 </div>
-            </div>
+
+            </main>
         </div>
     );
 }

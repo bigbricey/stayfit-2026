@@ -13,6 +13,8 @@ export interface Database {
                 Row: {
                     id: string
                     diet_mode: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian'
+                    name: string | null
+                    biometrics: Json
                     safety_flags: Json
                     created_at: string
                     updated_at: string
@@ -20,6 +22,8 @@ export interface Database {
                 Insert: {
                     id: string
                     diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian'
+                    name?: string | null
+                    biometrics?: Json
                     safety_flags?: Json
                     created_at?: string
                     updated_at?: string
@@ -27,6 +31,8 @@ export interface Database {
                 Update: {
                     id?: string
                     diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian'
+                    name?: string | null
+                    biometrics?: Json
                     safety_flags?: Json
                     created_at?: string
                     updated_at?: string
@@ -61,6 +67,56 @@ export interface Database {
                     created_at?: string
                 }
             }
+            conversations: {
+                Row: {
+                    id: string
+                    user_id: string
+                    title: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    title?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    title?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            messages: {
+                Row: {
+                    id: string
+                    conversation_id: string
+                    role: 'user' | 'assistant' | 'system'
+                    content: string
+                    tool_calls: Json | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    conversation_id: string
+                    role: 'user' | 'assistant' | 'system'
+                    content: string
+                    tool_calls?: Json | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    conversation_id?: string
+                    role?: 'user' | 'assistant' | 'system'
+                    content?: string
+                    tool_calls?: Json | null
+                    created_at?: string
+                }
+            }
         }
     }
 }
+

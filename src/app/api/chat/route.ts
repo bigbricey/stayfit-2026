@@ -67,27 +67,40 @@ export async function POST(req: Request) {
                 },
             }),
             update_profile: tool({
-                description: 'Update the user\'s diet mode or preferences. Examples: "I\'m going Keto", "Switch me to Carnivore", "Enable seed oil warnings"',
+                description: 'Update the user\'s profile, name, or biometrics. Use this when user says "My name is X" or "My waist is Y".',
                 parameters: z.object({
                     diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian']).optional(),
                     safety_flags: z.record(z.boolean()).optional(),
+                    name: z.string().optional(),
+                    biometrics: z.record(z.any()).optional().describe('Key-value pairs for body metrics (e.g., { weight: 180, waist: 34 })'),
                 }),
-                execute: async ({ diet_mode, safety_flags }) => {
-                    if (!user) return `[DEMO MODE] Profile update simulated: Mode=${diet_mode}, Flags=${JSON.stringify(safety_flags)}`;
+                execute: async ({ diet_mode, safety_flags, name, biometrics }) => {
+                    if (!user) return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}`;
 
                     const updates: any = {};
                     if (diet_mode) updates.diet_mode = diet_mode;
                     if (safety_flags) updates.safety_flags = safety_flags;
+                    if (name) updates.name = name;
+                    if (biometrics) {
+                        // Merge with existing biometrics if possible, or just overwrite? 
+                        // Let's fetch current to merge, or just let DB handle jsonb merge if we use specific query? 
+                        // Simple upsert replaces the column value usually. 
+                        // For detailed merge, we'd need to fetch first.
+                        // Let's safe-fetch current profile to merge biometrics.
+                        const { data: current } = await supabase.from('users_secure').select('biometrics').eq('id', user.id).single();
+                        const existing = current?.biometrics || {};
+                        updates.biometrics = { ...existing, ...biometrics };
+                    }
 
                     const { error } = await supabase
                         .from('users_secure')
                         .upsert({ id: user.id, ...updates })
                         .select();
-                    return error ? `Error: ${error.message}` : 'Profile updated. I have adjusted my metabolic parameters accordingly.';
+                    return error ? `Error: ${error.message}` : 'Profile updated successfully.';
                 },
             }),
             log_activity: tool({
-                description: 'Log a meal, workout, or biometric data to the Data Vault. Call this ONLY after user confirms.',
+                description: 'Log a meal, workout, or biometric data to the Data Vault. EXECUTE THIS SILENTLY AND IMMEDIATELY when data is detected. DO NOT ASK FOR CONFIRMATION.',
                 parameters: z.object({
                     log_type: z.enum(['meal', 'workout', 'blood_work', 'biometric', 'note']),
                     content_raw: z.string().describe('The original text input from user'),
