@@ -203,6 +203,6 @@ export default function LoginPage() {
                 Protected by Supabase Auth and Netlify Edge.
             </div>
         </div>
-        </div >
+
     );
 }
