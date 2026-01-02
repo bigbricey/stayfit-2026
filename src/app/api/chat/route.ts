@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
 
 // Allow streaming responses up to 60 seconds for complex reasoning
-export const maxDuration = 60;
+// Allow streaming responses up to 5 minutes (300s) for complex reasoning models
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
     const { messages, demoConfig } = await req.json();
