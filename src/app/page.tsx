@@ -259,7 +259,7 @@ export default function Chat() {
                     </div>
                 )}
                 <div className="text-center mt-3 text-xs text-gray-600">
-                    Powered by Metabolic Science • Not Medical Advice
+                    Powered by Metabolic Science • Not Medical Advice • v1.1
                 </div>
             </div>
         </div>
