@@ -95,12 +95,24 @@ export async function POST(req: Request) {
                 },
             }),
             update_profile: tool({
-                description: 'Update the user\'s profile, name, or biometrics. Use this when user says "My name is X" or "My waist is Y".',
+                description: 'Update the user\'s profile, name, diet mode, or biometrics. Use when user says "My name is X", "I weigh Y", "Switch me to keto", etc. Changes are logged to history for future queries. For "low carb" use keto mode.',
                 parameters: z.object({
-                    diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian']).optional(),
+                    diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian']).optional().describe('The dietary approach. Use "keto" for low-carb requests. Changes are logged to history.'),
                     safety_flags: z.record(z.boolean()).optional(),
                     name: z.string().optional(),
-                    biometrics: z.record(z.any()).optional().describe('Key-value pairs for body metrics (e.g., { weight: 180, waist: 34 })'),
+                    biometrics: z.object({
+                        weight: z.number().optional().describe('Body weight (logged to history for tracking)'),
+                        weight_unit: z.enum(['lbs', 'kg']).optional(),
+                        height: z.number().optional().describe('Height in inches or cm'),
+                        height_unit: z.enum(['in', 'cm']).optional(),
+                        age: z.number().optional().describe('Age in years'),
+                        birthdate: z.string().optional().describe('Birthday as YYYY-MM-DD string'),
+                        sex: z.enum(['male', 'female', 'other']).optional(),
+                        waist: z.number().optional(),
+                        goal_weight: z.number().optional(),
+                        activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
+                        goals: z.array(z.string()).optional().describe('Fitness goals like "lose fat", "gain muscle"'),
+                    }).passthrough().optional().describe('Body metrics - weight changes are logged to history'),
                 }),
                 execute: async ({ diet_mode, safety_flags, name, biometrics }) => {
                     if (!user) {
@@ -108,26 +120,89 @@ export async function POST(req: Request) {
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}`;
                     }
 
+                    // Fetch current profile for comparison and merging
+                    const { data: currentProfile } = await supabase
+                        .from('users_secure')
+                        .select('diet_mode, biometrics, name')
+                        .eq('id', user.id)
+                        .single();
+
                     const updates: any = {};
-                    if (diet_mode) updates.diet_mode = diet_mode;
+                    const loggedEvents: string[] = [];
+
+                    // Handle diet mode change - LOG AS HISTORICAL EVENT
+                    if (diet_mode && diet_mode !== currentProfile?.diet_mode) {
+                        updates.diet_mode = diet_mode;
+                        // Log diet switch to history
+                        await supabase.from('metabolic_logs').insert({
+                            user_id: user.id,
+                            log_type: 'note',
+                            content_raw: `Switched diet to ${diet_mode}`,
+                            data_structured: {
+                                event_type: 'diet_change',
+                                old_mode: currentProfile?.diet_mode || 'standard',
+                                new_mode: diet_mode,
+                            }
+                        });
+                        loggedEvents.push(`diet → ${diet_mode}`);
+                    }
+
                     if (safety_flags) updates.safety_flags = safety_flags;
                     if (name) updates.name = name;
+
                     if (biometrics) {
-                        // Merge with existing biometrics if possible, or just overwrite? 
-                        // Let's fetch current to merge, or just let DB handle jsonb merge if we use specific query? 
-                        // Simple upsert replaces the column value usually. 
-                        // For detailed merge, we'd need to fetch first.
-                        // Let's safe-fetch current profile to merge biometrics.
-                        const { data: current } = await supabase.from('users_secure').select('biometrics').eq('id', user.id).single();
-                        const existing = current?.biometrics || {};
+                        const existing = currentProfile?.biometrics || {};
                         updates.biometrics = { ...existing, ...biometrics };
+
+                        // Handle weight change - LOG AS HISTORICAL EVENT
+                        if (biometrics.weight) {
+                            const unit = biometrics.weight_unit || 'lbs';
+                            await supabase.from('metabolic_logs').insert({
+                                user_id: user.id,
+                                log_type: 'biometric',
+                                content_raw: `Weighed ${biometrics.weight} ${unit}`,
+                                data_structured: {
+                                    event_type: 'weight_check',
+                                    weight: biometrics.weight,
+                                    unit: unit,
+                                    previous_weight: existing.weight || null,
+                                }
+                            });
+                            loggedEvents.push(`weight: ${biometrics.weight} ${unit}`);
+                        }
+
+                        // Handle waist measurement - LOG AS HISTORICAL EVENT
+                        if (biometrics.waist) {
+                            await supabase.from('metabolic_logs').insert({
+                                user_id: user.id,
+                                log_type: 'biometric',
+                                content_raw: `Waist measurement: ${biometrics.waist} inches`,
+                                data_structured: {
+                                    event_type: 'waist_check',
+                                    waist: biometrics.waist,
+                                    previous_waist: existing.waist || null,
+                                }
+                            });
+                            loggedEvents.push(`waist: ${biometrics.waist}"`);
+                        }
+                    }
+
+                    // Only update if there are changes
+                    if (Object.keys(updates).length === 0) {
+                        return 'No changes detected.';
                     }
 
                     const { error } = await supabase
                         .from('users_secure')
                         .upsert({ id: user.id, ...updates })
                         .select();
-                    return error ? `Error: ${error.message}` : 'Profile updated successfully.';
+
+                    if (error) return `Error: ${error.message}`;
+
+                    const summary = loggedEvents.length > 0
+                        ? `Profile updated and logged: ${loggedEvents.join(', ')}`
+                        : 'Profile updated successfully.';
+                    return summary;
                 },
             }),
             log_activity: tool({
@@ -473,6 +548,113 @@ export async function POST(req: Request) {
                         days_in_period: days,
                         daily_average: dailyAverage,
                         period: { start: start_date, end: end_date },
+                    });
+                },
+            }),
+            get_profile_history: tool({
+                description: 'Query historical profile changes. Use for "how many days on keto", "show my weight history", "when did I switch diets", "what diets have I tried".',
+                parameters: z.object({
+                    query_type: z.enum(['diet_history', 'weight_history', 'waist_history', 'all']).describe('Type of profile history to retrieve'),
+                    start_date: z.string().describe('Start date (YYYY-MM-DD format)'),
+                    end_date: z.string().describe('End date (YYYY-MM-DD format)'),
+                }),
+                execute: async ({ query_type, start_date, end_date }) => {
+                    if (!user) return JSON.stringify({ message: '[DEMO MODE] No history available. Sign in to track your data.' });
+
+                    // Build query based on type
+                    let query = supabase
+                        .from('metabolic_logs')
+                        .select('id, log_type, content_raw, data_structured, logged_at')
+                        .eq('user_id', user.id)
+                        .gte('logged_at', `${start_date}T00:00:00`)
+                        .lte('logged_at', `${end_date}T23:59:59`)
+                        .order('logged_at', { ascending: true });
+
+                    // Filter by event type
+                    if (query_type === 'diet_history') {
+                        query = query.eq('log_type', 'note');
+                    } else if (query_type === 'weight_history' || query_type === 'waist_history') {
+                        query = query.eq('log_type', 'biometric');
+                    }
+
+                    const { data: logs, error } = await query;
+                    if (error) return JSON.stringify({ error: error.message });
+
+                    // Filter and process based on query type
+                    let results: any[] = [];
+
+                    if (query_type === 'diet_history' || query_type === 'all') {
+                        const dietChanges = logs?.filter(l => l.data_structured?.event_type === 'diet_change') || [];
+
+                        // Calculate days on each diet
+                        const dietDays: Record<string, number> = {};
+                        for (let i = 0; i < dietChanges.length; i++) {
+                            const current = dietChanges[i];
+                            const nextChange = dietChanges[i + 1];
+                            const startTime = new Date(current.logged_at).getTime();
+                            const endTime = nextChange
+                                ? new Date(nextChange.logged_at).getTime()
+                                : new Date(`${end_date}T23:59:59`).getTime();
+                            const days = Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24));
+                            const mode = current.data_structured?.new_mode || 'standard';
+                            dietDays[mode] = (dietDays[mode] || 0) + days;
+                        }
+
+                        results.push({
+                            type: 'diet_history',
+                            changes: dietChanges.map(d => ({
+                                date: new Date(d.logged_at).toLocaleDateString(),
+                                from: d.data_structured?.old_mode,
+                                to: d.data_structured?.new_mode,
+                            })),
+                            days_per_diet: dietDays,
+                        });
+                    }
+
+                    if (query_type === 'weight_history' || query_type === 'all') {
+                        const weightChecks = logs?.filter(l => l.data_structured?.event_type === 'weight_check') || [];
+                        const weights = weightChecks.map(w => ({
+                            date: new Date(w.logged_at).toLocaleDateString(),
+                            weight: w.data_structured?.weight,
+                            unit: w.data_structured?.unit || 'lbs',
+                        }));
+
+                        // Calculate weight change
+                        let weightChange = null;
+                        if (weights.length >= 2) {
+                            const first = weights[0].weight;
+                            const last = weights[weights.length - 1].weight;
+                            weightChange = {
+                                start: first,
+                                end: last,
+                                change: +(last - first).toFixed(1),
+                                unit: weights[0].unit,
+                            };
+                        }
+
+                        results.push({
+                            type: 'weight_history',
+                            entries: weights,
+                            weight_change: weightChange,
+                            count: weights.length,
+                        });
+                    }
+
+                    if (query_type === 'waist_history' || query_type === 'all') {
+                        const waistChecks = logs?.filter(l => l.data_structured?.event_type === 'waist_check') || [];
+                        results.push({
+                            type: 'waist_history',
+                            entries: waistChecks.map(w => ({
+                                date: new Date(w.logged_at).toLocaleDateString(),
+                                waist: w.data_structured?.waist,
+                            })),
+                            count: waistChecks.length,
+                        });
+                    }
+
+                    return JSON.stringify({
+                        period: { start: start_date, end: end_date },
+                        results,
                     });
                 },
             }),
