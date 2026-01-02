@@ -1,0 +1,240 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import {
+    Plus,
+    MessageSquare,
+    Settings,
+    Search,
+    PanelLeftClose,
+    LogOut,
+    MoreVertical,
+    Trash2,
+    Pencil
+} from 'lucide-react';
+
+// Types
+interface Conversation {
+    id: string;
+    title: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+interface SidebarProps {
+    showSidebar: boolean;
+    setShowSidebar: (show: boolean) => void;
+    conversations: Conversation[];
+    currentConversationId: string | null;
+    searchQuery: string;
+    setSearchQuery: (q: string) => void;
+    isLoading: boolean;
+    onNewChat: () => void;
+    onLoadConversation: (id: string) => void;
+    onRename: (id: string, title: string) => void;
+    onDelete: (id: string) => void;
+    onLogout: () => void;
+    userId: string | null;
+    userName: string | null;
+}
+
+export default function Sidebar({
+    showSidebar,
+    setShowSidebar,
+    conversations,
+    currentConversationId,
+    searchQuery,
+    setSearchQuery,
+    isLoading,
+    onNewChat,
+    onLoadConversation,
+    onRename,
+    onDelete,
+    onLogout,
+    userId,
+    userName
+}: SidebarProps) {
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [editingConversation, setEditingConversation] = useState<{ id: string; title: string } | null>(null);
+
+    // Group conversations by time
+    const groupConversations = (convs: Conversation[]) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today.getTime() - 86400000);
+        const weekAgo = new Date(today.getTime() - 7 * 86400000);
+        const monthAgo = new Date(today.getTime() - 30 * 86400000);
+
+        const groups: Record<string, Conversation[]> = {
+            'Today': [],
+            'Yesterday': [],
+            'Previous 7 days': [],
+            'Previous 30 days': [],
+            'Older': [],
+        };
+
+        convs.forEach(conv => {
+            const date = new Date(conv.updated_at);
+            if (date >= today) groups['Today'].push(conv);
+            else if (date >= yesterday) groups['Yesterday'].push(conv);
+            else if (date >= weekAgo) groups['Previous 7 days'].push(conv);
+            else if (date >= monthAgo) groups['Previous 30 days'].push(conv);
+            else groups['Older'].push(conv);
+        });
+
+        return groups;
+    };
+
+    const filteredConversations = searchQuery
+        ? conversations.filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+        : conversations;
+
+    const groupedConversations = groupConversations(filteredConversations);
+
+    const handleRename = (id: string, newTitle: string) => {
+        if (!newTitle.trim()) return;
+        onRename(id, newTitle.trim());
+        setEditingConversation(null);
+        setOpenMenuId(null);
+    };
+
+    const handleDelete = (id: string) => {
+        onDelete(id);
+        setOpenMenuId(null);
+    };
+
+    return (
+        <div className={`
+            ${showSidebar ? 'w-[300px]' : 'w-0'} 
+            bg-[#12141a] flex-shrink-0 transition-all duration-300 ease-in-out flex flex-col overflow-hidden
+        `}>
+            {/* New Chat & Toggle */}
+            <div className="p-4 flex items-center justify-between">
+                <button
+                    onClick={() => setShowSidebar(false)}
+                    className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#1a1d24]"
+                >
+                    <PanelLeftClose size={20} />
+                </button>
+                <div onClick={onNewChat} className="cursor-pointer hover:bg-[#1a1d24] p-2 rounded-lg text-gray-400 hover:text-white">
+                    <MessageSquare size={20} />
+                </div>
+            </div>
+
+            {/* New Chat Button Large */}
+            <div className="px-4 pb-2">
+                <button
+                    onClick={onNewChat}
+                    className="w-full bg-[#1a1d24] hover:bg-[#22262f] text-gray-200 py-3 rounded-lg flex items-center gap-3 px-4 transition-colors border border-[#2a2d34]"
+                >
+                    <Plus size={18} />
+                    <span className="text-sm font-medium">New Chat</span>
+                </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-2">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 pl-10 focus:ring-0 focus:outline-none text-sm"
+                    />
+                </div>
+            </div>
+
+            {/* History List */}
+            <div className="flex-1 overflow-y-auto px-2 py-2">
+                {isLoading ? (
+                    <div className="text-center text-gray-600 text-xs py-4">Loading...</div>
+                ) : filteredConversations.length === 0 ? (
+                    <div className="text-center text-gray-600 text-xs py-4">No recent chats</div>
+                ) : (
+                    Object.entries(groupedConversations).map(([group, convs]) => (
+                        convs.length > 0 && (
+                            <div key={group} className="mb-4">
+                                <div className="text-[11px] font-medium text-gray-500 px-4 py-2 uppercase tracking-wide">
+                                    {group}
+                                </div>
+                                {convs.map(conv => (
+                                    <div key={conv.id} className="relative group flex items-center">
+                                        {editingConversation?.id === conv.id ? (
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                value={editingConversation.title}
+                                                onChange={(e) => setEditingConversation({ ...editingConversation, title: e.target.value })}
+                                                onBlur={() => handleRename(conv.id, editingConversation.title)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRename(conv.id, editingConversation.title);
+                                                    if (e.key === 'Escape') setEditingConversation(null);
+                                                }}
+                                                className="flex-1 bg-[#22262f] text-gray-200 text-sm px-3 py-2 rounded-lg border border-[#22c55e] focus:outline-none"
+                                            />
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => onLoadConversation(conv.id)}
+                                                    className={`flex-1 text-left px-4 py-2 rounded-lg text-sm truncate transition-colors ${currentConversationId === conv.id
+                                                        ? 'bg-[#1a1d24] text-[#22c55e] border-l-2 border-[#22c55e]'
+                                                        : 'text-gray-400 hover:bg-[#1a1d24] hover:text-gray-200 border-l-2 border-transparent'
+                                                        }`}
+                                                >
+                                                    {conv.title || 'New conversation'}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === conv.id ? null : conv.id); }}
+                                                    className="p-1.5 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-[#22262f]"
+                                                >
+                                                    <MoreVertical size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                        {openMenuId === conv.id && (
+                                            <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a1d24] border border-[#2a2d34] rounded-lg shadow-lg py-1 min-w-[120px]">
+                                                <button
+                                                    onClick={() => { setEditingConversation({ id: conv.id, title: conv.title || '' }); setOpenMenuId(null); }}
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-[#22262f] hover:text-white"
+                                                >
+                                                    <Pencil size={14} />
+                                                    Rename
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(conv.id)}
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-[#22262f] hover:text-red-300"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ))
+                )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 mt-auto space-y-2">
+                <Link href="/settings" className="flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-sm">
+                    <Settings size={18} />
+                    <span>Settings</span>
+                </Link>
+                <button onClick={onLogout} className="w-full flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#1a1d24] hover:text-red-400 transition-colors text-sm">
+                    <LogOut size={18} />
+                    <span>Log Out</span>
+                </button>
+                <div className="flex items-center gap-3 text-gray-400 px-2 py-2 text-sm border-t border-gray-800 mt-2 pt-4">
+                    <div className={`w-2 h-2 rounded-full ${userId ? 'bg-emerald-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                    <span className="truncate">{userId ? (userName || 'User') : 'Guest Mode (Not Saving)'}</span>
+                </div>
+            </div>
+        </div>
+    );
+}

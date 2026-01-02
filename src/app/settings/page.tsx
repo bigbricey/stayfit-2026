@@ -12,9 +12,23 @@ const SAFETY_FLAGS = [
     { key: 'warn_gluten', label: 'Warn about Gluten', description: 'Alert when foods contain wheat, barley, or rye.' },
 ];
 
+const COACH_MODES = [
+    { mode: 'hypertrophy', label: 'Mass Architect', desc: 'Focus on muscle growth & progressive overload' },
+    { mode: 'fat_loss', label: 'Recomp Specialist', desc: 'Focus on fat usage & muscle preservation' },
+    { mode: 'longevity', label: 'Healthspan', desc: 'Focus on inflammation, vitality & blood markers' },
+];
+
+const INTENSITY_MODES = [
+    { mode: 'savage', label: 'Savage', desc: 'Drill Sergeant. No mercy.' },
+    { mode: 'neutral', label: 'Neutral', desc: 'Professional & objective.' },
+    { mode: 'supportive', label: 'Supportive', desc: 'Empathetic & encouraging.' },
+];
+
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [dietMode, setDietMode] = useState('standard');
+    const [activeCoach, setActiveCoach] = useState('fat_loss');
+    const [coachIntensity, setCoachIntensity] = useState('neutral');
     const [safetyFlags, setSafetyFlags] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -40,6 +54,8 @@ export default function SettingsPage() {
             if (saved) {
                 const config = JSON.parse(saved);
                 setDietMode(config.diet_mode || 'standard');
+                setActiveCoach(config.active_coach || 'fat_loss');
+                setCoachIntensity(config.coach_intensity || 'neutral');
                 setSafetyFlags(config.safety_flags || {});
             }
             setLoading(false);
@@ -49,11 +65,13 @@ export default function SettingsPage() {
     const loadProfile = async (currentUser: any) => {
         const { data } = await supabase
             .from('users_secure')
-            .select('diet_mode, safety_flags')
+            .select('diet_mode, active_coach, coach_intensity, safety_flags')
             .eq('id', currentUser.id)
             .single();
         if (data) {
             setDietMode(data.diet_mode || 'standard');
+            setActiveCoach(data.active_coach || 'fat_loss');
+            setCoachIntensity(data.coach_intensity || 'neutral');
             setSafetyFlags(data.safety_flags || {});
         }
         setLoading(false);
@@ -63,6 +81,8 @@ export default function SettingsPage() {
         setSaving(true);
         const updates = {
             diet_mode: dietMode,
+            active_coach: activeCoach,
+            coach_intensity: coachIntensity,
             safety_flags: safetyFlags,
         };
 
@@ -114,6 +134,47 @@ export default function SettingsPage() {
                     <Link href="/" className="text-gray-400 hover:text-white transition-colors">
                         ← Back to Chat
                     </Link>
+                </div>
+
+                {/* Coach Persona (Specialist & Intensity) */}
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-8">
+                    <div>
+                        <h2 className="text-xl font-bold mb-4">Coach Specialist</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {COACH_MODES.map((coach) => (
+                                <button
+                                    key={coach.mode}
+                                    onClick={() => setActiveCoach(coach.mode)}
+                                    className={`p-4 rounded-xl text-left transition-all border ${activeCoach === coach.mode
+                                        ? 'bg-blue-600/20 border-blue-500 text-white'
+                                        : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-600'
+                                        }`}
+                                >
+                                    <div className="font-bold">{coach.label}</div>
+                                    <div className="text-xs text-gray-400 mt-1 leading-tight">{coach.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 className="text-xl font-bold mb-4">Coach Intensity</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {INTENSITY_MODES.map((intensity) => (
+                                <button
+                                    key={intensity.mode}
+                                    onClick={() => setCoachIntensity(intensity.mode)}
+                                    className={`p-4 rounded-xl text-left transition-all border ${coachIntensity === intensity.mode
+                                        ? 'bg-emerald-600/20 border-emerald-500 text-white'
+                                        : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-600'
+                                        }`}
+                                >
+                                    <div className="font-bold">{intensity.label}</div>
+                                    <div className="text-xs text-gray-400 mt-1 leading-tight">{intensity.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Diet Mode */}
@@ -170,7 +231,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Account Security (Password Reset) */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+            <div className="max-w-2xl mx-auto space-y-8 mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6">
                 <h2 className="text-xl font-bold mb-4">🔐 Account Security</h2>
                 <div className="space-y-4">
                     <div>
@@ -199,13 +260,15 @@ export default function SettingsPage() {
             </div>
 
             {/* Save Button */}
-            <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
-            >
-                {saving ? 'Saving...' : 'Save Settings'}
-            </button>
+            <div className="max-w-2xl mx-auto mt-8">
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
+                >
+                    {saving ? 'Saving...' : 'Save Settings'}
+                </button>
+            </div>
         </div>
 
     );
