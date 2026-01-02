@@ -252,12 +252,15 @@ export default function Chat() {
             console.log('[saveMessagesToDb] Saved', toInsert.length, 'new messages');
         }
 
-        // Update conversation title if first user message (with weekday prefix)
+        // Update conversation title if first user message (with date prefix)
         const firstUserMessage = currentMessages.find(m => m.role === 'user');
         if (firstUserMessage) {
-            const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-            const snippet = firstUserMessage.content.slice(0, 35) + (firstUserMessage.content.length > 35 ? '...' : '');
-            const title = `${weekday} - ${snippet}`;
+            const now = new Date();
+            const month = now.getMonth() + 1; // 0-indexed
+            const day = now.getDate();
+            const weekday = now.toLocaleDateString('en-US', { weekday: 'short' }); // "Fri"
+            const snippet = firstUserMessage.content.slice(0, 25) + (firstUserMessage.content.length > 25 ? '...' : '');
+            const title = `${month}/${day} ${weekday}.-${snippet}`;
             await supabase
                 .from('conversations')
                 .update({ title, updated_at: new Date().toISOString() })
