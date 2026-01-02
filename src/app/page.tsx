@@ -17,7 +17,10 @@ import {
     PanelLeftOpen,
     User,
     Sparkles,
-    LogOut
+    LogOut,
+    MoreVertical,
+    Trash2,
+    Pencil
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -48,6 +51,8 @@ export default function Chat() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [editingConversation, setEditingConversation] = useState<{ id: string; title: string } | null>(null);
     const router = useRouter(); // For redirect after logout
 
     // Fix: Use ref to track conversation ID for callbacks
@@ -222,10 +227,12 @@ export default function Chat() {
 
         await supabase.from('messages').insert(toInsert);
 
-        // Update conversation title if first user message
+        // Update conversation title if first user message (with weekday prefix)
         const firstUserMessage = messages.find(m => m.role === 'user');
         if (firstUserMessage) {
-            const title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '');
+            const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+            const snippet = firstUserMessage.content.slice(0, 35) + (firstUserMessage.content.length > 35 ? '...' : '');
+            const title = `${weekday} - ${snippet}`;
             await supabase
                 .from('conversations')
                 .update({ title, updated_at: new Date().toISOString() })
@@ -267,6 +274,23 @@ export default function Chat() {
         // For now, just set input is safer UXwise so they can edit.
     };
 
+
+    // Rename a conversation
+    const renameConversation = async (id: string, newTitle: string) => {
+        if (!newTitle.trim()) return;
+        await supabase.from('conversations').update({ title: newTitle.trim() }).eq('id', id);
+        setConversations(prev => prev.map(c => c.id === id ? { ...c, title: newTitle.trim() } : c));
+        setEditingConversation(null);
+        setOpenMenuId(null);
+    };
+
+    // Delete a conversation
+    const deleteConversation = async (id: string) => {
+        await supabase.from('conversations').delete().eq('id', id);
+        setConversations(prev => prev.filter(c => c.id !== id));
+        if (currentConversationId === id) handleNewChat();
+        setOpenMenuId(null);
+    };
 
     // Logout
     const handleLogout = async () => {
@@ -367,16 +391,58 @@ export default function Chat() {
                                     {group}
                                 </div>
                                 {convs.map(conv => (
-                                    <button
-                                        key={conv.id}
-                                        onClick={() => loadConversation(conv.id)}
-                                        className={`w-full text-left px-4 py-2 rounded-lg text-sm truncate transition-colors ${currentConversationId === conv.id
-                                            ? 'bg-[#1a1d24] text-[#22c55e] border-l-2 border-[#22c55e]'
-                                            : 'text-gray-400 hover:bg-[#1a1d24] hover:text-gray-200 border-l-2 border-transparent'
-                                            }`}
-                                    >
-                                        {conv.title || 'New conversation'}
-                                    </button>
+                                    <div key={conv.id} className="relative group flex items-center">
+                                        {editingConversation?.id === conv.id ? (
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                value={editingConversation.title}
+                                                onChange={(e) => setEditingConversation({ ...editingConversation, title: e.target.value })}
+                                                onBlur={() => renameConversation(conv.id, editingConversation.title)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') renameConversation(conv.id, editingConversation.title);
+                                                    if (e.key === 'Escape') setEditingConversation(null);
+                                                }}
+                                                className="flex-1 bg-[#22262f] text-gray-200 text-sm px-3 py-2 rounded-lg border border-[#22c55e] focus:outline-none"
+                                            />
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => loadConversation(conv.id)}
+                                                    className={`flex-1 text-left px-4 py-2 rounded-lg text-sm truncate transition-colors ${currentConversationId === conv.id
+                                                        ? 'bg-[#1a1d24] text-[#22c55e] border-l-2 border-[#22c55e]'
+                                                        : 'text-gray-400 hover:bg-[#1a1d24] hover:text-gray-200 border-l-2 border-transparent'
+                                                        }`}
+                                                >
+                                                    {conv.title || 'New conversation'}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === conv.id ? null : conv.id); }}
+                                                    className="p-1.5 text-gray-500 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-[#22262f]"
+                                                >
+                                                    <MoreVertical size={16} />
+                                                </button>
+                                            </>
+                                        )}
+                                        {openMenuId === conv.id && (
+                                            <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a1d24] border border-[#2a2d34] rounded-lg shadow-lg py-1 min-w-[120px]">
+                                                <button
+                                                    onClick={() => { setEditingConversation({ id: conv.id, title: conv.title || '' }); setOpenMenuId(null); }}
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-[#22262f] hover:text-white"
+                                                >
+                                                    <Pencil size={14} />
+                                                    Rename
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteConversation(conv.id)}
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-[#22262f] hover:text-red-300"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         )
