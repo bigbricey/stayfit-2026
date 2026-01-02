@@ -1,0 +1,163 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+
+const DIET_MODES = ['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian'];
+
+const SAFETY_FLAGS = [
+    { key: 'warn_seed_oils', label: 'Warn about Seed Oils (Linoleic Acid)', description: 'Alert when foods contain soybean, canola, or corn oil.' },
+    { key: 'warn_sugar', label: 'Warn about Added Sugars', description: 'Alert when foods contain sucrose, HFCS, or maltodextrin.' },
+    { key: 'warn_gluten', label: 'Warn about Gluten', description: 'Alert when foods contain wheat, barley, or rye.' },
+];
+
+export default function SettingsPage() {
+    const [user, setUser] = useState<any>(null);
+    const [dietMode, setDietMode] = useState('standard');
+    const [safetyFlags, setSafetyFlags] = useState<any>({});
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const supabase = createClient();
+
+    useEffect(() => {
+        checkUser();
+    }, []);
+
+    const checkUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            setUser(user);
+            loadProfile(user);
+        } else {
+            // DEMO MODE: Load from LocalStorage
+            const saved = localStorage.getItem('stayfit_demo_config');
+            if (saved) {
+                const config = JSON.parse(saved);
+                setDietMode(config.diet_mode || 'standard');
+                setSafetyFlags(config.safety_flags || {});
+            }
+            setLoading(false);
+        }
+    };
+
+    const loadProfile = async (currentUser: any) => {
+        const { data } = await supabase
+            .from('users_secure')
+            .select('diet_mode, safety_flags')
+            .eq('id', currentUser.id)
+            .single();
+        if (data) {
+            setDietMode(data.diet_mode || 'standard');
+            setSafetyFlags(data.safety_flags || {});
+        }
+        setLoading(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        const updates = {
+            diet_mode: dietMode,
+            safety_flags: safetyFlags,
+        };
+
+        if (user) {
+            const { error } = await supabase
+                .from('users_secure')
+                .upsert({ id: user.id, ...updates });
+            if (error) alert('Error saving settings');
+            else alert('Settings saved successfully');
+        } else {
+            // DEMO MODE: Save to LocalStorage
+            localStorage.setItem('stayfit_demo_config', JSON.stringify(updates));
+            alert('Settings saved (Demo Mode)');
+        }
+        setSaving(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="text-gray-400 animate-pulse">Loading Settings...</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-black text-white p-6">
+            <div className="max-w-2xl mx-auto space-y-8">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                    <h1 className="text-3xl font-bold">⚙️ Settings</h1>
+                    <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                        ← Back to Chat
+                    </Link>
+                </div>
+
+                {/* Diet Mode */}
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                    <h2 className="text-xl font-bold mb-4">Diet Mode</h2>
+                    <p className="text-gray-500 text-sm mb-4">
+                        This adjusts how the AI analyzes your food. It won't judge you—it just optimizes for your framework.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {DIET_MODES.map((mode) => (
+                            <button
+                                key={mode}
+                                onClick={() => setProfile({ ...profile, diet_mode: mode })}
+                                className={`px-4 py-3 rounded-xl capitalize transition-all ${profile.diet_mode === mode
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                    }`}
+                            >
+                                {mode}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Safety Flags (Truth Watchdog) */}
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                    <h2 className="text-xl font-bold mb-2">🛡️ Truth Watchdog</h2>
+                    <p className="text-gray-500 text-sm mb-4">
+                        Opt-in to automatic chemical alerts based on metabolic science.
+                    </p>
+                    <div className="space-y-4">
+                        {SAFETY_FLAGS.map((flag) => (
+                            <div key={flag.key} className="flex items-start gap-4 bg-gray-950 p-4 rounded-xl">
+                                <button
+                                    onClick={() => setProfile({
+                                        ...profile,
+                                        safety_flags: {
+                                            ...profile.safety_flags,
+                                            [flag.key]: !profile.safety_flags?.[flag.key],
+                                        },
+                                    })}
+                                    className={`w-12 h-7 rounded-full transition-all flex items-center ${profile.safety_flags?.[flag.key]
+                                        ? 'bg-emerald-600 justify-end'
+                                        : 'bg-gray-700 justify-start'
+                                        }`}
+                                >
+                                    <div className="w-5 h-5 bg-white rounded-full m-1 shadow"></div>
+                                </button>
+                                <div>
+                                    <div className="font-medium">{flag.label}</div>
+                                    <div className="text-gray-500 text-sm">{flag.description}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50"
+                >
+                    {saving ? 'Saving...' : 'Save Settings'}
+                </button>
+            </div>
+        </div>
+    );
+}

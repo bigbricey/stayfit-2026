@@ -1,5 +1,5 @@
 {
-  "name": "engine",
+  "name": "stay-fit-with-ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,13 +12,13 @@
     "@ai-sdk/openai": "^0.0.66",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
-    "ai": "^3.4.9",
+    "ai": "^3.4.33",
     "lucide-react": "^0.378.0",
     "next": "14.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20",
