@@ -46,6 +46,42 @@ body {
   --tw-prose-code: #f3f4f6;
 }
 
+/* CRITICAL: Proper paragraph spacing for AI responses */
+.prose p {
+  margin-bottom: 1em;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  color: #f3f4f6;
+}
+
+/* Numbered section headers (bold paragraphs starting with numbers) */
+.prose p strong:first-child {
+  display: block;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  color: #22c55e;
+}
+
+/* First paragraph doesn't need top margin */
+.prose p:first-child strong:first-child {
+  margin-top: 0;
+}
+
+/* List items spacing */
+.prose ul, .prose ol {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+
+.prose li {
+  margin-bottom: 0.5em;
+}
+
 /* Table styling for Nutrition Labels */
 .prose table {
   border-collapse: collapse;
