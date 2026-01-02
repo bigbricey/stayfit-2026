@@ -279,10 +279,15 @@ export async function POST(req: Request) {
 
                     // Delete the most recent match (or first match)
                     const toDelete = matches[0];
-                    const { error: deleteError } = await supabase
+                    console.log('[delete_log] Attempting to delete:', { id: toDelete.id, user_id: user.id, content: toDelete.content_raw?.substring(0, 30) });
+
+                    const { error: deleteError, count } = await supabase
                         .from('metabolic_logs')
                         .delete()
-                        .eq('id', toDelete.id);
+                        .eq('id', toDelete.id)
+                        .eq('user_id', user.id);  // CRITICAL: Must include user_id for RLS
+
+                    console.log('[delete_log] Delete result:', { error: deleteError?.message, count });
 
                     if (deleteError) return `Error deleting: ${deleteError.message}`;
                     return `Deleted entry: "${toDelete.content_raw?.substring(0, 50)}..." (${toDelete.log_type} from ${new Date(toDelete.logged_at).toLocaleTimeString()})`;
