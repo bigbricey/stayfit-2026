@@ -186,15 +186,18 @@ export default function Chat() {
 
     // Load messages for a conversation
     const loadConversation = async (conversationId: string) => {
+        console.log('[loadConversation] Loading conversation:', conversationId);
         setCurrentConversationId(conversationId);
 
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('messages')
             .select('*')
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: true });
 
-        if (data) {
+        console.log('[loadConversation] Query result:', { count: data?.length, error });
+
+        if (data && data.length > 0) {
             // Convert DB messages to useChat format
             const chatMessages = data.map((m: DbMessage) => ({
                 id: m.id,
@@ -202,7 +205,11 @@ export default function Chat() {
                 content: m.content,
                 toolInvocations: m.tool_calls,
             }));
+            console.log('[loadConversation] Setting messages:', chatMessages.length);
             setMessages(chatMessages);
+        } else {
+            console.log('[loadConversation] No messages found, clearing chat');
+            setMessages([]);
         }
     };
 
