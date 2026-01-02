@@ -225,8 +225,11 @@ export default function Chat() {
     // Save messages to DB
     // Fix: Accept messages as parameter to avoid stale closure issues
     const saveMessagesToDb = async (conversationId: string, currentMessages: typeof messages) => {
+        setDebugStatus(`Saving: ${currentMessages.length} msgs to ${conversationId?.slice(0, 8) || 'null'}...`);
+
         if (!userId || currentMessages.length === 0) {
             console.warn('[saveMessagesToDb] Skip: no user or no messages', { userId, msgCount: currentMessages.length });
+            setDebugStatus(`SKIP SAVE: user=${!!userId}, msgs=${currentMessages.length}`);
             return;
         }
 
@@ -257,11 +260,14 @@ export default function Chat() {
             tool_calls: m.toolInvocations || null,
         }));
 
+        setDebugStatus(`Inserting ${toInsert.length} new msgs...`);
         const { error } = await supabase.from('messages').insert(toInsert);
         if (error) {
             console.error('[saveMessagesToDb] Insert error:', error);
+            setDebugStatus(`INSERT ERROR: ${error.message}`);
         } else {
             console.log('[saveMessagesToDb] Saved', toInsert.length, 'new messages');
+            setDebugStatus(`SAVED: ${toInsert.length} msgs ✓`);
         }
 
         // Update conversation title if first user message (with date prefix)
