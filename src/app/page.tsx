@@ -5,6 +5,7 @@ import { useRef, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
+import NutritionLabel from '@/components/chat/NutritionLabel';
 import {
     SendHorizontal,
     Mic,
@@ -555,6 +556,24 @@ export default function Chat() {
                                                         thead: ({ node, ...props }) => <thead className="bg-[#2e2f30] text-gray-200 font-medium" {...props} />,
                                                         th: ({ node, ...props }) => <th className="px-5 py-3" {...props} />,
                                                         td: ({ node, ...props }) => <td className="px-5 py-3 border-t border-gray-800" {...props} />,
+                                                        pre: ({ node, children, ...props }) => {
+                                                            // Check if this is a nutrition code block
+                                                            const codeChild = node?.children?.[0] as any;
+                                                            if (codeChild?.tagName === 'code') {
+                                                                const className = codeChild.properties?.className?.[0] || '';
+                                                                if (className === 'language-nutrition') {
+                                                                    // Extract the JSON from the code block
+                                                                    const codeContent = codeChild.children?.[0]?.value || '';
+                                                                    try {
+                                                                        const nutritionData = JSON.parse(codeContent);
+                                                                        return <NutritionLabel data={nutritionData} />;
+                                                                    } catch (e) {
+                                                                        console.error('Failed to parse nutrition data:', e);
+                                                                    }
+                                                                }
+                                                            }
+                                                            return <pre className="bg-[#1e1e1e] rounded-lg p-4 overflow-x-auto" {...props}>{children}</pre>;
+                                                        },
                                                         code: ({ node, ...props }) => {
                                                             // @ts-ignore
                                                             const inline = props.inline

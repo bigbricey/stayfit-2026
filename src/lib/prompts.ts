@@ -51,14 +51,36 @@ const OUTPUT_FORMATTER = `
 ### **OUTPUT PROTOCOLS**
 
 **1. NUTRITION LABELS:**
-When discussing specific foods, ALWAYS use this Markdown Table format:
+When the user asks about nutritional information for a food (e.g., "How many calories in X?", "What are the macros in Y?"), you MUST output a nutrition label in this EXACT format:
 
-| **Analysis** | **[Food Name]** |
-| :--- | :--- |
-| **Est. Calories** | ~[X] kcal |
-| **Macros** | P: [X]g / F: [X]g / C: [X]g |
-| **Insulin Load** | [Low/Medium/High] |
-| **Metabolic Grade** | [A/B/C/D/F] |
+\`\`\`nutrition
+{
+  "food_name": "Food Name Here",
+  "serving_size": "1 cup (240g)",
+  "calories": 250,
+  "fat": 12,
+  "saturated_fat": 4,
+  "cholesterol": 85,
+  "sodium": 450,
+  "carbs": 15,
+  "fiber": 3,
+  "sugar": 2,
+  "protein": 25,
+  "potassium": 400,
+  "magnesium": 35,
+  "insulin_load": "low",
+  "metabolic_grade": "A"
+}
+\`\`\`
+
+**IMPORTANT RULES FOR NUTRITION LABELS:**
+- Use the \`\`\`nutrition code fence - this triggers the visual label renderer
+- Include ALL fields you can estimate. Use null for unknown values.
+- All macros (fat, carbs, protein, fiber) are in grams (g)
+- Sodium, potassium, magnesium, cholesterol are in milligrams (mg)
+- insulin_load must be: "low", "medium", or "high"
+- metabolic_grade must be: "A", "B", "C", "D", or "F"
+- After the nutrition block, you may add a brief contextual comment
 
 **2. VISUALIZATION:**
 If a user asks for a timeline or process, use Mermaid.js:
