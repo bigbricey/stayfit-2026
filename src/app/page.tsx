@@ -47,6 +47,12 @@ export default function Chat() {
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
 
+    // Fix: Use ref to track conversation ID for callbacks
+    const conversationIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        conversationIdRef.current = currentConversationId;
+    }, [currentConversationId]);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const supabase = createClient();
 
@@ -55,10 +61,19 @@ export default function Chat() {
         maxSteps: 3,
         body: { demoConfig, conversationId: currentConversationId },
         onFinish: async (message) => {
-            // Save messages to DB after AI response completes
-            if (currentConversationId && userId) {
-                await saveMessagesToDb(currentConversationId);
+            // Fix: Use ref to get the LATEST conversation ID, not the one from closure capture
+            const activeId = conversationIdRef.current;
+
+            if (activeId && userId) {
+                await saveMessagesToDb(activeId);
+                // Refresh list
+                loadConversations(userId);
+            } else {
+                console.warn('Save skipped: missing ID or User', { activeId, userId });
             }
+        },
+        onError: (e) => {
+            console.error('Chat error:', e);
         }
     });
 
@@ -200,7 +215,11 @@ export default function Chat() {
         let convId = currentConversationId;
         if (!convId && userId) {
             convId = await createNewConversation();
-            if (convId) setCurrentConversationId(convId);
+            if (convId) {
+                setCurrentConversationId(convId);
+                // update ref immediately for this cycle
+                conversationIdRef.current = convId;
+            }
         }
 
         handleSubmit(e);
@@ -313,8 +332,8 @@ export default function Chat() {
                                         key={conv.id}
                                         onClick={() => loadConversation(conv.id)}
                                         className={`w-full text-left px-4 py-2 rounded-full text-sm truncate transition-colors ${currentConversationId === conv.id
-                                                ? 'bg-[#004a77] text-blue-100'
-                                                : 'text-gray-400 hover:bg-[#2e2f30] hover:text-gray-200'
+                                            ? 'bg-[#004a77] text-blue-100'
+                                            : 'text-gray-400 hover:bg-[#2e2f30] hover:text-gray-200'
                                             }`}
                                     >
                                         {conv.title || 'New conversation'}
