@@ -47,6 +47,7 @@ export default function Chat() {
     const [userId, setUserId] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [debugStatus, setDebugStatus] = useState<string>(''); // DEBUG
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -186,6 +187,7 @@ export default function Chat() {
 
     // Load messages for a conversation
     const loadConversation = async (conversationId: string) => {
+        setDebugStatus(`Loading: ${conversationId.slice(0, 8)}...`);
         console.log('[loadConversation] Loading conversation:', conversationId);
         setCurrentConversationId(conversationId);
 
@@ -196,6 +198,7 @@ export default function Chat() {
             .order('created_at', { ascending: true });
 
         console.log('[loadConversation] Query result:', { count: data?.length, error });
+        setDebugStatus(`Loaded: ${data?.length || 0} msgs, err: ${error?.message || 'none'}`);
 
         if (data && data.length > 0) {
             // Convert DB messages to useChat format
@@ -704,6 +707,12 @@ export default function Chat() {
                             <div className="text-center mt-3 text-[11px] text-gray-500">
                                 AI can make mistakes. Check important info.
                             </div>
+                            {/* DEBUG STATUS */}
+                            {debugStatus && (
+                                <div className="text-center mt-1 text-[10px] text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded">
+                                    🔧 DEBUG: {debugStatus}
+                                </div>
+                            )}
                         </form>
                     </div>
                 </div>
