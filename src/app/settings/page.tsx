@@ -104,8 +104,8 @@ export default function SettingsPage() {
                         {DIET_MODES.map((mode) => (
                             <button
                                 key={mode}
-                                onClick={() => setProfile({ ...profile, diet_mode: mode })}
-                                className={`px-4 py-3 rounded-xl capitalize transition-all ${profile.diet_mode === mode
+                                onClick={() => setDietMode(mode)}
+                                className={`px-4 py-3 rounded-xl capitalize transition-all ${dietMode === mode
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                     }`}
@@ -126,14 +126,11 @@ export default function SettingsPage() {
                         {SAFETY_FLAGS.map((flag) => (
                             <div key={flag.key} className="flex items-start gap-4 bg-gray-950 p-4 rounded-xl">
                                 <button
-                                    onClick={() => setProfile({
-                                        ...profile,
-                                        safety_flags: {
-                                            ...profile.safety_flags,
-                                            [flag.key]: !profile.safety_flags?.[flag.key],
-                                        },
+                                    onClick={() => setSafetyFlags({
+                                        ...safetyFlags,
+                                        [flag.key]: !safetyFlags?.[flag.key],
                                     })}
-                                    className={`w-12 h-7 rounded-full transition-all flex items-center ${profile.safety_flags?.[flag.key]
+                                    className={`w-12 h-7 rounded-full transition-all flex items-center ${safetyFlags?.[flag.key]
                                         ? 'bg-emerald-600 justify-end'
                                         : 'bg-gray-700 justify-start'
                                         }`}
