@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     // Model is configurable via OPENAI_MODEL env var (e.g., "google/gemini-2.5-pro")
     // Model is configurable via OPENAI_MODEL env var
-    const modelId = process.env.OPENAI_MODEL || 'x-ai/grok-4.1-fast';
+    const modelId = process.env.OPENAI_MODEL || 'deepseek/deepseek-v3.2';
 
     const result = await streamText({
         model: openrouter(modelId),
