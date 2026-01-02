@@ -47,7 +47,6 @@ export default function Chat() {
     const [userId, setUserId] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [debugStatus, setDebugStatus] = useState<string>(''); // DEBUG
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -78,7 +77,6 @@ export default function Chat() {
             // Fix: Use ref to get the LATEST conversation ID, not the one from closure capture
             const activeId = conversationIdRef.current;
             console.log('[onFinish] Called with activeId:', activeId, 'userId:', userId);
-            setDebugStatus(`onFinish: id=${activeId?.slice(0, 8) || 'null'}, user=${!!userId}, msgs=${messagesRef.current.length}`);
 
             if (activeId && userId) {
                 // Fix: Pass the current messages from ref, not stale closure
@@ -88,7 +86,6 @@ export default function Chat() {
                 loadConversations(userId);
             } else {
                 console.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
-                setDebugStatus(`SKIP: id=${activeId?.slice(0, 8) || 'null'}, user=${!!userId}`);
             }
         },
         onError: (e) => {
@@ -189,7 +186,6 @@ export default function Chat() {
 
     // Load messages for a conversation
     const loadConversation = async (conversationId: string) => {
-        setDebugStatus(`Loading: ${conversationId.slice(0, 8)}...`);
         console.log('[loadConversation] Loading conversation:', conversationId);
         setCurrentConversationId(conversationId);
 
@@ -200,7 +196,6 @@ export default function Chat() {
             .order('created_at', { ascending: true });
 
         console.log('[loadConversation] Query result:', { count: data?.length, error });
-        setDebugStatus(`Loaded: ${data?.length || 0} msgs, err: ${error?.message || 'none'}`);
 
         if (data && data.length > 0) {
             // Convert DB messages to useChat format
@@ -227,11 +222,9 @@ export default function Chat() {
     // Save messages to DB
     // Fix: Accept messages as parameter to avoid stale closure issues
     const saveMessagesToDb = async (conversationId: string, currentMessages: typeof messages) => {
-        setDebugStatus(`Saving: ${currentMessages.length} msgs to ${conversationId?.slice(0, 8) || 'null'}...`);
 
         if (!userId || currentMessages.length === 0) {
             console.warn('[saveMessagesToDb] Skip: no user or no messages', { userId, msgCount: currentMessages.length });
-            setDebugStatus(`SKIP SAVE: user=${!!userId}, msgs=${currentMessages.length}`);
             return;
         }
 
@@ -255,7 +248,6 @@ export default function Chat() {
 
         if (newMessages.length === 0) {
             console.log('[saveMessagesToDb] No new messages to save');
-            setDebugStatus('No new msgs to save');
             return;
         }
 
@@ -269,14 +261,11 @@ export default function Chat() {
             tool_calls: m.toolInvocations || null,
         }));
 
-        setDebugStatus(`Inserting ${toInsert.length} new msgs...`);
         const { error } = await supabase.from('messages').insert(toInsert);
         if (error) {
             console.error('[saveMessagesToDb] Insert error:', error);
-            setDebugStatus(`INSERT ERROR: ${error.message}`);
         } else {
             console.log('[saveMessagesToDb] Saved', toInsert.length, 'new messages');
-            setDebugStatus(`SAVED: ${toInsert.length} msgs ✓`);
         }
 
         // Update conversation title if first user message (with date prefix)
@@ -722,12 +711,6 @@ export default function Chat() {
                             <div className="text-center mt-3 text-[11px] text-gray-500">
                                 AI can make mistakes. Check important info.
                             </div>
-                            {/* DEBUG STATUS */}
-                            {debugStatus && (
-                                <div className="text-center mt-1 text-[10px] text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded">
-                                    🔧 DEBUG: {debugStatus}
-                                </div>
-                            )}
                         </form>
                     </div>
                 </div>
