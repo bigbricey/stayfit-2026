@@ -16,8 +16,11 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     User,
-    Sparkles
+    User,
+    Sparkles,
+    LogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface Conversation {
@@ -45,7 +48,9 @@ export default function Chat() {
     const [showSidebar, setShowSidebar] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+    const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
+    const router = useRouter(); // For redirect after logout
 
     // Fix: Use ref to track conversation ID for callbacks
     const conversationIdRef = useRef<string | null>(null);
@@ -236,6 +241,13 @@ export default function Chat() {
     };
 
 
+    // Logout
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.refresh(); // Force server re-render
+        router.push('/login');
+    };
+
     // Group conversations by time (unchanged logic)
     const groupConversations = (convs: Conversation[]) => {
         const now = new Date();
@@ -346,14 +358,18 @@ export default function Chat() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 mt-auto">
+            <div className="p-4 mt-auto space-y-2">
                 <Link href="/settings" className="flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#2e2f30] transition-colors text-sm">
                     <Settings size={18} />
                     <span>Settings</span>
                 </Link>
-                <div className="mt-2 flex items-center gap-3 text-gray-400 px-2 py-2 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <span className="truncate">{userName || 'Guest User'}</span>
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#2e2f30] hover:text-red-400 transition-colors text-sm">
+                    <LogOut size={18} />
+                    <span>Log Out</span>
+                </button>
+                <div className="flex items-center gap-3 text-gray-400 px-2 py-2 text-sm border-t border-gray-800 mt-2 pt-4">
+                    <div className={`w-2 h-2 rounded-full ${userId ? 'bg-emerald-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                    <span className="truncate">{userId ? (userName || 'User') : 'Guest Mode (Not Saving)'}</span>
                 </div>
             </div>
         </div>
