@@ -418,11 +418,31 @@ export const METABOLIC_COACH_PROMPT = (userProfile: any, activeGoals: any = []) 
     // 5. Format Context
     const contextBlock = formatUserContext(userProfile, activeGoals);
 
+    // 5b. Onboarding Protocol
+    let onboardingBlock = "";
+    if (!activeGoals || activeGoals.length === 0) {
+        onboardingBlock = `
+### **ONBOARDING & IDENTITY PROTOCOL**
+**STATUS:** The user has NO active goals. You are in "Cold Start" mode.
+**CRITICAL INSTRUCTION:**
+1. **CHECK IDENTITY FIRST**:
+   - Current Settings: Coach="${coachMode}", Intensity="${intensityMode}".
+   - Has the user *explicitly* acknowledged this? If not, or if they ask "What now?", you MUST offered the choice.
+   - Say: "Before we build your plan, confirm your coach: [Standard / Savage] and [Fat Loss / Muscle Build / Longevity]."
+
+2. **THEN GATHER DATA**:
+   - Once identity is established, ask for Biometrics to calculate TDEE.
+   - Don't give generic advice. Build the user's profile.
+`;
+    }
+
     // 6. Assemble the "Layer Cake"
     return `
 ${IDENTITY_BLOCK}
 
 ${contextBlock}
+
+${onboardingBlock}
 
 ${specialist}
 
