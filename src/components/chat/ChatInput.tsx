@@ -1,21 +1,25 @@
 'use client';
 
-import {
-    SendHorizontal,
-    Mic,
-    Image as ImageIcon,
-    Plus
-} from 'lucide-react';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { SendHorizontal, ImageIcon, Mic, Plus, Scan } from 'lucide-react';
+import BarcodeScanner from './BarcodeScanner';
 
 interface ChatInputProps {
     input: string;
     onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     onSubmit: (e: React.FormEvent) => void;
+    // New optional props for multimodal
+    onFileSelect?: (file: File) => void;
+    selectedImage?: string | null;
+    setSelectedImage?: (url: string | null) => void;
+    // Barcode scanner props
+    onBarcodeScan?: (code: string) => void;
 }
 
-export default function ChatInput({ input, onInputChange, onSubmit }: ChatInputProps) {
+export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect, selectedImage, setSelectedImage, onBarcodeScan }: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showScanner, setShowScanner] = useState(false);
 
     // Auto-resize textarea based on content
     useEffect(() => {
@@ -26,11 +30,19 @@ export default function ChatInput({ input, onInputChange, onSubmit }: ChatInputP
         }
     }, [input]);
 
+    // Handle file selection
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && onFileSelect) {
+            onFileSelect(file);
+        }
+    };
+
     // Handle Enter to submit, Shift+Enter for newline
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            if (input.trim()) {
+            if (input.trim() || selectedImage) {
                 onSubmit(e as unknown as React.FormEvent);
             }
         }
@@ -40,16 +52,67 @@ export default function ChatInput({ input, onInputChange, onSubmit }: ChatInputP
         <div className="pb-6 px-4 pt-2 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d] to-transparent z-20">
             <div className="max-w-3xl mx-auto">
                 <form onSubmit={onSubmit} className="relative group">
+                    {/* Image Preview */}
+                    {selectedImage && (
+                        <div className="absolute -top-24 left-0 p-2 bg-[#1a1d24] rounded-xl border border-[#2a2d34] animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="relative">
+                                <img src={selectedImage} alt="Preview" className="h-20 w-20 object-cover rounded-lg" />
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedImage?.(null)}
+                                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 hover:bg-red-600 transition-colors"
+                                >
+                                    <Plus size={12} className="rotate-45" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className={`
                         flex items-end gap-2 bg-[#1a1d24] rounded-xl px-3 py-2 
                         transition-all duration-200 border border-[#2a2d34]
-                        ${input.trim() ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
+                        ${input.trim() || selectedImage ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
                         focus-within:bg-[#22262f] focus-within:border-[#22c55e]/50
                     `}>
-                        {/* Left actions (Upload) */}
-                        <button type="button" className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors mb-1">
-                            <Plus size={20} />
-                        </button>
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*"
+                            className="hidden"
+                        />
+
+                        {/* Left actions (Upload/Scanning) */}
+                        <div className="flex items-center gap-1 mb-1">
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                title="Attach Image"
+                            >
+                                <ImageIcon size={20} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowScanner(true)}
+                                className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                title="Scan Barcode"
+                            >
+                                <Scan size={20} />
+                            </button>
+                        </div>
+
+                        {/* Scanner Modal */}
+                        {showScanner && (
+                            <BarcodeScanner
+                                onClose={() => setShowScanner(false)}
+                                onScan={(code) => {
+                                    setShowScanner(false);
+                                    if (onBarcodeScan) onBarcodeScan(code);
+                                }}
+                            />
+                        )}
 
                         {/* Textarea with word wrapping and auto-resize */}
                         <textarea
@@ -64,15 +127,12 @@ export default function ChatInput({ input, onInputChange, onSubmit }: ChatInputP
                             rows={1}
                         />
 
-                        {/* Right actions (Mic, Image, Send) */}
+                        {/* Right actions (Send) */}
                         <div className="flex items-center gap-1 pr-1 mb-1">
-                            <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors">
-                                <ImageIcon size={20} />
-                            </button>
                             <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors">
                                 <Mic size={20} />
                             </button>
-                            {input.trim() && (
+                            {(input.trim() || selectedImage) && (
                                 <button
                                     type="submit"
                                     className="p-2.5 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors ml-1 animate-in zoom-in duration-200"

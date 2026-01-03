@@ -40,6 +40,8 @@ export default function Chat() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const router = useRouter();
 
     // Refs
@@ -75,6 +77,31 @@ export default function Chat() {
             console.error('Chat error:', e);
         }
     });
+
+    const handleFileSelect = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setSelectedImage(e.target?.result as string);
+            setSelectedFile(file);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleBarcodeScan = async (code: string) => {
+        console.log('[handleBarcodeScan] Scanned code:', code);
+        try {
+            const res = await fetch(`/api/lookup-upc?upc=${code}`);
+            if (!res.ok) throw new Error('Product not found');
+            const data = await res.json();
+
+            // Format the product info into the chat input
+            const productInfo = `I've scanned ${data.brand || ''} ${data.name}. It has ${data.calories} calories, ${data.protein}g protein, ${data.fat}g fat, and ${data.carbs}g carbs per ${data.serving_size}. Please log this for me.`;
+            setInput(productInfo);
+        } catch (err) {
+            console.error('Barcode lookup failed:', err);
+            setInput(`I scanned code ${code}, but couldn't find it in the database. Can you help me log it manually?`);
+        }
+    };
 
     // Initialize
     useEffect(() => {
@@ -285,9 +312,9 @@ export default function Chat() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() && !selectedImage) return;
 
-        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current });
+        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current, hasImage: !!selectedImage });
 
         let convId = currentConversationId;
         if (!convId && userId) {
@@ -309,11 +336,24 @@ export default function Chat() {
                 id: crypto.randomUUID(),
                 conversation_id: convId,
                 role: 'user',
-                content: input.trim(),
+                content: input.trim() || (selectedImage ? "[Attached Image]" : ""),
+                tool_calls: selectedImage ? { image_attached: true } : null
             });
         }
 
-        handleSubmit(e);
+        const options = selectedFile ? {
+            experimental_attachments: [{
+                name: selectedFile.name,
+                type: selectedFile.type,
+                url: selectedImage!,
+            }]
+        } : {};
+
+        handleSubmit(e, options);
+
+        // Reset image
+        setSelectedImage(null);
+        setSelectedFile(null);
     };
 
     const handleSuggestionClick = (text: string) => {
@@ -402,6 +442,10 @@ export default function Chat() {
                     input={input}
                     onInputChange={handleInputChange}
                     onSubmit={onSubmit}
+                    onFileSelect={handleFileSelect}
+                    selectedImage={selectedImage}
+                    setSelectedImage={setSelectedImage}
+                    onBarcodeScan={handleBarcodeScan}
                 />
 
             </main>

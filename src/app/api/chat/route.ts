@@ -94,15 +94,13 @@ export async function POST(req: Request) {
     }
 
     // 4. Initialize The Brain
-    // Explicitly configure OpenRouter to prevent SDK from defaulting to OpenAI
     const openrouter = createOpenAI({
         baseURL: process.env.OPENAI_BASE_URL || "https://openrouter.ai/api/v1",
         apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Model is configurable via OPENAI_MODEL env var (e.g., "google/gemini-2.5-pro")
-    // Model is configurable via OPENAI_MODEL env var
-    const modelId = process.env.OPENAI_MODEL || 'x-ai/grok-4.1-fast';
+    // Use a vision-capable model for multimodal support
+    const modelId = process.env.OPENAI_MODEL || 'google/gemini-2.0-flash-001';
 
     // 5. Load Domain Knowledge (The Knowledge Vault)
     const constitution = await getKnowledgeItem('constitutions', userProfile.diet_mode || 'standard');

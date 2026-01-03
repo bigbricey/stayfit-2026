@@ -9,6 +9,14 @@ export const metadata: Metadata = {
     description: 'Your personal AI metabolic coach. Log meals, track goals, and optimize your health with science-backed insights.',
     keywords: ['fitness', 'nutrition', 'metabolic health', 'keto', 'carnivore', 'macro tracking', 'AI health coach'],
     authors: [{ name: 'StayFitWithAI' }],
+    manifest: '/manifest.json',
+    viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
+    themeColor: '#0a0b0d',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'black-translucent',
+        title: 'StayFit',
+    },
     openGraph: {
         title: 'StayFitWithAI - The Metabolic Truth Engine',
         description: 'The only AI that learns you for a decade',
