@@ -23,17 +23,23 @@ const RequestSchema = z.object({
         name: z.string().optional(),
         biometrics: z.any().optional(),
     }).optional(),
-});
+}).passthrough(); // Allow extra fields like 'attachments'
 
 export async function POST(req: Request) {
     const body = await req.json();
+
+    // LOG RAW BODY FOR DEBUGGING
+    console.log('[API/Chat] Received body keys:', Object.keys(body));
+
     const result_validate = RequestSchema.safeParse(body);
 
     if (!result_validate.success) {
+        console.error('[API/Chat] Validation Error:', result_validate.error);
         return new Response(JSON.stringify({ error: 'Invalid Request Data', details: result_validate.error.format() }), { status: 400 });
     }
 
     const { messages, demoConfig, conversationId } = result_validate.data;
+    const attachments = (body as any).attachments || [];
     const supabase = await createClient();
 
     // CHECK: API Key Existence
@@ -106,10 +112,23 @@ export async function POST(req: Request) {
     const constitution = await getKnowledgeItem('constitutions', userProfile.diet_mode || 'standard');
     const specialist = await getKnowledgeItem('specialists', userProfile.active_coach || 'fat_loss');
 
+    // 6. Multimodal Processing: Append attachments to the last message
+    const processedMessages = [...messages];
+    if (attachments.length > 0 && processedMessages.length > 0) {
+        const lastIndex = processedMessages.length - 1;
+        const lastMessage = processedMessages[lastIndex];
+        if (lastMessage.role === 'user') {
+            processedMessages[lastIndex] = {
+                ...lastMessage,
+                experimental_attachments: attachments,
+            };
+        }
+    }
+
     const result = await streamText({
         model: openrouter(modelId),
         system: METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist),
-        messages,
+        messages: processedMessages,
         onFinish: async (event) => {
             if (user && conversationId) {
                 // Server-Side Persistence: Fallback/Primary mechanism
