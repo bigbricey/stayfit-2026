@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
-const DIET_MODES = ['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian'];
+const DIET_MODES = ['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian', 'modified_keto'];
 
 const SAFETY_FLAGS = [
     { key: 'warn_seed_oils', label: 'Warn about Seed Oils (Linoleic Acid)', description: 'Alert when foods contain soybean, canola, or corn oil.' },
@@ -18,17 +18,10 @@ const COACH_MODES = [
     { mode: 'longevity', label: 'Healthspan', desc: 'Focus on inflammation, vitality & blood markers' },
 ];
 
-const INTENSITY_MODES = [
-    { mode: 'savage', label: 'Savage', desc: 'Drill Sergeant. No mercy.' },
-    { mode: 'neutral', label: 'Neutral', desc: 'Professional & objective.' },
-    { mode: 'supportive', label: 'Supportive', desc: 'Empathetic & encouraging.' },
-];
-
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [dietMode, setDietMode] = useState('standard');
     const [activeCoach, setActiveCoach] = useState('fat_loss');
-    const [coachIntensity, setCoachIntensity] = useState('neutral');
     const [safetyFlags, setSafetyFlags] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -55,7 +48,6 @@ export default function SettingsPage() {
                 const config = JSON.parse(saved);
                 setDietMode(config.diet_mode || 'standard');
                 setActiveCoach(config.active_coach || 'fat_loss');
-                setCoachIntensity(config.coach_intensity || 'neutral');
                 setSafetyFlags(config.safety_flags || {});
             }
             setLoading(false);
@@ -65,13 +57,12 @@ export default function SettingsPage() {
     const loadProfile = async (currentUser: any) => {
         const { data } = await supabase
             .from('users_secure')
-            .select('diet_mode, active_coach, coach_intensity, safety_flags')
+            .select('diet_mode, active_coach, safety_flags')
             .eq('id', currentUser.id)
             .single();
         if (data) {
             setDietMode(data.diet_mode || 'standard');
             setActiveCoach(data.active_coach || 'fat_loss');
-            setCoachIntensity(data.coach_intensity || 'neutral');
             setSafetyFlags(data.safety_flags || {});
         }
         setLoading(false);
@@ -82,7 +73,6 @@ export default function SettingsPage() {
         const updates = {
             diet_mode: dietMode,
             active_coach: activeCoach,
-            coach_intensity: coachIntensity,
             safety_flags: safetyFlags,
         };
 
@@ -136,8 +126,8 @@ export default function SettingsPage() {
                     </Link>
                 </div>
 
-                {/* Coach Persona (Specialist & Intensity) */}
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-8">
+                {/* Coach Persona (Specialist) */}
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
                     <div>
                         <h2 className="text-xl font-bold mb-4">Coach Specialist</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -152,25 +142,6 @@ export default function SettingsPage() {
                                 >
                                     <div className="font-bold">{coach.label}</div>
                                     <div className="text-xs text-gray-400 mt-1 leading-tight">{coach.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <h2 className="text-xl font-bold mb-4">Coach Intensity</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {INTENSITY_MODES.map((intensity) => (
-                                <button
-                                    key={intensity.mode}
-                                    onClick={() => setCoachIntensity(intensity.mode)}
-                                    className={`p-4 rounded-xl text-left transition-all border ${coachIntensity === intensity.mode
-                                        ? 'bg-emerald-600/20 border-emerald-500 text-white'
-                                        : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-600'
-                                        }`}
-                                >
-                                    <div className="font-bold">{intensity.label}</div>
-                                    <div className="text-xs text-gray-400 mt-1 leading-tight">{intensity.desc}</div>
                                 </button>
                             ))}
                         </div>

@@ -97,9 +97,8 @@ export async function POST(req: Request) {
             update_profile: tool({
                 description: 'Update the user\'s profile, name, diet mode, or biometrics. Use when user says "My name is X", "I weigh Y", "Switch me to keto", etc. Changes are logged to history for future queries. For "low carb" use keto mode.',
                 parameters: z.object({
-                    diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian']).optional().describe('The dietary approach. Use "keto" for low-carb requests. Changes are logged to history.'),
+                    diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian', 'modified_keto']).optional().describe('The dietary approach. Use "keto" for low-carb or "modified_keto" for performance keto. Changes are logged to history.'),
                     active_coach: z.enum(['hypertrophy', 'fat_loss', 'longevity']).optional().describe('The specialist coach mode. Hypertrophy=Builder, Fat Loss=Shredder, Longevity=Healthspan.'),
-                    coach_intensity: z.enum(['savage', 'neutral', 'supportive']).optional().describe('The personality intensity. Savage=Drill Sergeant, Neutral=Professional, Supportive=Empathetic.'),
                     safety_flags: z.record(z.boolean()).optional(),
                     name: z.string().optional(),
                     biometrics: z.object({
@@ -116,7 +115,7 @@ export async function POST(req: Request) {
                         goals: z.array(z.string()).optional().describe('Fitness goals like "lose fat", "gain muscle"'),
                     }).passthrough().optional().describe('Body metrics - weight changes are logged to history'),
                 }),
-                execute: async ({ diet_mode, active_coach, coach_intensity, safety_flags, name, biometrics }) => {
+                execute: async ({ diet_mode, active_coach, safety_flags, name, biometrics }) => {
                     if (!user) {
                         console.warn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}`;
@@ -125,7 +124,7 @@ export async function POST(req: Request) {
                     // Fetch current profile for comparison and merging
                     const { data: currentProfile } = await supabase
                         .from('users_secure')
-                        .select('diet_mode, active_coach, coach_intensity, biometrics, name')
+                        .select('diet_mode, active_coach, biometrics, name')
                         .eq('id', user.id)
                         .single();
 
@@ -153,12 +152,6 @@ export async function POST(req: Request) {
                     if (active_coach && active_coach !== currentProfile?.active_coach) {
                         updates.active_coach = active_coach;
                         loggedEvents.push(`coach → ${active_coach}`);
-                    }
-
-                    // Handle coach_intensity change
-                    if (coach_intensity && coach_intensity !== currentProfile?.coach_intensity) {
-                        updates.coach_intensity = coach_intensity;
-                        loggedEvents.push(`intensity → ${coach_intensity}`);
                     }
 
                     if (safety_flags) updates.safety_flags = safety_flags;
