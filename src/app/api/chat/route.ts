@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     const { messages, demoConfig, conversationId } = result_validate.data;
-    const attachments = (body as any).attachments || [];
+    const attachments = (body as any).attachments || (body as any).experimental_attachments || [];
     const supabase = await createClient();
 
     // CHECK: API Key Existence
@@ -139,6 +139,7 @@ export async function POST(req: Request) {
                         role: 'assistant',
                         content: event.text,
                         tool_calls: event.toolCalls && event.toolCalls.length > 0 ? event.toolCalls : null,
+                        experimental_attachments: event.attachments && event.attachments.length > 0 ? event.attachments : null,
                     });
                     if (error) console.error('[API/Chat] Server Save Error:', error);
                     else console.log('[API/Chat] Server Saved Assistant Message');

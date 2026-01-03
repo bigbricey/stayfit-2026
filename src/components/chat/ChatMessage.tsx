@@ -89,6 +89,29 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                     </ReactMarkdown>
                 </div>
 
+                {/* Attachments */}
+                {(message as any).experimental_attachments && (message as any).experimental_attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                        {(message as any).experimental_attachments.map((attachment: any, index: number) => (
+                            <div key={index} className="relative group/img max-w-[300px]">
+                                {attachment.contentType?.startsWith('image/') || attachment.type?.startsWith('image/') ? (
+                                    <div className="rounded-xl overflow-hidden border border-[#2a2d34] bg-[#1a1d24]">
+                                        <img
+                                            src={attachment.url}
+                                            alt={attachment.name || 'Attachment'}
+                                            className="w-full h-auto object-cover max-h-[300px]"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="px-3 py-2 rounded-lg bg-[#1a1d24] border border-[#2a2d34] text-xs text-gray-400">
+                                        {attachment.name || 'File'}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Tool Logs */}
                 {message.toolInvocations?.map((tool: any) => (
                     <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">

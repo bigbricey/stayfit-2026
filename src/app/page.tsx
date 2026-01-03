@@ -269,6 +269,7 @@ export default function Chat() {
             role: m.role,
             content: m.content,
             tool_calls: m.toolInvocations || null,
+            experimental_attachments: (m as any).experimental_attachments || null,
         }));
 
         const { error } = await supabase.from('messages').insert(toInsert);
@@ -359,7 +360,10 @@ export default function Chat() {
             }]
         } : {};
 
-        handleSubmit(e, options);
+        handleSubmit(e, {
+            ...options,
+            allowEmptySubmit: true,
+        });
 
         // Reset image
         setSelectedImage(null);
