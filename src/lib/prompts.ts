@@ -141,6 +141,44 @@ const OUTPUT_FORMATTER = `
 // 4. THE PROMPT FACTORY (Assembler)
 // ============================================================================
 
+// Helper: Build Safety Guardrails based on user flags
+const buildGuardrails = (flags: Record<string, boolean> = {}): string => {
+    const items: string[] = [];
+    if (flags?.warn_seed_oils) items.push('**SEED OIL ALERT**: This product may contain inflammatory linoleic acid.');
+    if (flags?.warn_sugar) items.push('**SUGAR ALERT**: This product may contain hidden sugars.');
+    if (flags?.warn_gluten) items.push('**GLUTEN ALERT**: This product may contain gluten.');
+    return items.length > 0 ? `\n### **SAFETY GUARDRAILS**\n${items.join('\n')}\n` : '';
+};
+
+// Helper: Format User Context
+const formatUserContext = (profile: any, goals: any[]): string => {
+    const name = profile?.name || 'User';
+    const weight = profile?.current_weight;
+    const waist = profile?.waist;
+    const goalsText = goals && goals.length > 0 ? goals.map((g: any) => `- ${g.type}: ${g.target}`).join('\n') : 'No active goals.';
+    return `
+<user_profile>
+**Name:** ${name}
+${weight ? `**Weight:** ${weight} lbs` : ''}
+${waist ? `**Waist:** ${waist} in` : ''}
+
+**Active Goals:**
+${goalsText}
+</user_profile>
+`;
+};
+
+// The Lab Analysis Engine
+const LAB_ANALYSIS_ENGINE = `
+### **LAB ANALYSIS ENGINE**
+When the user provides lab results (blood panels, lipid profiles, etc.):
+1. **CONTEXTUALIZE**: Interpret values within the context of the user's current Diet Mode.
+2. **HIGHLIGHT**: Point out any values that are outside optimal ranges.
+3. **EDUCATE**: Explain in plain language what each marker indicates about metabolic health.
+4. **ACTIONABLE**: Provide specific recommendations to address any concerns.
+`;
+
+
 export const METABOLIC_COACH_PROMPT = (
     userProfile: any,
     activeGoals: any = [],

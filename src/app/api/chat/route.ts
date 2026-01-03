@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     });
 
     // 2. Fetch User Profile
-    let userProfile = { diet_mode: 'standard', safety_flags: {} };
+    let userProfile: { diet_mode: string; safety_flags: Record<string, boolean>; active_coach?: string;[key: string]: any } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss' };
     let activeGoals: any[] = [];
 
     if (user) {
