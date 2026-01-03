@@ -397,19 +397,16 @@ export default function Chat() {
             {/* Main Canvas */}
             <main className="flex-1 flex flex-col relative min-w-0">
 
-                {/* Mobile Header / Sidebar Toggle */}
-                <div className={`
-                    absolute top-0 left-0 z-30 p-4 pt-[env(safe-area-inset-top)]
-                    transition-opacity duration-300
-                    ${showSidebar ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-                `}>
+                {/* Mobile Sidebar Toggle - Always reachable */}
+                {!showSidebar && (
                     <button
                         onClick={() => setShowSidebar(true)}
-                        className="p-2.5 text-gray-400 hover:text-white bg-[#12141a]/80 backdrop-blur-md border border-[#2a2d34] rounded-xl shadow-lg transition-all active:scale-95"
+                        className="fixed top-4 left-4 z-40 p-3 text-gray-400 hover:text-[#22c55e] bg-[#12141a]/90 backdrop-blur-md border border-[#2a2d34] rounded-xl shadow-2xl md:hidden transition-all active:scale-95 flex items-center justify-center pt-[calc(1rem+env(safe-area-inset-top))]"
+                        style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
                     >
                         <PanelLeftOpen size={24} />
                     </button>
-                </div>
+                )}
 
                 {/* Chat Scroll Area */}
                 <div className="flex-1 overflow-y-auto scroll-smooth">

@@ -118,10 +118,10 @@ export default function Sidebar({
             )}
 
             <aside className={`
-                ${showSidebar ? 'translate-x-0 w-[300px]' : '-translate-x-full w-0 md:w-0'} 
                 fixed md:relative inset-y-0 left-0 z-50
-                bg-[#12141a] flex-shrink-0 transition-all duration-300 ease-in-out flex flex-col overflow-hidden
+                bg-[#12141a] flex-shrink-0 transition-transform duration-300 ease-in-out flex flex-col
                 border-r border-[#2a2d34]
+                ${showSidebar ? 'translate-x-0 w-[300px]' : '-translate-x-full w-[300px] md:w-0 md:hidden'} 
                 pb-[env(safe-area-inset-bottom)]
             `}>
                 {/* Header with Close Toggle */}
