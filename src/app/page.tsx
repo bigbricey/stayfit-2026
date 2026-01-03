@@ -247,6 +247,7 @@ export default function Chat() {
                 role: m.role as 'user' | 'assistant',
                 content: m.content,
                 toolInvocations: m.tool_calls,
+                experimental_attachments: (m as any).experimental_attachments,
             }));
             console.log('[loadConversation] Setting messages:', chatMessages.length);
             setMessages(chatMessages);
