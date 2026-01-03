@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/chat/Sidebar';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
+import { resizeImage } from '@/lib/utils';
 import WelcomeScreen from '@/components/chat/WelcomeScreen';
 import PWAInstallPrompt from '@/components/chat/PWAInstallPrompt';
 
@@ -43,6 +44,7 @@ export default function Chat() {
     const [demoConfig, setDemoConfig] = useState<any>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isCompressing, setIsCompressing] = useState(false);
     const router = useRouter();
 
     // Responsive initial state
@@ -94,13 +96,28 @@ export default function Chat() {
         }
     });
 
-    const handleFileSelect = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setSelectedImage(e.target?.result as string);
+    const handleFileSelect = async (file: File) => {
+        console.log('[handleFileSelect] File selected:', file.name, 'size:', file.size);
+        setIsCompressing(true);
+        try {
+            const compressedDataUrl = await resizeImage(file);
+            console.log('[handleFileSelect] Compression complete. Length:', compressedDataUrl.length);
+            setSelectedImage(compressedDataUrl);
             setSelectedFile(file);
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            console.error('[handleFileSelect] Compression failed:', err);
+            // Fallback to original reader if compression fails
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const result = e.target?.result as string;
+                setSelectedImage(result);
+                setSelectedFile(file);
+                console.log('[handleFileSelect] Fallback read complete. Length:', result.length);
+            };
+            reader.readAsDataURL(file);
+        } finally {
+            setIsCompressing(false);
+        }
     };
 
     const handleBarcodeScan = async (code: string) => {
@@ -369,11 +386,13 @@ export default function Chat() {
             if (saveError) console.error('[onSubmit] DB Save Error:', saveError);
         }
 
-        const options = selectedFile ? {
+        console.log('[onSubmit] Preparing options. hasImage:', !!selectedImage, 'urlLength:', selectedImage?.length);
+
+        const options = selectedFile && selectedImage ? {
             experimental_attachments: [{
                 name: selectedFile.name,
-                type: selectedFile.type,
-                url: selectedImage!,
+                contentType: selectedFile.type,
+                url: selectedImage,
             }]
         } : {};
 
