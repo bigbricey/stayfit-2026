@@ -11,6 +11,7 @@ import Sidebar from '@/components/chat/Sidebar';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
 import WelcomeScreen from '@/components/chat/WelcomeScreen';
+import InstallPrompt from '@/components/chat/InstallPrompt';
 
 // Types
 interface Conversation {
@@ -456,6 +457,7 @@ export default function Chat() {
                     onBarcodeScan={handleBarcodeScan}
                 />
 
+                <InstallPrompt />
             </main>
         </div>
     );
