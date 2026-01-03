@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { SendHorizontal, ImageIcon, Mic, Plus, Scan } from 'lucide-react';
+import { SendHorizontal, ImageIcon, Mic, Plus, Scan, Camera } from 'lucide-react';
 import BarcodeScanner from './BarcodeScanner';
 
 interface ChatInputProps {
@@ -74,12 +74,20 @@ export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect
                         ${input.trim() || selectedImage ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
                         focus-within:bg-[#22262f] focus-within:border-[#22c55e]/50
                     `}>
-                        {/* Hidden File Input */}
+                        {/* Hidden Inputs */}
                         <input
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileChange}
+                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            className="hidden"
+                        />
+                        <input
+                            type="file"
+                            id="cameraInput"
+                            capture="environment"
                             accept="image/*"
+                            onChange={handleFileChange}
                             className="hidden"
                         />
 
@@ -88,15 +96,23 @@ export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
-                                title="Attach Image"
+                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                title="Photo Library"
                             >
                                 <ImageIcon size={20} />
                             </button>
                             <button
                                 type="button"
+                                onClick={() => document.getElementById('cameraInput')?.click()}
+                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                title="Take Photo"
+                            >
+                                <Camera size={20} />
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setShowScanner(true)}
-                                className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                className="p-2.5 text-gray-400 hover:text-[#22c55e] rounded-lg hover:bg-[#2a2d34] transition-colors"
                                 title="Scan Barcode"
                             >
                                 <Scan size={20} />
