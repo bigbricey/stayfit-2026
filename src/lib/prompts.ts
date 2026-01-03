@@ -249,7 +249,12 @@ ${goalSummary}
 
 export const METABOLIC_COACH_PROMPT = (userProfile: any, activeGoals: any = []) => {
     const dietMode = (userProfile?.diet_mode as DietMode) || 'standard';
-    const constitution = CONSTITUTIONS[dietMode] || CONSTITUTIONS.standard;
+    const constitution = CONSTITUTIONS[dietMode as keyof typeof CONSTITUTIONS] || `
+### **DYNAMIC CONSTITUTION: ${dietMode.toUpperCase()}**
+> **Current Status**: Specific metabolic rules for this mode are not yet internalized.
+> **Protocol**: Defaulting to the user's specific performance goals and documented history. 
+> **Action**: If you have specific 'Guardrails' or 'Metabolic Laws' for this diet, state them now so I can calibrate my analysis.
+`;
 
     const coachMode = (userProfile?.active_coach as CoachMode) || 'fat_loss';
     const specialist = SPECIALISTS[coachMode] || SPECIALISTS.fat_loss;
