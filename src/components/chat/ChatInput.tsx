@@ -49,8 +49,8 @@ export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect
     };
 
     return (
-        <div className="pb-6 px-4 pt-2 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d] to-transparent z-20">
-            <div className="max-w-3xl mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d]/95 to-transparent z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="max-w-4xl mx-auto">
                 <form onSubmit={onSubmit} className="relative group">
                     {/* Image Preview */}
                     {selectedImage && (

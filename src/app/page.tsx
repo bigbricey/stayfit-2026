@@ -389,16 +389,18 @@ export default function Chat() {
             <main className="flex-1 flex flex-col relative min-w-0">
 
                 {/* Mobile Header / Sidebar Toggle */}
-                {!showSidebar && (
-                    <div className="absolute top-4 left-4 z-10">
-                        <button
-                            onClick={() => setShowSidebar(true)}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-[#1a1d24] rounded-lg transition-colors"
-                        >
-                            <PanelLeftOpen size={24} />
-                        </button>
-                    </div>
-                )}
+                <div className={`
+                    absolute top-0 left-0 z-30 p-4 pt-[env(safe-area-inset-top)]
+                    transition-opacity duration-300
+                    ${showSidebar ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+                `}>
+                    <button
+                        onClick={() => setShowSidebar(true)}
+                        className="p-2.5 text-gray-400 hover:text-white bg-[#12141a]/80 backdrop-blur-md border border-[#2a2d34] rounded-xl shadow-lg transition-all active:scale-95"
+                    >
+                        <PanelLeftOpen size={24} />
+                    </button>
+                </div>
 
                 {/* Chat Scroll Area */}
                 <div className="flex-1 overflow-y-auto scroll-smooth">
