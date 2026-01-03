@@ -14,6 +14,10 @@ export const metadata: Metadata = {
         capable: true,
         statusBarStyle: 'black-translucent',
         title: 'StayFit',
+        startupImage: [],
+    },
+    icons: {
+        apple: '/icons/icon-192x192.png',
     },
     openGraph: {
         title: 'StayFitWithAI - The Metabolic Truth Engine',
