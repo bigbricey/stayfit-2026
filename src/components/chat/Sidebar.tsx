@@ -12,8 +12,7 @@ import {
     MoreVertical,
     Trash2,
     Pencil,
-    ShieldCheck,
-    Download
+    ShieldCheck
 } from 'lucide-react';
 
 // Types
@@ -242,14 +241,6 @@ export default function Sidebar({
                         <Settings size={18} />
                         <span>Settings</span>
                     </Link>
-                    {/* Add App Link - Only shown on mobile */}
-                    <button
-                        onClick={() => window.dispatchEvent(new CustomEvent('show-pwa-install-prompt'))}
-                        className="w-full flex md:hidden items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-sm"
-                    >
-                        <Download size={18} />
-                        <span>Install App</span>
-                    </button>
                     {/* VIP Admin Link - Only for you */}
                     {userId && userEmail === 'bigbricey@gmail.com' && (
                         <Link href="/admin" className="flex items-center gap-3 text-emerald-500 hover:text-emerald-400 px-2 py-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-sm group">
