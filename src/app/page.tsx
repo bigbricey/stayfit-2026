@@ -67,14 +67,21 @@ export default function Chat() {
     // AI Hook
     const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
         maxSteps: 3,
-        body: () => ({ demoConfig, conversationId: conversationIdRef.current }),
+        body: () => {
+            console.log('[useChat] body() called. convRef:', conversationIdRef.current);
+            return { demoConfig, conversationId: conversationIdRef.current };
+        },
+        onResponse: (response) => {
+            console.log('[useChat] onResponse received:', response.status, response.statusText);
+        },
         onFinish: async (message) => {
             const activeId = conversationIdRef.current;
-            console.log('[onFinish] Called with activeId:', activeId, 'userId:', userId);
+            console.log('[useChat] onFinish. message:', message.content?.slice(0, 50), 'activeId:', activeId, 'userId:', userId);
+            console.log('[useChat] Current messages count:', messagesRef.current.length);
 
             if (activeId && userId) {
-                // We no longer save everything here because the server handles the assistant message.
-                // We only ensure the user message was saved (though it should have been on submit).
+                console.log('[useChat] Persisting messages for conv:', activeId);
+                await saveMessagesToDb(activeId, [...messagesRef.current, message]);
                 loadConversations(userId);
             }
             else {
@@ -82,7 +89,8 @@ export default function Chat() {
             }
         },
         onError: (e) => {
-            console.error('Chat error:', e);
+            console.error('[useChat] onError:', e);
+            alert(`Chat error: ${e.message}`);
         }
     });
 
@@ -323,33 +331,42 @@ export default function Chat() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() && !selectedImage) return;
+        console.log('[onSubmit] Triggered. input:', input.trim(), 'hasImage:', !!selectedImage);
 
-        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current, hasImage: !!selectedImage });
+        if (!input.trim() && !selectedImage) {
+            console.log('[onSubmit] Empty submission ignored');
+            return;
+        }
+
+        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current });
 
         let convId = currentConversationId;
         if (!convId && userId) {
-            console.log('[onSubmit] Creating new conversation...');
+            console.log('[onSubmit] Creating new conversation for user:', userId);
             convId = await createNewConversation();
             console.log('[onSubmit] Created conversation:', convId);
             if (convId) {
                 setCurrentConversationId(convId);
                 conversationIdRef.current = convId;
-                console.log('[onSubmit] Ref updated to:', conversationIdRef.current);
             }
         }
 
-        console.log('[onSubmit] Calling handleSubmit with convId:', convId, 'ref:', conversationIdRef.current);
-
-        // SAVE USER MESSAGE IMMEDIATELY (Prevent Race Condition)
+        // SAVE USER MESSAGE IMMEDIATELY for authenticated users
         if (convId && userId) {
-            await supabase.from('messages').insert({
+            console.log('[onSubmit] Saving user message to DB for conv:', convId);
+            const { error: saveError } = await supabase.from('messages').insert({
                 id: crypto.randomUUID(),
                 conversation_id: convId,
                 role: 'user',
-                content: input.trim() || (selectedImage ? "[Attached Image]" : ""),
-                tool_calls: selectedImage ? { image_attached: true } : null
+                content: input.trim() || "[Attached Image]",
+                tool_calls: selectedImage ? { image_attached: true, image_url: selectedImage.slice(0, 50) + '...' } : null,
+                experimental_attachments: selectedFile ? [{
+                    name: selectedFile.name,
+                    type: selectedFile.type,
+                    url: selectedImage,
+                }] : null
             });
+            if (saveError) console.error('[onSubmit] DB Save Error:', saveError);
         }
 
         const options = selectedFile ? {
@@ -360,10 +377,17 @@ export default function Chat() {
             }]
         } : {};
 
-        handleSubmit(e, {
-            ...options,
-            allowEmptySubmit: true,
-        });
+        console.log('[onSubmit] Calling handleSubmit. Attachments:', options.experimental_attachments?.length || 0);
+
+        try {
+            handleSubmit(e, {
+                ...options,
+                allowEmptySubmit: true,
+            });
+            console.log('[onSubmit] handleSubmit called successfully');
+        } catch (err) {
+            console.error('[onSubmit] handleSubmit CRASHED:', err);
+        }
 
         // Reset image
         setSelectedImage(null);
