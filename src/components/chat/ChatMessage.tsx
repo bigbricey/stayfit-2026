@@ -90,7 +90,7 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                 </div>
 
                 {/* Attachments */}
-                {(message as any).experimental_attachments && (message as any).experimental_attachments.length > 0 && (
+                {Array.isArray((message as any).experimental_attachments) && (message as any).experimental_attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
                         {(message as any).experimental_attachments.map((attachment: any, index: number) => (
                             <div key={index} className="relative group/img max-w-[300px]">
@@ -113,7 +113,7 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                 )}
 
                 {/* Tool Logs */}
-                {message.toolInvocations?.map((tool: any) => (
+                {Array.isArray(message.toolInvocations) && message.toolInvocations.map((tool: any) => (
                     <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">
                         {tool.toolName === 'log_activity' && 'result' in tool && (
                             <div className="text-xs text-emerald-400 flex items-center gap-1.5 opacity-75">

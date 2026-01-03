@@ -28,6 +28,7 @@ interface DbMessage {
     role: 'user' | 'assistant' | 'system';
     content: string;
     tool_calls: any;
+    experimental_attachments?: any;
     created_at: string;
 }
 
@@ -242,13 +243,28 @@ export default function Chat() {
         console.log('[loadConversation] Query result:', { count: data?.length, error });
 
         if (data && data.length > 0) {
-            const chatMessages = data.map((m: DbMessage) => ({
-                id: m.id,
-                role: m.role as 'user' | 'assistant',
-                content: m.content,
-                toolInvocations: m.tool_calls,
-                experimental_attachments: (m as any).experimental_attachments,
-            }));
+            const chatMessages = data.map((m: DbMessage) => {
+                // Defensive checks for JSONB columns which might be objects instead of arrays
+                let toolInvocations = m.tool_calls;
+                if (toolInvocations && !Array.isArray(toolInvocations)) {
+                    console.warn('[loadConversation] tool_calls is not an array, wrapping in array:', toolInvocations);
+                    toolInvocations = [toolInvocations];
+                }
+
+                let attachments = m.experimental_attachments;
+                if (attachments && !Array.isArray(attachments)) {
+                    console.warn('[loadConversation] attachments is not an array, wrapping in array:', attachments);
+                    attachments = [attachments];
+                }
+
+                return {
+                    id: m.id,
+                    role: m.role as 'user' | 'assistant' | 'system',
+                    content: m.content || '',
+                    toolInvocations: toolInvocations || undefined,
+                    experimental_attachments: attachments || undefined,
+                };
+            });
             console.log('[loadConversation] Setting messages:', chatMessages.length);
             setMessages(chatMessages);
         } else {

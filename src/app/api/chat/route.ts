@@ -1,9 +1,10 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { streamText, generateText, tool, Message } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
 import { getKnowledgeItem } from '@/lib/knowledge';
+import { ContextManager } from '@/lib/memory/context-manager';
 
 // Allow streaming responses up to 60 seconds for complex reasoning
 // Allow streaming responses up to 5 minutes (300s) for complex reasoning models
@@ -76,24 +77,22 @@ export async function POST(req: Request) {
         authError: authError?.message
     });
 
-    // 2. Fetch User Profile
+    // 2. Fetch User Profile & Memory Summary
     let userProfile: { diet_mode: string; safety_flags: Record<string, boolean>; active_coach?: string;[key: string]: any } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss' };
     let activeGoals: any[] = [];
+    let memorySummary: string | null = null;
 
     if (user) {
-        const { data: profile } = await supabase
-            .from('users_secure')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-        if (profile) userProfile = profile;
+        // Parallel fetch for profile, goals, and conversation memory
+        const [profileRes, goalsRes, convRes] = await Promise.all([
+            supabase.from('users_secure').select('*').eq('id', user.id).single(),
+            supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'active'),
+            conversationId ? supabase.from('conversations').select('memory_summary').eq('id', conversationId).single() : Promise.resolve({ data: null })
+        ]);
 
-        const { data: goals } = await supabase
-            .from('goals')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('status', 'active');
-        if (goals) activeGoals = goals;
+        if (profileRes.data) userProfile = profileRes.data;
+        if (goalsRes.data) activeGoals = goalsRes.data;
+        if (convRes.data) memorySummary = convRes.data.memory_summary;
     } else if (demoConfig) {
         // Apply Demo Config to System Prompt
         userProfile = { ...userProfile, ...demoConfig };
@@ -125,10 +124,16 @@ export async function POST(req: Request) {
         }
     }
 
+    // 6. Context management (Episodic + Semantic Tiers)
+    const tieredMessages = ContextManager.processContext(
+        METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist),
+        memorySummary,
+        processedMessages
+    );
+
     const result = await streamText({
         model: openrouter(modelId),
-        system: METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist),
-        messages: processedMessages,
+        messages: tieredMessages,
         onFinish: async (event) => {
             if (user && conversationId) {
                 // Server-Side Persistence: Fallback/Primary mechanism
@@ -143,6 +148,36 @@ export async function POST(req: Request) {
                     });
                     if (error) console.error('[API/Chat] Server Save Error:', error);
                     else console.log('[API/Chat] Server Saved Assistant Message');
+
+                    // Tiered Memory: Recursive Background Summarization
+                    // We trigger an extraction if the conversation is ongoing (multiples of 3 messages)
+                    // This ensures "Metabolic Truths" stay fresh without firing every turn.
+                    if (messages.length > 2 && messages.length % 3 === 0) {
+                        try {
+                            const extractionPrompt = ContextManager.getExtractionPrompt(
+                                memorySummary,
+                                [
+                                    ...messages.slice(-2),
+                                    { role: 'assistant', content: event.text } as Message
+                                ]
+                            );
+
+                            const { text: newSummary } = await generateText({
+                                model: openrouter(modelId),
+                                prompt: extractionPrompt,
+                            });
+
+                            if (newSummary && newSummary.length > 10) {
+                                await supabase
+                                    .from('conversations')
+                                    .update({ memory_summary: newSummary })
+                                    .eq('id', conversationId);
+                                console.log('[API/Chat] Memory Summary Updated');
+                            }
+                        } catch (summaryErr) {
+                            console.error('[API/Chat] background-summarization error:', summaryErr);
+                        }
+                    }
                 } catch (e) {
                     console.error('[API/Chat] Server Save Exception:', e);
                 }
