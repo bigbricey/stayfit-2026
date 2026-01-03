@@ -36,13 +36,44 @@ export default function Chat() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-    const [showSidebar, setShowSidebar] = useState(true);
+    const [showSidebar, setShowSidebar] = useState(false); // Default to closed for better mobile UX
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [demoConfig, setDemoConfig] = useState<any>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const router = useRouter();
+
+    // Responsive initial state
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setShowSidebar(window.innerWidth >= 768);
+        }
+    }, []);
+
+    // Also close sidebar on navigation if on mobile
+    const loadConversation = async (id: string) => {
+        console.log('[loadConversation] Called with id:', id);
+        setCurrentConversationId(id);
+        if (window.innerWidth < 768) setShowSidebar(false);
+        try {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('conversation_id', id)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            setMessages(data.map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                createdAt: new Date(m.created_at)
+            })));
+        } catch (err) {
+            console.error('Failed to load messages:', err);
+        }
+    };
 
     // Refs
     const conversationIdRef = useRef<string | null>(null);
@@ -225,6 +256,7 @@ export default function Chat() {
     const handleNewChat = () => {
         setCurrentConversationId(null);
         setMessages([]);
+        if (window.innerWidth < 768) setShowSidebar(false);
     };
 
     const saveMessagesToDb = async (conversationId: string, currentMessages: typeof messages) => {
