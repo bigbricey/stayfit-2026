@@ -138,126 +138,27 @@ const OUTPUT_FORMATTER = `
 `;
 
 // ============================================================================
-// 2. DYNAMIC CONSTITUTIONS (The "Law" Modules)
-// ============================================================================
-
-const CONSTITUTIONS: Record<DietMode | 'standard', string> = {
-    modified_keto: `
-### **THE MODIFIED KETOGENIC CONSTITUTION (D'AGOSTINO)**
-> **The Performance Imperative**: Therapeutic ketosis with glycolytic support.
-> 1. **Baseline Ketosis**: Sustain BHB levels (0.5-3.0 mmol/L) through 70-80% fat intake.
-> 2. **Peri-Workout Carbs**: Targeted carb pulses (25-50g) pre/post high-intensity training to fuel mTOR without derailing fat-adaptation.
-> 3. **The Metabolic Snap-Back**: Prioritize rapid return to ketosis post-workout.
-`,
-    keto: `
-### **THE KETOGENIC CONSTITUTION (BIKMAN/D'AGOSTINO)**
-> **The Insulin Imperative**: You are the guardian of nutritional ketosis.
-> 1. **Insulin Suppression**: Carbs are a lever, protein is a constant, fat is to satiety.
-> 2. **Electrolyte Mandate**: (Phinney/Volek) Low insulin causes sodium wasting. Prescribe salt for lethargy.
-> 3. **The PPG Rule**: 10 min movement after any carb ingestion to blunt the spike.
-`,
-    carnivore: `
-### **THE APEX CONSTITUTION (ANIMAL-BASED)**
-> **The Elimination Imperative**: You are the guardian of the zero-carb predatory state.
-> 1. **Plant Toxin Veto**: Alert the user to oxalates and lectins in non-animal foods.
-> 2. **Fat-to-Protein Mastery**: High-protein alone is starvation logic. Target 80/20 fat/protein for stability.
-> 3. **Organ Synergy**: Prioritize liver and heart as "Nature's Multivitamins."
-`,
-    vegan: `
-### **THE PLANT-BASED CONSTITUTION**
-> **The Bioavailability Imperative**: Guard against nutrient deficiencies.
-> 1. **Protein Quality**: Monitor amino acid profiles (Leucine thresholds).
-> 2. **Anti-Nutrient Audit**: Address phytates and their impact on mineral absorption.
-`,
-    standard: `
-### **THE METABOLIC STANDARD**
-> **The Foundation Imperative**: Prioritize whole-food integrity.
-> 1. **Seed Oil Veto**: (Industrial Lipid Warning).
-> 2. **Protein Anchor**: 30g minimum per meal.
-`,
-    paleo: `
-### **THE PALEOLITHIC CONSTITUTION**
-> **The Ancestral Imperative**: Hunter-gatherer logic. No Neolithic agricultural additives.
-`,
-    mediterranean: `
-### **THE MEDITERRANEAN CONSTITUTION**
-> **The Longevity Imperative**: EVOO supremacy and social dining context.
-`,
-    fruitarian: `
-### **THE FRUITARIAN CONSTITUTION**
-> **The Frugivore Imperative**: Fruit-based logic with dental and protein gap monitoring.
-`
-};
-
-const LAB_ANALYSIS_ENGINE = `
-### **THE LAB ANALYSIS ENGINE (CLINICAL OPTIMALITY)**
-Interpret biomarkers through **Bikman's Optimal Ranges**, not standard lab "normal":
-- **Fasting Insulin**: Optimal < 6 uIU/mL. Warning > 10.
-- **Trig/HDL Ratio**: Optimal < 1.5. High Risk > 3.0.
-- **HbA1c**: Optimal 4.8 - 5.2%.
-- **HOMA-IR**: (Glucose * Insulin) / 405. Optimal < 1.0.
-`;
-
-// ============================================================================
-// 3. HELPER FUNCTIONS
-// ============================================================================
-
-function buildGuardrails(flags: SafetyFlags = {}): string {
-    const rails = [];
-    if (flags.warn_seed_oils) {
-        rails.push(`- **SEED OIL VETO:** If food implies Soybean, Canola, Corn, or 'Vegetable' oil, label it "Industrial Lipid" and warn of oxidation risks.`);
-    }
-    if (flags.warn_sugar) {
-        rails.push(`- **GLYCEMIC VETO:** If food has >10g added sugar, label it "Metabolic Poison" and warn of mitochondrial stress.`);
-    }
-    if (flags.warn_gluten) {
-        rails.push(`- **GUT BARRIER VETO:** If food contains wheat/gluten, label it "Intestinal Permeability Hazard".`);
-    }
-
-    if (rails.length === 0) return "";
-
-    return `
-### **ACTIVE SAFETY GUARDRAILS**
-The user has activated specific "Tripwires". You MUST trigger these if detected:
-${rails.join('\n')}
-`;
-}
-
-function formatUserContext(userProfile: any, activeGoals: any[]): string {
-    const goalSummary = activeGoals && activeGoals.length > 0
-        ? activeGoals.map(g => `- ${g.metric}: Target ${g.target_value} (${g.period})`).join('\n')
-        : "No specific metabolic targets set yet.";
-
-    return `
-  <user_profile>
-    <name>${userProfile?.name || 'Unknown'}</name>
-    <diet_mode>${userProfile?.diet_mode || 'standard'}</diet_mode>
-    <active_coach>${userProfile?.active_coach || 'fat_loss'}</active_coach>
-    <biometrics>
-      ${JSON.stringify(userProfile?.biometrics || {})}
-    </biometrics>
-    <metabolic_goals>
-${goalSummary}
-    </metabolic_goals>
-  </user_profile>
-  `;
-}
-
-// ============================================================================
 // 4. THE PROMPT FACTORY (Assembler)
 // ============================================================================
 
-export const METABOLIC_COACH_PROMPT = (userProfile: any, activeGoals: any = []) => {
+export const METABOLIC_COACH_PROMPT = (
+    userProfile: any,
+    activeGoals: any = [],
+    customConstitution: string = '',
+    customSpecialist: string = ''
+) => {
     const dietMode = (userProfile?.diet_mode as DietMode) || 'standard';
-    const constitution = CONSTITUTIONS[dietMode as keyof typeof CONSTITUTIONS] || `
+    const coachMode = (userProfile?.active_coach as CoachMode) || 'fat_loss';
+
+    // Prioritize passed-in custom knowledge (from the Knowledge Vault)
+    const constitution = customConstitution || `
 ### **DYNAMIC CONSTITUTION: ${dietMode.toUpperCase()}**
 > **Current Status**: Specific metabolic rules for this mode are not yet internalized.
 > **Protocol**: Defaulting to the user's specific performance goals and documented history. 
 > **Action**: If you have specific 'Guardrails' or 'Metabolic Laws' for this diet, state them now so I can calibrate my analysis.
 `;
 
-    const coachMode = (userProfile?.active_coach as CoachMode) || 'fat_loss';
-    const specialist = SPECIALISTS[coachMode] || SPECIALISTS.fat_loss;
+    const specialist = customSpecialist || `### **THE UNIVERSAL COACH**\nYou are a peer-level conversational expert focused on results.`;
 
     const safetyGuardrails = buildGuardrails(userProfile?.safety_flags);
     const contextBlock = formatUserContext(userProfile, activeGoals);

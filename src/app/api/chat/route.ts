@@ -3,6 +3,7 @@ import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
+import { getKnowledgeItem } from '@/lib/knowledge';
 
 // Allow streaming responses up to 60 seconds for complex reasoning
 // Allow streaming responses up to 5 minutes (300s) for complex reasoning models
@@ -62,9 +63,13 @@ export async function POST(req: Request) {
     // Model is configurable via OPENAI_MODEL env var
     const modelId = process.env.OPENAI_MODEL || 'x-ai/grok-4.1-fast';
 
+    // 5. Load Domain Knowledge (The Knowledge Vault)
+    const constitution = await getKnowledgeItem('constitutions', userProfile.diet_mode || 'standard');
+    const specialist = await getKnowledgeItem('specialists', userProfile.active_coach || 'fat_loss');
+
     const result = await streamText({
         model: openrouter(modelId),
-        system: METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined),
+        system: METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist),
         messages,
         onFinish: async (event) => {
             if (user && conversationId) {
