@@ -51,30 +51,6 @@ export default function Chat() {
         }
     }, []);
 
-    // Also close sidebar on navigation if on mobile
-    const loadConversation = async (id: string) => {
-        console.log('[loadConversation] Called with id:', id);
-        setCurrentConversationId(id);
-        if (window.innerWidth < 768) setShowSidebar(false);
-        try {
-            const { data, error } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('conversation_id', id)
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
-            setMessages(data.map(m => ({
-                id: m.id,
-                role: m.role,
-                content: m.content,
-                createdAt: new Date(m.created_at)
-            })));
-        } catch (err) {
-            console.error('Failed to load messages:', err);
-        }
-    };
-
     // Refs
     const conversationIdRef = useRef<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -229,6 +205,7 @@ export default function Chat() {
     const loadConversation = async (conversationId: string) => {
         console.log('[loadConversation] Loading conversation:', conversationId);
         setCurrentConversationId(conversationId);
+        if (typeof window !== 'undefined' && window.innerWidth < 768) setShowSidebar(false);
 
         const { data, error } = await supabase
             .from('messages')
