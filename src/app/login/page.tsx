@@ -75,15 +75,7 @@ export default function LoginPage() {
             console.error("Signup Error:", error);
             setErrorMsg(error.message);
         } else {
-            setSuccessMsg("🎉 Account created! Loging you in...");
-            // Supabase sometimes logs in immediately after signup if email confirm is off
-            // Let's check session or try standard login just to be safe/speedy
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                router.push('/');
-            } else {
-                setSuccessMsg("Account created! Please check your email for a confirmation link.");
-            }
+            setSuccessMsg("🎉 Account created! Your access is now pending admin approval. You will be able to log in once the admin has reviewed your account.");
         }
         setLoading(false);
     };

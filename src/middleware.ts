@@ -35,19 +35,42 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    // 1. Check Approval Status for Authenticated Users
+    let isApproved = false;
+    if (user) {
+        // Special Case: Admin Bypass (The Boss)
+        if (user.email === 'bigbricey@gmail.com') {
+            isApproved = true;
+        } else {
+            const { data: profile } = await supabase
+                .from('users_secure')
+                .select('is_approved')
+                .eq('id', user.id)
+                .single();
+            isApproved = !!profile?.is_approved;
+        }
+    }
+
     // Protect all routes except public ones and Demo Mode
     const isPublic =
         request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/auth') ||
         request.nextUrl.pathname.startsWith('/api/chat') ||
+        request.nextUrl.pathname.startsWith('/pending') ||
         request.nextUrl.pathname.startsWith('/public');
 
+    // REDIRECT LOGIC
     if (!user && !isPublic) {
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Redirect authenticated users away from login
-    if (user && request.nextUrl.pathname.startsWith('/login')) {
+    // Redirect unapproved users to /pending
+    if (user && !isApproved && !isPublic) {
+        return NextResponse.redirect(new URL('/pending', request.url))
+    }
+
+    // Redirect authenticated & approved users away from login/pending
+    if (user && isApproved && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/pending'))) {
         return NextResponse.redirect(new URL('/', request.url))
     }
 

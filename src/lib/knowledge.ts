@@ -8,7 +8,8 @@ import path from 'path';
 export async function getKnowledgeItem(category: 'constitutions' | 'specialists', slug: string): Promise<string> {
     try {
         const knowledgeDir = path.join(process.cwd(), 'src', 'knowledge', category);
-        const filePath = path.join(knowledgeDir, `${slug.toLowerCase()}.md`);
+        const safeSlug = slug.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        const filePath = path.join(knowledgeDir, `${safeSlug}.md`);
 
         if (fs.existsSync(filePath)) {
             return fs.readFileSync(filePath, 'utf8');

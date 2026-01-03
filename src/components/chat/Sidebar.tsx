@@ -11,7 +11,8 @@ import {
     LogOut,
     MoreVertical,
     Trash2,
-    Pencil
+    Pencil,
+    ShieldCheck
 } from 'lucide-react';
 
 // Types
@@ -37,6 +38,7 @@ interface SidebarProps {
     onLogout: () => void;
     userId: string | null;
     userName: string | null;
+    userEmail: string | null;
 }
 
 export default function Sidebar({
@@ -53,7 +55,8 @@ export default function Sidebar({
     onDelete,
     onLogout,
     userId,
-    userName
+    userName,
+    userEmail
 }: SidebarProps) {
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingConversation, setEditingConversation] = useState<{ id: string; title: string } | null>(null);
@@ -226,6 +229,13 @@ export default function Sidebar({
                     <Settings size={18} />
                     <span>Settings</span>
                 </Link>
+                {/* VIP Admin Link - Only for you */}
+                {userId && userEmail === 'bigbricey@gmail.com' && (
+                    <Link href="/admin" className="flex items-center gap-3 text-emerald-500 hover:text-emerald-400 px-2 py-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-sm group">
+                        <ShieldCheck size={18} className="group-hover:animate-pulse" />
+                        <span>VIP Admin Dashboard</span>
+                    </Link>
+                )}
                 <button onClick={onLogout} className="w-full flex items-center gap-3 text-gray-400 hover:text-white px-2 py-2 rounded-lg hover:bg-[#1a1d24] hover:text-red-400 transition-colors text-sm">
                     <LogOut size={18} />
                     <span>Log Out</span>

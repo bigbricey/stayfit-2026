@@ -33,6 +33,7 @@ export default function Chat() {
     // State
     const [userId, setUserId] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(true);
@@ -62,10 +63,11 @@ export default function Chat() {
             console.log('[onFinish] Called with activeId:', activeId, 'userId:', userId);
 
             if (activeId && userId) {
-                console.log('[onFinish] Saving messages, count:', messagesRef.current.length);
-                await saveMessagesToDb(activeId, messagesRef.current);
+                // We no longer save everything here because the server handles the assistant message.
+                // We only ensure the user message was saved (though it should have been on submit).
                 loadConversations(userId);
-            } else {
+            }
+            else {
                 console.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
             }
         },
@@ -87,6 +89,7 @@ export default function Chat() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUserId(user.id);
+                setUserEmail(user.email ?? null);
                 const { data: profile } = await supabase
                     .from('users_secure')
                     .select('name')
@@ -299,6 +302,17 @@ export default function Chat() {
         }
 
         console.log('[onSubmit] Calling handleSubmit with convId:', convId, 'ref:', conversationIdRef.current);
+
+        // SAVE USER MESSAGE IMMEDIATELY (Prevent Race Condition)
+        if (convId && userId) {
+            await supabase.from('messages').insert({
+                id: crypto.randomUUID(),
+                conversation_id: convId,
+                role: 'user',
+                content: input.trim(),
+            });
+        }
+
         handleSubmit(e);
     };
 
@@ -328,6 +342,7 @@ export default function Chat() {
                 onLogout={handleLogout}
                 userId={userId}
                 userName={userName}
+                userEmail={userEmail}
             />
 
             {/* Main Canvas */}

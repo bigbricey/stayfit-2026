@@ -9,8 +9,31 @@ import { getKnowledgeItem } from '@/lib/knowledge';
 // Allow streaming responses up to 5 minutes (300s) for complex reasoning models
 export const maxDuration = 300;
 
+// Basic in-memory rate limiter for Demo Mode
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS = 20; // 20 requests per hour for guest mode
+
+const RequestSchema = z.object({
+    messages: z.array(z.any()),
+    conversationId: z.string().uuid().optional(),
+    demoConfig: z.object({
+        diet_mode: z.string().optional(),
+        active_coach: z.string().optional(),
+        name: z.string().optional(),
+        biometrics: z.any().optional(),
+    }).optional(),
+});
+
 export async function POST(req: Request) {
-    const { messages, demoConfig, conversationId } = await req.json();
+    const body = await req.json();
+    const result_validate = RequestSchema.safeParse(body);
+
+    if (!result_validate.success) {
+        return new Response(JSON.stringify({ error: 'Invalid Request Data', details: result_validate.error.format() }), { status: 400 });
+    }
+
+    const { messages, demoConfig, conversationId } = result_validate.data;
     const supabase = await createClient();
 
     // CHECK: API Key Existence
@@ -21,12 +44,30 @@ export async function POST(req: Request) {
     // 1. Authenticate User (Optional for Demo)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
+    // 1.5 Rate Limiting for Demo Mode (Unauthenticated)
+    if (!user) {
+        const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+        const now = Date.now();
+        const record = rateLimitMap.get(ip) || { count: 0, lastReset: now };
+
+        if (now - record.lastReset > RATE_LIMIT_WINDOW) {
+            record.count = 0;
+            record.lastReset = now;
+        }
+
+        if (record.count >= MAX_REQUESTS) {
+            return new Response('Rate limit exceeded for Guest Mode. Please sign in for unlimited access.', { status: 429 });
+        }
+
+        record.count++;
+        rateLimitMap.set(ip, record);
+    }
+
     // DIAGNOSTIC LOGGING
-    console.log('[API/Chat] Auth Check:', {
+    console.log('[API/Chat] Request processed', {
         hasUser: !!user,
         userId: user?.id,
-        authError: authError?.message,
-        cookieHeader: req.headers.get('cookie')?.substring(0, 20) + '...'
+        authError: authError?.message
     });
 
     // 2. Fetch User Profile
@@ -516,7 +557,8 @@ export async function POST(req: Request) {
                         .eq('user_id', user.id)
                         .eq('log_type', 'meal')
                         .gte('logged_at', `${start_date}T00:00:00`)
-                        .lte('logged_at', `${end_date}T23:59:59`);
+                        .lte('logged_at', `${end_date}T23:59:59`)
+                        .limit(1000); // Safety limit to prevent OOM
 
                     if (error) return JSON.stringify({ error: error.message });
                     if (!logs || logs.length === 0) return JSON.stringify({ message: 'No data found for this period.', value: 0 });
