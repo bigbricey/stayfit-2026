@@ -252,9 +252,16 @@ export default function Sidebar({
                         <LogOut size={18} />
                         <span>Log Out</span>
                     </button>
-                    <div className="flex items-center gap-3 text-gray-400 px-2 py-2 text-sm border-t border-gray-800 mt-2 pt-4">
-                        <div className={`w-2 h-2 rounded-full ${userId ? 'bg-emerald-500' : 'bg-yellow-500 animate-pulse'}`}></div>
-                        <span className="truncate">{userId ? (userName || 'User') : 'Guest Mode (Not Saving)'}</span>
+                    <div className="flex flex-col gap-1 border-t border-gray-800 mt-2 pt-4 px-2">
+                        <div className="flex items-center gap-3 text-gray-400 py-1 text-sm">
+                            <div className={`w-2 h-2 rounded-full ${userId ? 'bg-emerald-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                            <span className="truncate">{userId ? (userName || 'User') : 'Guest Mode (Not Saving)'}</span>
+                        </div>
+                        {!userId && (
+                            <Link href="/login" className="text-xs text-[#22c55e] hover:underline ml-5">
+                                Sign in to sync your history
+                            </Link>
+                        )}
                     </div>
                 </div>
             </aside>

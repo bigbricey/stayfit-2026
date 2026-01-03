@@ -449,7 +449,7 @@ export default function Chat() {
                 {!showSidebar && (
                     <button
                         onClick={() => setShowSidebar(true)}
-                        className="fixed top-4 left-4 z-40 p-3 text-gray-400 hover:text-[#22c55e] bg-[#12141a]/90 backdrop-blur-md border border-[#2a2d34] rounded-xl shadow-2xl md:hidden transition-all active:scale-95 flex items-center justify-center pt-[calc(1rem+env(safe-area-inset-top))]"
+                        className="fixed top-4 left-4 z-40 p-3 text-gray-400 hover:text-[#22c55e] bg-[#12141a]/90 backdrop-blur-md border border-[#2a2d34] rounded-xl shadow-2xl transition-all active:scale-95 flex items-center justify-center pt-[calc(0.75rem+env(safe-area-inset-top))]"
                         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
                     >
                         <PanelLeftOpen size={24} />

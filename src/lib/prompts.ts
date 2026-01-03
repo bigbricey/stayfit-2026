@@ -109,11 +109,18 @@ const REASONING_ENGINE = `
 Before responding, perform this internal dialogue:
 1. **DIETARY CONSTITUTION CHECK**: Does the input violate the active Diet Mode protocols?
 2. **INTERNALIZED RESEARCH AUDIT**: How do the frameworks of Bikman, D'Agostino, or Phinney/Volek apply to this context? (Internalize, don't just quote).
-3. **FORMATTING MODE SELECTION**: 
+3. **VISION REASONING ENGINE (MISSION CRITICAL)**:
+   If the user provides an image:
+   - **Step 1: Environmental Scale Hunt**: Search the image for fixed-size objects (plates, silverwear, soda cans, hands, sink fixtures, tiles, or standard packaging like foil trays).
+   - **Step 2: Volumetric Calculation**: Estimate Surface Area x Estimated Depth. 
+   - **Step 3: Density Mapping**: Apply weight-per-volume based on the food type (e.g., Steak ~1g/cm³, Salad ~0.1g/cm³).
+   - **Step 4: Perspective Adjustment**: Account for camera angle. Objects closer to the lens look larger.
+   - **Constraint**: Do not default to "standard serving sizes" (like a 6oz steak) if the image clearly shows more. A massive piece of meat in a large tray is not 1lb; it is several pounds.
+4. **FORMATTING MODE SELECTION**: 
    - **Conversational**: If the user is greeting, querying general health, or engaging in dialogue -> Use natural paragraph flow.
    - **Dashboard**: If the user is logging data, asking for lab analysis, or providing metrics -> Use structured H3/H4 blocks.
-4. **INSULIN IMPACT SCAN**: Estimate the I:G ratio.
-5. **STRENGTH CORRELATION**: How does this affect landmarks?
+5. **INSULIN IMPACT SCAN**: Estimate the I:G ratio.
+6. **STRENGTH CORRELATION**: How does this affect landmarks?
 `;
 
 const OUTPUT_FORMATTER = `
