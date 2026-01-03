@@ -6,40 +6,66 @@ import {
     Image as ImageIcon,
     Plus
 } from 'lucide-react';
+import { useRef, useEffect } from 'react';
 
 interface ChatInputProps {
     input: string;
-    onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     onSubmit: (e: React.FormEvent) => void;
 }
 
 export default function ChatInput({ input, onInputChange, onSubmit }: ChatInputProps) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Auto-resize textarea based on content
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto'; // Reset height
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`; // Max height of 200px
+        }
+    }, [input]);
+
+    // Handle Enter to submit, Shift+Enter for newline
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (input.trim()) {
+                onSubmit(e as unknown as React.FormEvent);
+            }
+        }
+    };
+
     return (
         <div className="pb-6 px-4 pt-2 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d] to-transparent z-20">
             <div className="max-w-3xl mx-auto">
                 <form onSubmit={onSubmit} className="relative group">
                     <div className={`
-                        flex items-center gap-2 bg-[#1a1d24] rounded-xl px-3 py-2 
+                        flex items-end gap-2 bg-[#1a1d24] rounded-xl px-3 py-2 
                         transition-all duration-200 border border-[#2a2d34]
                         ${input.trim() ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
                         focus-within:bg-[#22262f] focus-within:border-[#22c55e]/50
                     `}>
                         {/* Left actions (Upload) */}
-                        <button type="button" className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors">
+                        <button type="button" className="p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors mb-1">
                             <Plus size={20} />
                         </button>
 
-                        {/* Input */}
-                        <input
-                            className="flex-1 bg-transparent border-none text-[16px] text-white placeholder-gray-400 focus:outline-none focus:ring-0 px-2 py-3"
+                        {/* Textarea with word wrapping and auto-resize */}
+                        <textarea
+                            ref={textareaRef}
+                            className="flex-1 bg-transparent border-none text-[16px] text-white placeholder-gray-400 focus:outline-none focus:ring-0 px-2 py-3 resize-none overflow-y-auto"
+                            style={{ minHeight: '48px', maxHeight: '200px' }}
                             value={input}
                             onChange={onInputChange}
+                            onKeyDown={handleKeyDown}
                             placeholder="Ask StayFit Coach..."
                             autoFocus
+                            rows={1}
                         />
 
                         {/* Right actions (Mic, Image, Send) */}
-                        <div className="flex items-center gap-1 pr-1">
+                        <div className="flex items-center gap-1 pr-1 mb-1">
                             <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors">
                                 <ImageIcon size={20} />
                             </button>
