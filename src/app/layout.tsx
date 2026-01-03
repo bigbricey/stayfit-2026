@@ -10,8 +10,6 @@ export const metadata: Metadata = {
     keywords: ['fitness', 'nutrition', 'metabolic health', 'keto', 'carnivore', 'macro tracking', 'AI health coach'],
     authors: [{ name: 'StayFitWithAI' }],
     manifest: '/manifest.json',
-    viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
-    themeColor: '#0a0b0d',
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
@@ -22,6 +20,14 @@ export const metadata: Metadata = {
         description: 'The only AI that learns you for a decade',
         type: 'website',
     },
+}
+
+export const viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: '#0a0b0d',
 }
 
 export default function RootLayout({
