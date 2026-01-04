@@ -519,6 +519,7 @@ export default function Chat() {
                     selectedImage={selectedImage}
                     setSelectedImage={setSelectedImage}
                     onBarcodeScan={handleBarcodeScan}
+                    showSidebar={showSidebar}
                 />
 
                 <PWAInstallPrompt />

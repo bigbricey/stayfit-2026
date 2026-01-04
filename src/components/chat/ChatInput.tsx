@@ -14,9 +14,19 @@ interface ChatInputProps {
     setSelectedImage?: (url: string | null) => void;
     // Barcode scanner props
     onBarcodeScan?: (code: string) => void;
+    showSidebar?: boolean;
 }
 
-export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect, selectedImage, setSelectedImage, onBarcodeScan }: ChatInputProps) {
+export default function ChatInput({
+    input,
+    onInputChange,
+    onSubmit,
+    onFileSelect,
+    selectedImage,
+    setSelectedImage,
+    onBarcodeScan,
+    showSidebar = false
+}: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showScanner, setShowScanner] = useState(false);
@@ -49,7 +59,11 @@ export default function ChatInput({ input, onInputChange, onSubmit, onFileSelect
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d]/95 to-transparent z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className={`
+            fixed bottom-0 right-0 p-4 bg-gradient-to-t from-[#0a0b0d] via-[#0a0b0d]/95 to-transparent z-20 
+            pb-[calc(1rem+env(safe-area-inset-bottom))] transition-all duration-300 ease-in-out
+            ${showSidebar ? 'left-0 md:left-[300px]' : 'left-0 md:left-0'}
+        `}>
             <div className="max-w-4xl mx-auto">
                 <form onSubmit={onSubmit} className="relative group">
                     {/* Image Preview */}
