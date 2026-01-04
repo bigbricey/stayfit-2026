@@ -93,6 +93,13 @@ export async function POST(req: Request) {
         if (profileRes.data) userProfile = profileRes.data;
         if (goalsRes.data) activeGoals = goalsRes.data;
         if (convRes.data) memorySummary = convRes.data.memory_summary;
+
+        // SECURITY: Block unapproved users (VIP Whitelist)
+        // Admin (bigbricey) always bypasses
+        if (!userProfile.is_approved && user.email !== 'bigbricey@gmail.com') {
+            console.warn('[API/Chat] Blocked Access: User not approved', user.email);
+            return new Response('Access Denied: Your account is pending approval by Brice.', { status: 403 });
+        }
     } else if (demoConfig) {
         // Apply Demo Config to System Prompt
         userProfile = { ...userProfile, ...demoConfig };
@@ -126,7 +133,7 @@ export async function POST(req: Request) {
 
     // 6. Context management (Episodic + Semantic Tiers)
     const tieredMessages = ContextManager.processContext(
-        METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist),
+        METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist, new Date().toISOString()),
         memorySummary,
         processedMessages
     );

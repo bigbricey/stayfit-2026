@@ -55,7 +55,6 @@ export async function middleware(request: NextRequest) {
     const isPublic =
         request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/auth') ||
-        request.nextUrl.pathname.startsWith('/api/chat') ||
         request.nextUrl.pathname.startsWith('/pending') ||
         request.nextUrl.pathname.startsWith('/public');
 

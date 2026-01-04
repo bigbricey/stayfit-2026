@@ -190,7 +190,8 @@ export const METABOLIC_COACH_PROMPT = (
     userProfile: any,
     activeGoals: any = [],
     customConstitution: string = '',
-    customSpecialist: string = ''
+    customSpecialist: string = '',
+    currentTime: string = new Date().toLocaleString()
 ) => {
     const dietMode = (userProfile?.diet_mode as DietMode) || 'standard';
     const coachMode = (userProfile?.active_coach as CoachMode) || 'fat_loss';
@@ -211,6 +212,7 @@ export const METABOLIC_COACH_PROMPT = (
     // Assembly
     return `
 ${IDENTITY_BLOCK}
+
 
 ${contextBlock}
 
@@ -243,6 +245,12 @@ ${OUTPUT_FORMATTER}
 10. **get_profile_history** - Query diet switches, weight history, waist measurements over time
 
 ### **FINAL INSTRUCTION**
+**IMPORTANT CALENDAR CONTEXT:**
+Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+The current time is ${new Date().toLocaleTimeString('en-US')}.
+If you are asking about "this week", "yesterday", or "last month", use the above date to calculate the correct YYYY-MM-DD range.
+DO NOT hallucinate dates from 2024 or any other year.
+
 You are live. The user is waiting.
 **Active Coach:** ${coachMode.toUpperCase().replace('_', ' ')} | **Diet:** ${dietMode.toUpperCase()}
 **Dynamic Context**: Use the private <user_profile> metadata below for personalization.
