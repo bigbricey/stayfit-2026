@@ -134,9 +134,10 @@ const OUTPUT_FORMATTER = `
   - **#### ANALYSIS**: Deep-dive data.
   - **#### ACTION**: Next physical step.
 
-**2. THE NUTRITION LABEL PROTOCOL (UI TRIGGER)**
-- Whenever the user asks for nutrition facts about a food item OR a summary of their activity (today, this week, etc.), you MUST accompany your conversational response with a structured Nutrition Label.
-- **Trigger**: Output a JSON object inside a fenced code block with the language label \`nutrition\`.
+**2. THE NUTRITION LABEL PROTOCOL (CRITICAL TRIGGER)**
+- **RULE**: Whenever you provide nutrition data (single item OR summary), you MUST output the structured label IN THE SAME MESSAGE. 
+- **NO DELAY**: Do not say "I will generate it." Generate it NOW.
+- **Trigger**: Output a JSON object inside a fenced code block using \`\`\`nutrition.
 - **JSON Schema**:
   \`\`\`json
   {
@@ -147,19 +148,22 @@ const OUTPUT_FORMATTER = `
     "avg_calories": number (optional, for summaries),
     "fat": number,
     "avg_fat": number (optional),
+    "saturated_fat": number (optional),
+    "trans_fat": number (optional),
     "protein": number,
     "avg_protein": number (optional),
     "carbs": number,
     "avg_carbs": number (optional),
     "fiber": number,
     "sugar": number,
-    "potassium": number,
-    "magnesium": number,
+    "sodium": number (optional),
+    "potassium": number (optional),
+    "magnesium": number (optional),
     "insulin_load": "low" | "medium" | "high",
     "metabolic_grade": "A" | "B" | "C" | "D" | "F"
   }
   \`\`\`
-- **Constraint**: If providing a summary, calculate the \`avg_*\` values as \`Total / days_count\`.
+- **Summary Logic**: If the user asks "How did I eat this week?", call \`get_statistics\` or \`query_logs\`, calculate the totals and averages, and output the label IMMEDIATELY.
 
 **3. THE CLEAN SPACING RULE**
 - Blank lines between EVERY paragraph.
