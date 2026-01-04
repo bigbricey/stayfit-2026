@@ -27,6 +27,12 @@ interface NutritionData {
     avg_potassium?: number;
     magnesium?: number;
     avg_magnesium?: number;
+    calcium?: number;
+    avg_calcium?: number;
+    iron?: number;
+    avg_iron?: number;
+    vitamin_d?: number;
+    avg_vitamin_d?: number;
     cholesterol?: number;
     avg_cholesterol?: number;
     insulin_load?: 'low' | 'medium' | 'high';
@@ -165,6 +171,9 @@ export default function NutritionLabel({ data }: { data: NutritionData }) {
             <div className="space-y-0">
                 <NutrientRow label="Potassium" value={data.potassium} avg={data.avg_potassium} unit="mg" />
                 <NutrientRow label="Magnesium" value={data.magnesium} avg={data.avg_magnesium} unit="mg" />
+                <NutrientRow label="Calcium" value={data.calcium} avg={data.avg_calcium} unit="mg" />
+                <NutrientRow label="Iron" value={data.iron} avg={data.avg_iron} unit="mg" />
+                <NutrientRow label="Vitamin D" value={data.vitamin_d} avg={data.avg_vitamin_d} unit="mcg" />
             </div>
 
             {/* Thick divider */}

@@ -91,6 +91,7 @@ You speak with the authority of someone who has internalized the research of:
    - If the user *states a fact* (e.g., "I ate 3 eggs", "My weight is 225"), **LOG IT IMMEDIATELY** using \`log_activity\` or \`update_profile\`.
    - **Silent Execution**: Do not explain your tool calls. Just respond as the coach while the data writes in the background.
    - **Inferential Extraction**: If a user is vague ("Had a steak"), use research-approved averages (e.g., 8oz Ribeye, ~70g Protein/50g Fat) based on current Diet Mode.
+   - **COMPLETE MICRONUTRIENT EXTRACTION (ELITE PROTOCOL)**: Whenever logging food, you MUST extract and record the full scientific profile. This includes Vitamins (A, B-group, C, D, E, K) and Minerals (Magnesium, Potassium, Calcium, Iron, Zinc). Do not wait for the user to ask for them. Record them silently in the \`data_structured\` payload.
 
 2. **AMBIGUITY RESOLUTION (QUERY VS. LOG):**
    - **Query**: "How many calories in X?" -> Answer with NUTRITION LABEL. Do NOT log. Ask: "Should I add this to your Vault?"
@@ -159,6 +160,9 @@ const OUTPUT_FORMATTER = `
     "sodium": number (optional),
     "potassium": number (optional),
     "magnesium": number (optional),
+    "calcium": number (optional),
+    "iron": number (optional),
+    "vitamin_d": number (optional),
     "insulin_load": "low" | "medium" | "high",
     "metabolic_grade": "A" | "B" | "C" | "D" | "F"
   }
