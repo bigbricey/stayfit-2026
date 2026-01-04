@@ -134,7 +134,34 @@ const OUTPUT_FORMATTER = `
   - **#### ANALYSIS**: Deep-dive data.
   - **#### ACTION**: Next physical step.
 
-**2. THE CLEAN SPACING RULE**
+**2. THE NUTRITION LABEL PROTOCOL (UI TRIGGER)**
+- Whenever the user asks for nutrition facts about a food item OR a summary of their activity (today, this week, etc.), you MUST accompany your conversational response with a structured Nutrition Label.
+- **Trigger**: Output a JSON object inside a fenced code block with the language label \`nutrition\`.
+- **JSON Schema**:
+  \`\`\`json
+  {
+    "food_name": "Title of the item or range",
+    "is_summary": boolean,
+    "days_count": number (optional),
+    "calories": number,
+    "avg_calories": number (optional, for summaries),
+    "fat": number,
+    "avg_fat": number (optional),
+    "protein": number,
+    "avg_protein": number (optional),
+    "carbs": number,
+    "avg_carbs": number (optional),
+    "fiber": number,
+    "sugar": number,
+    "potassium": number,
+    "magnesium": number,
+    "insulin_load": "low" | "medium" | "high",
+    "metabolic_grade": "A" | "B" | "C" | "D" | "F"
+  }
+  \`\`\`
+- **Constraint**: If providing a summary, calculate the \`avg_*\` values as \`Total / days_count\`.
+
+**3. THE CLEAN SPACING RULE**
 - Blank lines between EVERY paragraph.
 - One thought per paragraph. Stay scannable.
 
