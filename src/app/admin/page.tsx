@@ -33,14 +33,14 @@ export default function AdminPage() {
 
     const loadUsers = async () => {
         setLoading(true);
-        // We fetch from users_secure. Note: This assumes is_approved exists.
-        const { data, error } = await supabase
-            .from('users_secure')
-            .select('*')
-            .order('created_at', { ascending: false });
+        // We fetch from RPC to get emails securely
+        const { data, error } = await supabase.rpc('get_users_with_emails');
 
         if (error) {
             console.error('Error loading users:', error);
+            // Fallback if RPC fails (e.g. if permissions aren't ready)
+            const { data: fallbackData } = await supabase.from('users_secure').select('*');
+            setUsers(fallbackData || []);
         } else {
             setUsers(data || []);
         }
@@ -92,6 +92,7 @@ export default function AdminPage() {
 
     const filteredUsers = users.filter(u =>
         u.name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase()) ||
         u.id.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -170,7 +171,7 @@ export default function AdminPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by name or ID..."
+                        placeholder="Search by name, email, or ID..."
                         className="w-full bg-gray-900 border border-gray-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-blue-500 outline-none"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -193,28 +194,29 @@ export default function AdminPage() {
                                     <tr key={user.id} className="hover:bg-gray-800/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-200">{user.name || 'Anonymous User'}</div>
-                                            <div className="text-xs text-gray-500 font-mono">{user.id}</div>
+                                            <div className="text-sm text-blue-400 font-medium">{user.email || 'No Email Found'}</div>
+                                            <div className="text-[10px] text-gray-600 font-mono mt-1 uppercase tracking-tighter opacity-50">{user.id}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {user.is_approved ? (
-                                                <span className="text-emerald-500 text-xs font-bold uppercase tracking-widest">Approved</span>
+                                                <span className="text-emerald-500 text-xs font-bold uppercase tracking-widest px-2 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">Approved</span>
                                             ) : (
-                                                <span className="text-yellow-500 text-xs font-bold uppercase tracking-widest">Pending</span>
+                                                <span className="text-yellow-500 text-xs font-bold uppercase tracking-widest px-2 py-1 bg-yellow-500/10 rounded-full border border-yellow-500/20">Pending</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right space-x-2">
                                             <button
                                                 onClick={() => toggleApproval(user.id, !!user.is_approved)}
                                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${user.is_approved
-                                                        ? 'bg-gray-800 text-gray-400 hover:text-white'
-                                                        : 'bg-emerald-600 text-white hover:bg-emerald-400'
+                                                    ? 'bg-gray-800 text-gray-400 hover:text-white'
+                                                    : 'bg-emerald-600 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-900/20'
                                                     }`}
                                             >
                                                 {user.is_approved ? 'Revoke' : 'Approve'}
                                             </button>
                                             <button
                                                 onClick={() => deleteUser(user.id, user.name)}
-                                                className="px-4 py-2 rounded-lg text-xs font-bold bg-red-900/40 text-red-500 hover:bg-red-900/60 border border-red-500/20"
+                                                className="px-4 py-2 rounded-lg text-xs font-bold bg-red-900/40 text-red-500 hover:bg-red-900/60 border border-red-500/20 transition-all hover:scale-105"
                                             >
                                                 <Trash2 size={14} />
                                             </button>

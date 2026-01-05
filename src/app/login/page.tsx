@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 export default function LoginPage() {
     const [view, setView] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -69,6 +70,11 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+                data: {
+                    name: fullName,
+                }
+            }
         });
 
         if (error) {
@@ -129,6 +135,19 @@ export default function LoginPage() {
                         e.preventDefault();
                         view === 'login' ? handleLogin() : handleSignUp();
                     }}>
+                        {view === 'signup' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder-gray-600"
+                                    placeholder="John Doe"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                />
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
                             <input
