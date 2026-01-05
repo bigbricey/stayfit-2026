@@ -53,6 +53,7 @@ export async function middleware(request: NextRequest) {
 
     // Protect all routes except public ones and Demo Mode
     const isPublic =
+        request.nextUrl.pathname === '/' ||
         request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/auth') ||
         request.nextUrl.pathname.startsWith('/pending') ||
@@ -68,9 +69,13 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/pending', request.url))
     }
 
-    // Redirect authenticated & approved users away from login/pending
-    if (user && isApproved && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/pending'))) {
-        return NextResponse.redirect(new URL('/', request.url))
+    // Redirect authenticated & approved users away from login/pending/landing
+    if (user && isApproved && (
+        request.nextUrl.pathname === '/' ||
+        request.nextUrl.pathname.startsWith('/login') ||
+        request.nextUrl.pathname.startsWith('/pending')
+    )) {
+        return NextResponse.redirect(new URL('/chat', request.url))
     }
 
     return response
