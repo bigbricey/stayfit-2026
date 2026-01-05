@@ -100,6 +100,6 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
         startListening,
         stopListening,
         toggleListening,
-        isSupported: !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+        isSupported: typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
     };
 }

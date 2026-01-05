@@ -3,9 +3,11 @@ import { generateText } from 'ai';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // 1. Verify admin
         const { data: { user } } = await supabase.auth.getUser();
