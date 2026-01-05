@@ -48,10 +48,10 @@ export default function AdminPage() {
     };
 
     const toggleApproval = async (userId: string, currentStatus: boolean) => {
-        const { error } = await supabase
-            .from('users_secure')
-            .update({ is_approved: !currentStatus })
-            .eq('id', userId);
+        const { error } = await supabase.rpc('admin_toggle_approval', {
+            target_user_id: userId,
+            new_status: !currentStatus
+        });
 
         if (error) {
             alert('Error updating user: ' + error.message);
@@ -63,10 +63,9 @@ export default function AdminPage() {
     const deleteUser = async (userId: string, name: string) => {
         if (!confirm(`Are you absolutely sure you want to delete ${name || 'this user'}? This will remove them from the database.`)) return;
 
-        const { error } = await supabase
-            .from('users_secure')
-            .delete()
-            .eq('id', userId);
+        const { error } = await supabase.rpc('delete_user_admin', {
+            target_user_id: userId
+        });
 
         if (error) {
             alert('Error deleting user: ' + error.message);
