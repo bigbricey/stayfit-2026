@@ -12,12 +12,22 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
     const [error, setError] = useState<string | null>(null);
     const recognitionRef = useRef<any>(null);
 
+    const onTranscriptRef = useRef(onTranscript);
+    const onFinalTranscriptRef = useRef(onFinalTranscript);
+
+    // Update refs whenever the callbacks change
     useEffect(() => {
+        onTranscriptRef.current = onTranscript;
+        onFinalTranscriptRef.current = onFinalTranscript;
+    }, [onTranscript, onFinalTranscript]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
         // Initialize recognition object
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            setError('Web Speech API is not supported in this browser.');
             return;
         }
 
@@ -27,6 +37,7 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
         recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
+            console.log('Speech recognition result received', event);
             let interimTranscript = '';
             let finalTranscript = '';
 
@@ -38,22 +49,30 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
                 }
             }
 
-            if (interimTranscript && onTranscript) {
-                onTranscript(interimTranscript);
+            console.log('Transcripts:', { interim: interimTranscript, final: finalTranscript });
+
+            if (interimTranscript && onTranscriptRef.current) {
+                onTranscriptRef.current(interimTranscript);
             }
 
-            if (finalTranscript && onFinalTranscript) {
-                onFinalTranscript(finalTranscript);
+            if (finalTranscript && onFinalTranscriptRef.current) {
+                onFinalTranscriptRef.current(finalTranscript);
             }
         };
 
         recognition.onerror = (event: any) => {
-            console.error('Speech recognition error', event.error);
+            console.error('Speech recognition error event', event);
             setError(event.error);
             setIsListening(false);
         };
 
+        recognition.onstart = () => {
+            console.log('Speech recognition started');
+            setIsListening(true);
+        };
+
         recognition.onend = () => {
+            console.log('Speech recognition ended');
             setIsListening(false);
         };
 
@@ -64,7 +83,7 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
                 recognitionRef.current.stop();
             }
         };
-    }, [onTranscript, onFinalTranscript]);
+    }, []); // Run once on mount
 
     const startListening = useCallback(() => {
         if (recognitionRef.current && !isListening) {
