@@ -1,8 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { SendHorizontal, ImageIcon, Mic, Plus, Scan, Camera } from 'lucide-react';
+import { SendHorizontal, ImageIcon, Mic, Plus, Scan, Camera, MicOff } from 'lucide-react';
 import BarcodeScanner from './BarcodeScanner';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 interface ChatInputProps {
     input: string;
@@ -15,6 +16,7 @@ interface ChatInputProps {
     // Barcode scanner props
     onBarcodeScan?: (code: string) => void;
     showSidebar?: boolean;
+    setInput?: (value: string) => void;
 }
 
 export default function ChatInput({
@@ -25,11 +27,28 @@ export default function ChatInput({
     selectedImage,
     setSelectedImage,
     onBarcodeScan,
-    showSidebar = false
+    showSidebar = false,
+    setInput
 }: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showScanner, setShowScanner] = useState(false);
+
+    const { isListening, toggleListening, isSupported } = useSpeechToText({
+        onTranscript: (transcript) => {
+            if (setInput) {
+                // For interim results, we can show them in the input
+                // but we might want to preserve what was already there
+                // For now, let's just append or replace
+            }
+        },
+        onFinalTranscript: (transcript) => {
+            if (setInput) {
+                const newValue = input ? `${input.trim()} ${transcript}` : transcript;
+                setInput(newValue);
+            }
+        }
+    });
 
     // Auto-resize textarea based on content
     useEffect(() => {
@@ -159,9 +178,19 @@ export default function ChatInput({
 
                         {/* Right actions (Send) */}
                         <div className="flex items-center gap-1 pr-1 mb-1">
-                            <button type="button" className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors">
-                                <Mic size={20} />
-                            </button>
+                            {isSupported && (
+                                <button
+                                    type="button"
+                                    onClick={toggleListening}
+                                    className={`p-2.5 rounded-lg transition-all duration-200 ${isListening
+                                            ? 'bg-red-500/20 text-red-500 animate-pulse border border-red-500/50'
+                                            : 'text-gray-400 hover:text-white hover:bg-[#2a2d34]'
+                                        }`}
+                                    title={isListening ? "Stop Recording" : "Voice to Text"}
+                                >
+                                    {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                                </button>
+                            )}
                             {(input.trim() || selectedImage) && (
                                 <button
                                     type="submit"
