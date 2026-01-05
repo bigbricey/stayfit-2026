@@ -21,6 +21,8 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
         onFinalTranscriptRef.current = onFinalTranscript;
     }, [onTranscript, onFinalTranscript]);
 
+    const explicitlyStopped = useRef(false);
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -32,7 +34,10 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
         }
 
         const recognition = new SpeechRecognition();
-        recognition.continuous = true;
+
+        // Mobile browsers often handle continuous: true poorly
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        recognition.continuous = !isMobile;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
@@ -62,8 +67,10 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
 
         recognition.onerror = (event: any) => {
             console.error('Speech recognition error event', event);
-            setError(event.error);
-            setIsListening(false);
+            if (event.error !== 'no-speech') {
+                setError(event.error);
+                setIsListening(false);
+            }
         };
 
         recognition.onstart = () => {
@@ -73,13 +80,33 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
 
         recognition.onend = () => {
             console.log('Speech recognition ended');
-            setIsListening(false);
+            // If it ended but we didn't explicitly stop it (like a mobile timeout)
+            // and we are on mobile, we might want to restart
+            if (isMobile && !explicitlyStopped.current) {
+                console.log('Restarting recognition for mobile stability...');
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error('Failed to restart recognition', e);
+                    setIsListening(false);
+                }
+            } else {
+                setIsListening(false);
+            }
         };
+
+        // Extra events for debugging mobile
+        recognition.onaudiostart = () => console.log('Audio capture started');
+        recognition.onsoundstart = () => console.log('Sound detected');
+        recognition.onspeechstart = () => console.log('Speech detected');
+        recognition.onspeechend = () => console.log('Speech ended');
+        recognition.onnomatch = () => console.log('No match found');
 
         recognitionRef.current = recognition;
 
         return () => {
             if (recognitionRef.current) {
+                explicitlyStopped.current = true;
                 recognitionRef.current.stop();
             }
         };
@@ -88,9 +115,10 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
     const startListening = useCallback(() => {
         if (recognitionRef.current && !isListening) {
             setError(null);
+            explicitlyStopped.current = false;
             try {
                 recognitionRef.current.start();
-                setIsListening(true);
+                // Note: setIsListening(true) happens in onstart
             } catch (err) {
                 console.error('Failed to start speech recognition', err);
                 setError('Failed to start speech recognition');
@@ -100,6 +128,7 @@ export function useSpeechToText({ onTranscript, onFinalTranscript }: UseSpeechTo
 
     const stopListening = useCallback(() => {
         if (recognitionRef.current && isListening) {
+            explicitlyStopped.current = true;
             recognitionRef.current.stop();
             setIsListening(false);
         }
