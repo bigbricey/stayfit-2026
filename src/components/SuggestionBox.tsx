@@ -32,7 +32,8 @@ export default function SuggestionBox() {
     useEffect(() => {
         const checkAdmin = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (user?.email === 'bigbricey@gmail.com') {
+            const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
+            if (user?.email && adminEmails.includes(user.email)) {
                 setIsAdmin(true);
             }
         };
@@ -135,7 +136,7 @@ export default function SuggestionBox() {
             {/* Floating Toggle Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-[100] p-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-2xl transition-all active:scale-95 group flex items-center gap-2"
+                className="fixed top-24 right-6 z-[100] p-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-2xl transition-all active:scale-95 group flex items-center gap-2"
                 title="Suggestion Box"
             >
                 <Lightbulb size={24} className="group-hover:animate-pulse" />
