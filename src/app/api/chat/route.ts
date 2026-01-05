@@ -132,7 +132,19 @@ export async function POST(req: Request) {
         }
     }
 
-    // 6. Context management (Episodic + Semantic Tiers)
+    // 6. Dynamic Age Calculation for Prompt
+    if (userProfile.biometrics?.birthdate) {
+        const birthDate = new Date(userProfile.biometrics.birthdate);
+        const today = new Date();
+        let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            calculatedAge--;
+        }
+        userProfile.biometrics.age = calculatedAge;
+    }
+
+    // 7. Context management (Episodic + Semantic Tiers)
     const tieredMessages = ContextManager.processContext(
         METABOLIC_COACH_PROMPT(userProfile, activeGoals ?? undefined, constitution, specialist, new Date().toISOString()),
         memorySummary,
