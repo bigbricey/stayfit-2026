@@ -106,8 +106,8 @@ You speak with the authority of someone who has internalized the research of:
 
 5. **THE FIRST CONTACT PROTOCOL (ONBOARDING):**
    - **Audit First**: At the start of every session, silently audit the \`<user_profile>\`.
-   - **Mandatory Markers**: If Height, Weight, Sex, Birthdate, or Preferred Language are missing (null/unknown), your priority is **Enrollment**.
-   - **The Pitch**: Explain *why* you need this. Example: "To give you precise metabolic advice and build your long-term data vault, I need your vitals and your preferred language. What's your height, weight, birthdate, sex, and what language should we speak?"
+   - **Mandatory Markers**: If Height, Weight, Sex, or Age are missing (null/unknown), your priority is **Enrollment**.
+   - **The Pitch**: Explain *why* you need this. Example: "To give you precise metabolic advice and build your long-term data vault, I need your vitals. What's your height, weight, age, and sex?"
    - **Biological Accuracy**: Use biological "Sex" (Male/Female) for caloric and hormonal calculations. It is the engine type we are optimizing.
    - **Dynamic Persistence**: Use \`update_profile\` as soon as the user provides any of these values. Do not wait for a full list. Log each piece as it comes.
 `;
@@ -115,7 +115,7 @@ You speak with the authority of someone who has internalized the research of:
 const REASONING_ENGINE = `
 ### **THE COGNITIVE CHAIN (METABOLIC SCAN)**
 Before responding, perform this internal dialogue:
-0. **ONBOARDING AUDIT**: Does the \`<user_profile>\` have the 5 Mandatory Markers (Height, Weight, Sex, Birthdate, Language)? If not, craft the response to acquire them naturally.
+0. **ONBOARDING AUDIT**: Does the \`<user_profile>\` have the 4 Mandatory Markers (Height, Weight, Sex, Age)? If not, craft the response to acquire them naturally. This is your highest priority.
 1. **DIETARY CONSTITUTION CHECK**: Does the input violate the active Diet Mode protocols?
 2. **INTERNALIZED RESEARCH AUDIT**: How do the frameworks of Bikman, D'Agostino, or Phinney/Volek apply to this context? (Internalize, don't just quote).
 3. **VISION REASONING ENGINE (MISSION CRITICAL)**:
@@ -207,10 +207,18 @@ const formatUserContext = (profile: any, goals: any[]): string => {
     const b = profile?.biometrics || {};
 
     // Core Metabolic Markers
-    const weight = b.weight ? `${b.weight} ${b.weight_unit || 'lbs'}` : 'Missing (Crucial)';
-    const height = b.height ? `${b.height} ${b.height_unit || 'in'}` : 'Missing (Crucial)';
-    const sex = b.sex ? b.sex : 'Missing (Crucial)';
-    const age = b.age ? b.age : 'Missing (Crucial)';
+    const weight = b.weight ? `${b.weight} ${b.weight_unit || 'lbs'}` : 'Missing (Instruction: Ask User)';
+    const height = b.height ? `${b.height} ${b.height_unit || 'in'}` : 'Missing (Instruction: Ask User)';
+    const sex = b.sex ? b.sex : 'Missing (Instruction: Ask User)';
+
+    // Age Calculation Logic
+    let age = b.age;
+    if (!age && b.birthdate) {
+        const birth = new Date(b.birthdate);
+        const today = new Date();
+        age = today.getFullYear() - birth.getFullYear();
+    }
+    const ageDisplay = age ? `${age} years` : 'Missing (Instruction: Ask User)';
 
     const goalsText = goals && goals.length > 0 ? goals.map((g: any) => `- ${g.type}: ${g.target}`).join('\n') : 'No active goals.';
 
@@ -220,7 +228,7 @@ const formatUserContext = (profile: any, goals: any[]): string => {
 **Weight:** ${weight}
 **Height:** ${height}
 **Sex:** ${sex}
-**Age:** ${age}
+**Age:** ${ageDisplay}
 **Language:** ${profile?.preferred_language || 'en'}
 ${b.waist ? `**Waist:** ${b.waist} in` : ''}
 
