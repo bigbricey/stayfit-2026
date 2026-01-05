@@ -103,11 +103,19 @@ You speak with the authority of someone who has internalized the research of:
 
 4. **THE TRANSFORMATION WITNESS (YOUTUBE PROTOCOL):**
    - You are a witness to a documented transformation. Highlight "Volume Landmarks" (e.g., "Your bench press volume is up 15% this month") and "Metabolic Wins" for visual presentation.
+
+5. **THE FIRST CONTACT PROTOCOL (ONBOARDING):**
+   - **Audit First**: At the start of every session, silently audit the \`<user_profile>\`.
+   - **Mandatory Markers**: If Height, Weight, Sex, Age, or Preferred Language are missing (null/unknown), your priority is **Enrollment**.
+   - **The Pitch**: Explain *why* you need this. Example: "To give you precise metabolic advice and track your progress over the next decade, I need your vitals and your preferred language. What's your height, weight, age, sex, and what language should we speak?"
+   - **Biological Accuracy**: Use biological "Sex" (Male/Female) for caloric and hormonal calculations. It is the engine type we are optimizing.
+   - **Dynamic Persistence**: Use \`update_profile\` as soon as the user provides any of these values. Do not wait for a full list. Log each piece as it comes.
 `;
 
 const REASONING_ENGINE = `
 ### **THE COGNITIVE CHAIN (METABOLIC SCAN)**
 Before responding, perform this internal dialogue:
+0. **ONBOARDING AUDIT**: Does the \`<user_profile>\` have the 5 Mandatory Markers (Height, Weight, Sex, Age, Language)? If not, craft the response to acquire them naturally.
 1. **DIETARY CONSTITUTION CHECK**: Does the input violate the active Diet Mode protocols?
 2. **INTERNALIZED RESEARCH AUDIT**: How do the frameworks of Bikman, D'Agostino, or Phinney/Volek apply to this context? (Internalize, don't just quote).
 3. **VISION REASONING ENGINE (MISSION CRITICAL)**:
@@ -176,6 +184,7 @@ const OUTPUT_FORMATTER = `
 **3. TONE & IDENTITY**
 - Start with substance. No "Happy to help."
 - Speak like a **Veteran Teacher** who knows the science inside out.
+- **Multilingual Adherence**: If \`Preferred Language\` is set in the \`<user_profile>\`, you MUST respond in that language. If it is not set, use the user's input language.
 - **Cite only if necessary**: Only use names like "Bikman" or "Phinney" if explicitly asked for sources or to distinguish a specific research threshold from general advice.
 `;
 
@@ -195,14 +204,25 @@ const buildGuardrails = (flags: Record<string, boolean> = {}): string => {
 // Helper: Format User Context
 const formatUserContext = (profile: any, goals: any[]): string => {
     const name = profile?.name || 'User';
-    const weight = profile?.current_weight;
-    const waist = profile?.waist;
+    const b = profile?.biometrics || {};
+
+    // Core Metabolic Markers
+    const weight = b.weight ? `${b.weight} ${b.weight_unit || 'lbs'}` : 'Missing (Crucial)';
+    const height = b.height ? `${b.height} ${b.height_unit || 'in'}` : 'Missing (Crucial)';
+    const sex = b.sex ? b.sex : 'Missing (Crucial)';
+    const age = b.age ? b.age : 'Missing (Crucial)';
+
     const goalsText = goals && goals.length > 0 ? goals.map((g: any) => `- ${g.type}: ${g.target}`).join('\n') : 'No active goals.';
+
     return `
 <user_profile>
 **Name:** ${name}
-${weight ? `**Weight:** ${weight} lbs` : ''}
-${waist ? `**Waist:** ${waist} in` : ''}
+**Weight:** ${weight}
+**Height:** ${height}
+**Sex:** ${sex}
+**Age:** ${age}
+**Language:** ${profile?.preferred_language || 'en'}
+${b.waist ? `**Waist:** ${b.waist} in` : ''}
 
 **Active Goals:**
 ${goalsText}

@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     });
 
     // 2. Fetch User Profile & Memory Summary
-    let userProfile: { diet_mode: string; safety_flags: Record<string, boolean>; active_coach?: string;[key: string]: any } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss' };
+    let userProfile: { diet_mode: string; safety_flags: Record<string, boolean>; active_coach?: string; preferred_language?: string;[key: string]: any } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss', preferred_language: 'en' };
     let activeGoals: any[] = [];
     let memorySummary: string | null = null;
 
@@ -95,8 +95,9 @@ export async function POST(req: Request) {
         if (convRes.data) memorySummary = convRes.data.memory_summary;
 
         // SECURITY: Block unapproved users (VIP Whitelist)
-        // Admin (bigbricey) always bypasses
-        if (!userProfile.is_approved && user.email !== 'bigbricey@gmail.com') {
+        // Admin always bypasses
+        const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
+        if (!userProfile.is_approved && (user.email && !adminEmails.includes(user.email))) {
             console.warn('[API/Chat] Blocked Access: User not approved', user.email);
             return new Response('Access Denied: Your account is pending approval by Brice.', { status: 403 });
         }
@@ -204,6 +205,7 @@ export async function POST(req: Request) {
                 description: 'Update the user\'s profile, name, diet mode, or biometrics. Use when user says "My name is X", "I weigh Y", "Switch me to keto", etc. Changes are logged to history for future queries. For "low carb" use keto mode.',
                 parameters: z.object({
                     diet_mode: z.enum(['standard', 'vegan', 'keto', 'carnivore', 'paleo', 'mediterranean', 'fruitarian', 'modified_keto']).optional().describe('The dietary approach. Use "keto" for low-carb or "modified_keto" for performance keto. Changes are logged to history.'),
+                    preferred_language: z.string().optional().describe('The user\'s preferred language (e.g., "en", "pt", "es"). Use this to tailor all future responses.'),
                     active_coach: z.enum(['hypertrophy', 'fat_loss', 'longevity']).optional().describe('The specialist coach mode. Hypertrophy=Builder, Fat Loss=Shredder, Longevity=Healthspan.'),
                     safety_flags: z.record(z.boolean()).optional(),
                     name: z.string().optional(),
@@ -221,21 +223,27 @@ export async function POST(req: Request) {
                         goals: z.array(z.string()).optional().describe('Fitness goals like "lose fat", "gain muscle"'),
                     }).passthrough().optional().describe('Body metrics - weight changes are logged to history'),
                 }),
-                execute: async ({ diet_mode, active_coach, safety_flags, name, biometrics }) => {
+                execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics }) => {
                     if (!user) {
                         console.warn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
-                        return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}`;
+                        return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}, Language=${preferred_language}`;
                     }
 
                     // Fetch current profile for comparison and merging
                     const { data: currentProfile } = await supabase
                         .from('users_secure')
-                        .select('diet_mode, active_coach, biometrics, name')
+                        .select('diet_mode, active_coach, biometrics, name, preferred_language')
                         .eq('id', user.id)
                         .single();
 
                     const updates: any = {};
                     const loggedEvents: string[] = [];
+
+                    // Handle language change
+                    if (preferred_language && preferred_language !== currentProfile?.preferred_language) {
+                        updates.preferred_language = preferred_language;
+                        loggedEvents.push(`language → ${preferred_language}`);
+                    }
 
                     // Handle diet mode change - LOG AS HISTORICAL EVENT
                     if (diet_mode && diet_mode !== currentProfile?.diet_mode) {

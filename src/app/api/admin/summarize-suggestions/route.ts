@@ -11,7 +11,8 @@ export async function GET() {
 
         // 1. Verify admin
         const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email !== 'bigbricey@gmail.com') {
+        const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
+        if (!user || (user.email && !adminEmails.includes(user.email))) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
