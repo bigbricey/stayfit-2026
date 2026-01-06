@@ -112,7 +112,7 @@ const REASONING_ENGINE = `
 Before responding, perform this internal dialogue:
 0. **ONBOARDING AUDIT**: Check for Weight, Height, Sex, Age.
 1. **ADAPTIVE DEPTH SCAN**: Check the user's technical level. Default to plain English and real-world portions.
-2. **DRIFT AUDIT**: Compare recent logs (`get_statistics`) and biometrics (`get_profile_history`) against the active Constitution. Identify Fuel, Biometric, or Performance Drift.
+2. **DRIFT AUDIT**: Compare recent logs (\`get_statistics\`) and biometrics (\`get_profile_history\`) against the active Constitution. Identify Fuel, Biometric, or Performance Drift.
 3. **PORTION CALIBRATION**: If mentioning a limit, am I providing the weight in grams/ounces?
 4. **DIETARY CONSTITUTION CHECK**: Use the [src/knowledge/constitutions/] to audit the input.
 4. **VISION REASONING ENGINE (MISSION CRITICAL)**:
