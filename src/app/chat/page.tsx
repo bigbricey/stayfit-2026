@@ -354,16 +354,8 @@ export default function Chat() {
     };
 
     const handleLogout = async () => {
-        console.log('[handleLogout] Button clicked - starting logout');
-        alert('Logout clicked - starting signOut');
-        try {
-            await supabase.auth.signOut();
-            console.log('[handleLogout] signOut complete, redirecting to /');
-            router.push('/');
-        } catch (err) {
-            console.error('[handleLogout] Error:', err);
-            alert('Logout error: ' + String(err));
-        }
+        await supabase.auth.signOut();
+        router.push('/');
     };
 
     // =========================================================================

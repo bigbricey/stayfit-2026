@@ -33,20 +33,17 @@ export default function Hero() {
                         </div>
                     </div>
                     <h1 className="mt-10 text-4xl font-bold tracking-tight text-white sm:text-6xl">
-                        THE METABOLIC <span className="gradient-text block">TRUTH ENGINE</span>
+                        THE ULTIMATE <span className="gradient-text block">BIOLOGICAL DATA LOGGER</span>
                     </h1>
                     <p className="mt-6 text-lg leading-8 text-gray-400">
-                        Stop guessing. Start persisting. A lifetime of biological data—from food logs to blood work—cross-referenced by advanced AI to find the objective truth about your performance.
+                        Stop guessing. Start auditing. The precision of a black box flight recorder for your metabolism. Track every macro, micro, and metric with forensic accuracy.
                     </p>
                     <div className="mt-10 flex items-center gap-x-6">
                         <Link
                             href="/login"
                             className="rounded-md bg-white px-6 py-3 text-sm font-semibold text-black shadow-sm hover:bg-gray-200 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                         >
-                            ENTER THE VAULT
-                        </Link>
-                        <Link href="/login" className="text-sm font-semibold leading-6 text-white group">
-                            Member Login <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                            Log In / Sign Up
                         </Link>
                     </div>
                 </div>

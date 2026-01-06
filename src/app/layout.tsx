@@ -35,7 +35,7 @@ export const viewport = {
 }
 
 // Components
-import SuggestionBox from '@/components/SuggestionBox'
+// import SuggestionBox from '@/components/SuggestionBox'
 
 export default function RootLayout({
     children,
@@ -46,7 +46,6 @@ export default function RootLayout({
         <html lang="en" className="dark">
             <body className={`${inter.className} bg-black text-white antialiased`}>
                 {children}
-                <SuggestionBox />
             </body>
         </html>
     )

@@ -1,28 +1,12 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import Hero from '@/components/landing/Hero'
 import Features from '@/components/landing/Features'
 import Disclaimer from '@/components/landing/Disclaimer'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 export default function LandingPage() {
-    const supabase = createClient()
-    const router = useRouter()
-
-    useEffect(() => {
-        const checkAuth = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                console.log('[Landing] User detected, redirecting to /chat')
-                router.push('/chat')
-            }
-        }
-        checkAuth()
-    }, [supabase, router])
-
     return (
         <main className="min-h-screen bg-black">
             {/* Navigation Header */}
@@ -32,11 +16,8 @@ export default function LandingPage() {
                         STAY<span className="text-accent-primary">FIT</span>
                     </div>
                     <div className="flex gap-4">
-                        <Link href="/login" className="text-sm font-medium text-gray-400 hover:text-white transition-colors py-2 px-4 rounded-md">
-                            Login
-                        </Link>
                         <Link href="/login" className="text-sm font-medium bg-white text-black hover:bg-gray-200 transition-all py-2 px-6 rounded-md">
-                            Enter Vault
+                            Log In
                         </Link>
                     </div>
                 </div>
