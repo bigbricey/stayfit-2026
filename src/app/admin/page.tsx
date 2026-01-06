@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, UserCheck, UserX, Search, ArrowLeft, Loader2, Trash2, Clock } from 'lucide-react';
 
-const ADMIN_EMAILS = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
+const ADMIN_EMAILS = ['bigbricey@gmail.com'];
 
 export default function AdminPage() {
     const [users, setUsers] = useState<any[]>([]);

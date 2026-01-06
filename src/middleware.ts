@@ -37,21 +37,16 @@ export async function middleware(request: NextRequest) {
 
     console.log('[Middleware] Path:', request.nextUrl.pathname, 'User:', !!user);
 
-    // 1. Check Approval Status for Authenticated Users
+    // 1. Check Approval Status for Authenticated Users (Strict DB Audit)
     let isApproved = false;
     if (user) {
-        // Special Case: Admin Bypass (The Boss)
-        if (user.email === 'bigbricey@gmail.com' || user.email === 'tonygarrett@comcast.net') {
-            isApproved = true;
-        } else {
-            const { data: profile } = await supabase
-                .from('users_secure')
-                .select('is_approved')
-                .eq('id', user.id)
-                .single();
-            isApproved = !!profile?.is_approved;
-        }
-        console.log('[Middleware] User Approved:', isApproved);
+        const { data: profile } = await supabase
+            .from('users_secure')
+            .select('is_approved')
+            .eq('id', user.id)
+            .single();
+        isApproved = !!profile?.is_approved;
+        console.log('[Middleware] User:', user.email, 'Approved:', isApproved);
     }
 
     // Protect all routes except public ones and Demo Mode
