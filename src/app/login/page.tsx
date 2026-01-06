@@ -58,7 +58,7 @@ export default function LoginPage() {
                 ? 'Invalid email or password. Do you need to create an account?'
                 : error.message);
         } else {
-            router.push('/');
+            window.location.href = '/chat';
         }
         setLoading(false);
     };
