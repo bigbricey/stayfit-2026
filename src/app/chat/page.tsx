@@ -355,7 +355,7 @@ export default function Chat() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        router.push('/');
+        window.location.href = '/';
     };
 
     // =========================================================================
