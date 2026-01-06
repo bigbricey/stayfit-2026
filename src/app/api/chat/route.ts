@@ -112,8 +112,8 @@ export async function POST(req: Request) {
         apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Use a vision-capable model for multimodal support
-    const modelId = process.env.OPENAI_MODEL || 'google/gemini-2.0-flash-001';
+    // Use a vision-capable, cost-optimized model for metabolic auditing
+    const modelId = process.env.OPENAI_MODEL || 'x-ai/grok-4.1-fast';
 
     // 5. Load Domain Knowledge (The Knowledge Vault)
     const constitution = await getKnowledgeItem('constitutions', userProfile.diet_mode || 'standard');
