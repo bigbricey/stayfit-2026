@@ -1,12 +1,28 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Hero from '@/components/landing/Hero'
 import Features from '@/components/landing/Features'
 import Disclaimer from '@/components/landing/Disclaimer'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function LandingPage() {
+    const supabase = createClient()
+    const router = useRouter()
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                console.log('[Landing] User detected, redirecting to /chat')
+                router.push('/chat')
+            }
+        }
+        checkAuth()
+    }, [supabase, router])
+
     return (
         <main className="min-h-screen bg-black">
             {/* Navigation Header */}
