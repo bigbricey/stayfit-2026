@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [view, setView] = useState<'login' | 'signup'>('login');
@@ -10,7 +9,6 @@ export default function LoginPage() {
     const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
     const supabase = createClient();
 
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -201,7 +199,7 @@ export default function LoginPage() {
 
                         <button
                             type="button"
-                            onClick={() => router.push('/')} // Middleware might block this if not logged in, but useful for explicit demo intent if we enable it
+                            onClick={() => window.location.href = '/'}
                             className="text-gray-500 hover:text-gray-300 text-xs mt-2"
                         >
                             Just looking? Ask for Demo Access

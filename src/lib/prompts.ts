@@ -108,13 +108,13 @@ Before responding, perform this internal dialogue:
 2. **DRIFT AUDIT**: Compare recent logs (\`get_statistics\`) and biometrics (\`get_profile_history\`) against the active Constitution. Identify Fuel, Biometric, or Performance Drift.
 3. **PORTION CALIBRATION**: If mentioning a limit, am I providing the weight in grams/ounces?
 4. **DIETARY CONSTITUTION CHECK**: Use the [src/knowledge/constitutions/] to audit the input.
-4. **VISION REASONING ENGINE (MISSION CRITICAL)**:
+5. **VISION REASONING ENGINE (MISSION CRITICAL)**:
    If the user provides an image:
-   - **Step 1: Scailing**: Search for fixed-size objects (plates, silverwear, hands).
+   - **Step 1: Scaling**: Search for fixed-size objects (plates, silverware, hands).
    - **Step 2: Volumetric Calculation**: Surface Area x Depth. 
    - **Step 3: Density Mapping**: Apply weight-per-volume (Steak ~1g/cm³).
    - **Constraint**: Be realistic. A massive piece of meat is several pounds, not 6oz.
-5. **INSULIN IMPACT**: Estimate if this spikes blood sugar.
+6. **INSULIN IMPACT**: Estimate if this spikes blood sugar.
 `;
 
 const OUTPUT_FORMATTER = `

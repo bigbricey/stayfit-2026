@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, UserCheck, UserX, Search, ArrowLeft, Loader2, Trash2, Clock } from 'lucide-react';
-
-const ADMIN_EMAILS = ['bigbricey@gmail.com'];
+import { isAdmin } from '@/lib/config';
 
 export default function AdminPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -15,18 +14,18 @@ export default function AdminPage() {
     const [isAddingUser, setIsAddingUser] = useState(false);
     const [newUserName, setNewUserName] = useState('');
     const [newUserEmail, setNewUserEmail] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isAdminUser, setIsAdminUser] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
     useEffect(() => {
         const checkAdmin = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user || (user.email && !ADMIN_EMAILS.includes(user.email))) {
+            if (!user || !isAdmin(user.email)) {
                 router.push('/');
                 return;
             }
-            setIsAdmin(true);
+            setIsAdminUser(true);
             setCurrentUser(user);
             await loadUsers();
         };

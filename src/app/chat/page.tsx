@@ -1,9 +1,9 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { PanelLeftOpen, Sparkles } from 'lucide-react';
+import { PanelLeftOpen, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Components
@@ -32,6 +32,30 @@ interface DbMessage {
     created_at: string;
 }
 
+// Toast notification component for errors
+interface ToastProps {
+    message: string;
+    onDismiss: () => void;
+}
+
+function ErrorToast({ message, onDismiss }: ToastProps) {
+    useEffect(() => {
+        const timer = setTimeout(onDismiss, 8000);
+        return () => clearTimeout(timer);
+    }, [onDismiss]);
+
+    return (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
+            <div className="bg-red-900/90 border border-red-700 text-red-100 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-md">
+                <span className="flex-1 text-sm">{message}</span>
+                <button onClick={onDismiss} className="text-red-300 hover:text-white">
+                    <X size={16} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function Chat() {
     // State
     const [userId, setUserId] = useState<string | null>(null);
@@ -46,7 +70,11 @@ export default function Chat() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isCompressing, setIsCompressing] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const router = useRouter();
+
+    // Memoized Supabase client to prevent recreation on every render
+    const supabase = useMemo(() => createClient(), []);
 
     // Responsive initial state
     useEffect(() => {
@@ -59,8 +87,6 @@ export default function Chat() {
     const conversationIdRef = useRef<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesRef = useRef<typeof messages>([]);
-
-    const supabase = createClient();
 
     // Sync conversationId ref
     useEffect(() => {
@@ -93,7 +119,7 @@ export default function Chat() {
         },
         onError: (e) => {
             console.error('[useChat] onError:', e);
-            alert(`Chat error: ${e.message}`);
+            setErrorMessage(`Chat error: ${e.message}`);
         }
     });
 
@@ -439,6 +465,14 @@ export default function Chat() {
 
     return (
         <div className="flex h-screen bg-[#0a0b0d] text-[#e5e7eb] font-sans selection:bg-emerald-500/30">
+            {/* Error Toast */}
+            {errorMessage && (
+                <ErrorToast
+                    message={errorMessage}
+                    onDismiss={() => setErrorMessage(null)}
+                />
+            )}
+
             {/* Sidebar */}
             <Sidebar
                 showSidebar={showSidebar}

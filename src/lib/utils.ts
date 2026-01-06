@@ -1,6 +1,8 @@
 /**
- * Resizes an image to fit within maximum dimensions while maintaining aspect ratio.
- * This helps avoid exceeding payload limits (like Netlify's 6MB body limit).
+ * Resizes and compresses an image to fit within the configured max dimension
+ * while maintaining aspect ratio. Converts to JPEG format for optimal compression.
+ * Note: JPEG provides better compression for photos. WebP would offer better quality
+ * at the same file size but has slightly less universal browser support.
  */
 export async function resizeImage(file: File, maxWidth: number = 1024, maxHeight: number = 1024): Promise<string> {
     return new Promise((resolve, reject) => {

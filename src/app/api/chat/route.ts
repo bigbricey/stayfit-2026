@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
 import { getKnowledgeItem } from '@/lib/knowledge';
 import { ContextManager } from '@/lib/memory/context-manager';
+import { isAdmin } from '@/lib/config';
 
 // Allow streaming responses up to 60 seconds for complex reasoning
 // Allow streaming responses up to 5 minutes (300s) for complex reasoning models
@@ -96,8 +97,7 @@ export async function POST(req: Request) {
 
         // SECURITY: Block unapproved users (VIP Whitelist)
         // Admin always bypasses
-        const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
-        if (!userProfile.is_approved && (user.email && !adminEmails.includes(user.email))) {
+        if (!userProfile.is_approved && !isAdmin(user.email)) {
             console.warn('[API/Chat] Blocked Access: User not approved', user.email);
             return new Response('Access Denied: Your account is pending approval by Brice.', { status: 403 });
         }

@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import Hero from '@/components/landing/Hero'
 import Features from '@/components/landing/Features'
 import Disclaimer from '@/components/landing/Disclaimer'

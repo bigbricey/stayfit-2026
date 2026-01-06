@@ -21,7 +21,7 @@ export interface Database {
                 }
                 Insert: {
                     id: string
-                    diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian'
+                    diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian' | 'modified_keto'
                     name?: string | null
                     biometrics?: Json
                     safety_flags?: Json
@@ -30,7 +30,7 @@ export interface Database {
                 }
                 Update: {
                     id?: string
-                    diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian'
+                    diet_mode?: 'standard' | 'vegan' | 'keto' | 'carnivore' | 'paleo' | 'mediterranean' | 'fruitarian' | 'modified_keto'
                     name?: string | null
                     biometrics?: Json
                     safety_flags?: Json

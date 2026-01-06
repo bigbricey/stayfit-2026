@@ -2,6 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,7 @@ export async function GET() {
 
         // 1. Verify admin
         const { data: { user } } = await supabase.auth.getUser();
-        const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
-        if (!user || (user.email && !adminEmails.includes(user.email))) {
+        if (!user || !isAdmin(user.email)) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 

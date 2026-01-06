@@ -14,6 +14,7 @@ import {
     Pencil,
     ShieldCheck
 } from 'lucide-react';
+import { isAdmin } from '@/lib/config';
 
 // Types
 interface Conversation {
@@ -241,8 +242,8 @@ export default function Sidebar({
                         <Settings size={18} />
                         <span>Settings</span>
                     </Link>
-                    {/* VIP Admin Link - Only for you */}
-                    {userId && userEmail === 'bigbricey@gmail.com' && (
+                    {/* VIP Admin Link - Only for admins */}
+                    {userId && isAdmin(userEmail) && (
                         <Link href="/admin" className="flex items-center gap-3 text-emerald-500 hover:text-emerald-400 px-2 py-2 rounded-lg hover:bg-[#1a1d24] transition-colors text-sm group">
                             <ShieldCheck size={18} className="group-hover:animate-pulse" />
                             <span>VIP Admin Dashboard</span>

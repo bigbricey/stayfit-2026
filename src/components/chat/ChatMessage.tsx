@@ -93,7 +93,7 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                 {Array.isArray((message as any).experimental_attachments) && (message as any).experimental_attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
                         {(message as any).experimental_attachments.map((attachment: any, index: number) => (
-                            <div key={index} className="relative group/img max-w-[300px]">
+                            <div key={`${attachment.name || attachment.url || 'attachment'}-${index}`} className="relative group/img max-w-[300px]">
                                 {attachment.contentType?.startsWith('image/') || attachment.type?.startsWith('image/') ? (
                                     <div className="rounded-xl overflow-hidden border border-[#2a2d34] bg-[#1a1d24]">
                                         <img

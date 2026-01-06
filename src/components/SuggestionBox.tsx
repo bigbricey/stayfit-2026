@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, X, ThumbsUp, ThumbsDown, Send, MessageSquare, Loader2, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { isAdmin } from '@/lib/config';
 
 interface Suggestion {
     id: string;
@@ -23,7 +24,7 @@ export default function SuggestionBox() {
     const [newSuggestion, setNewSuggestion] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isAdminUser, setIsAdminUser] = useState(false);
     const [aiSummary, setAiSummary] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -32,9 +33,8 @@ export default function SuggestionBox() {
     useEffect(() => {
         const checkAdmin = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            const adminEmails = ['bigbricey@gmail.com', 'tonygarrett@comcast.net'];
-            if (user?.email && adminEmails.includes(user.email)) {
-                setIsAdmin(true);
+            if (user?.email && isAdmin(user.email)) {
+                setIsAdminUser(true);
             }
         };
         checkAdmin();
@@ -186,7 +186,7 @@ export default function SuggestionBox() {
                             </form>
 
                             {/* AI Insights for Admin */}
-                            {isAdmin && (
+                            {isAdminUser && (
                                 <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 text-emerald-400 font-semibold">

@@ -34,9 +34,6 @@ export const viewport = {
     themeColor: '#0a0b0d',
 }
 
-// Components
-// import SuggestionBox from '@/components/SuggestionBox'
-
 export default function RootLayout({
     children,
 }: {
