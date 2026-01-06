@@ -183,22 +183,24 @@ export default function ChatInput({
                                     type="button"
                                     onClick={toggleListening}
                                     className={`p-2.5 rounded-lg transition-all duration-200 ${isListening
-                                            ? 'bg-red-500/20 text-red-500 animate-pulse border border-red-500/50'
-                                            : 'text-gray-400 hover:text-white hover:bg-[#2a2d34]'
+                                        ? 'bg-red-500/20 text-red-500 animate-pulse border border-red-500/50'
+                                        : 'text-gray-400 hover:text-white hover:bg-[#2a2d34]'
                                         }`}
                                     title={isListening ? "Stop Recording" : "Voice to Text"}
                                 >
                                     {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                                 </button>
                             )}
-                            {(input.trim() || selectedImage) && (
-                                <button
-                                    type="submit"
-                                    className="p-2.5 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors ml-1 animate-in zoom-in duration-200"
-                                >
-                                    <SendHorizontal size={20} />
-                                </button>
-                            )}
+                            <button
+                                type="submit"
+                                disabled={!input.trim() && !selectedImage}
+                                className={`p-2.5 rounded-lg transition-colors ml-1 ${input.trim() || selectedImage
+                                        ? 'bg-[#22c55e] text-white hover:bg-[#16a34a]'
+                                        : 'bg-[#2a2d34] text-gray-500 cursor-not-allowed'
+                                    }`}
+                            >
+                                <SendHorizontal size={20} />
+                            </button>
                         </div>
                     </div>
 
