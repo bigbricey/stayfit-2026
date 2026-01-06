@@ -5,16 +5,26 @@ import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
 import { getKnowledgeItem } from '@/lib/knowledge';
 import { ContextManager } from '@/lib/memory/context-manager';
-import { isAdmin } from '@/lib/config';
+import { isAdmin, RATE_LIMIT } from '@/lib/config';
 
-// Allow streaming responses up to 60 seconds for complex reasoning
+// Production-safe logging (suppressed in production unless explicitly enabled)
+const isLoggingEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_LOGGING === 'true';
+const log = (...args: unknown[]) => { if (isLoggingEnabled) console.log(...args); };
+const logWarn = (...args: unknown[]) => { if (isLoggingEnabled) console.warn(...args); };
+
 // Allow streaming responses up to 5 minutes (300s) for complex reasoning models
 export const maxDuration = 300;
 
-// Basic in-memory rate limiter for Demo Mode
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS = 20; // 20 requests per hour for guest mode
+// Rate limiter structure for Demo Mode
+// NOTE: In-memory rate limiting is stateless on serverless. For persistent rate limiting,
+// migrate to Supabase using RATE_LIMIT.TABLE_NAME from config.ts
+interface RateLimitRecord {
+    count: number;
+    lastReset: number;
+}
+const rateLimitMap = new Map<string, RateLimitRecord>();
+const RATE_LIMIT_WINDOW = RATE_LIMIT.WINDOW_MS;
+const MAX_REQUESTS = RATE_LIMIT.MAX_GUEST_REQUESTS;
 
 const RequestSchema = z.object({
     messages: z.array(z.any()),
@@ -31,7 +41,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // LOG RAW BODY FOR DEBUGGING
-    console.log('[API/Chat] Received body keys:', Object.keys(body));
+    log('[API/Chat] Received body keys:', Object.keys(body));
 
     const result_validate = RequestSchema.safeParse(body);
 
@@ -72,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     // DIAGNOSTIC LOGGING
-    console.log('[API/Chat] Request processed', {
+    log('[API/Chat] Request processed', {
         hasUser: !!user,
         userId: user?.id,
         authError: authError?.message
@@ -98,7 +108,7 @@ export async function POST(req: Request) {
         // SECURITY: Block unapproved users (VIP Whitelist)
         // Admin always bypasses
         if (!userProfile.is_approved && !isAdmin(user.email)) {
-            console.warn('[API/Chat] Blocked Access: User not approved', user.email);
+            logWarn('[API/Chat] Blocked Access: User not approved', user.email);
             return new Response('Access Denied: Your account is pending approval by Brice.', { status: 403 });
         }
     } else if (demoConfig) {
@@ -167,7 +177,7 @@ export async function POST(req: Request) {
                         experimental_attachments: (event as any).attachments && (event as any).attachments.length > 0 ? (event as any).attachments : null,
                     });
                     if (error) console.error('[API/Chat] Server Save Error:', error);
-                    else console.log('[API/Chat] Server Saved Assistant Message');
+                    else log('[API/Chat] Server Saved Assistant Message');
 
                     // Tiered Memory: Recursive Background Summarization
                     // We trigger an extraction if the conversation is ongoing (multiples of 3 messages)
@@ -192,7 +202,7 @@ export async function POST(req: Request) {
                                     .from('conversations')
                                     .update({ memory_summary: newSummary })
                                     .eq('id', conversationId);
-                                console.log('[API/Chat] Memory Summary Updated');
+                                log('[API/Chat] Memory Summary Updated');
                             }
                         } catch (summaryErr) {
                             console.error('[API/Chat] background-summarization error:', summaryErr);
@@ -202,7 +212,7 @@ export async function POST(req: Request) {
                     console.error('[API/Chat] Server Save Exception:', e);
                 }
             } else {
-                console.log('[API/Chat] Skip Save: No User or ConversationId', { hasUser: !!user, conversationId });
+                log('[API/Chat] Skip Save: No User or ConversationId', { hasUser: !!user, conversationId });
             }
         },
         tools: {
@@ -237,7 +247,7 @@ export async function POST(req: Request) {
                 }),
                 execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics }) => {
                     if (!user) {
-                        console.warn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
+                        logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}, Language=${preferred_language}`;
                     }
 
@@ -356,7 +366,7 @@ export async function POST(req: Request) {
                 }),
                 execute: async ({ log_type, content_raw, data_structured }) => {
                     if (!user) {
-                        console.warn('[API/Chat] Blocked Tool Execution (Demo Mode): log_activity');
+                        logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): log_activity');
                         return `[DEMO MODE] Item NOT saved to Vault (Sign in to save). Analysis: ${JSON.stringify(data_structured)}`;
                     }
 
@@ -487,7 +497,7 @@ export async function POST(req: Request) {
 
                     // Delete the most recent match (or first match)
                     const toDelete = matches[0];
-                    console.log('[delete_log] Attempting to delete:', { id: toDelete.id, user_id: user.id, content: toDelete.content_raw?.substring(0, 30) });
+                    log('[delete_log] Attempting to delete:', { id: toDelete.id, user_id: user.id, content: toDelete.content_raw?.substring(0, 30) });
 
                     const { error: deleteError, count } = await supabase
                         .from('metabolic_logs')
@@ -495,7 +505,7 @@ export async function POST(req: Request) {
                         .eq('id', toDelete.id)
                         .eq('user_id', user.id);  // CRITICAL: Must include user_id for RLS
 
-                    console.log('[delete_log] Delete result:', { error: deleteError?.message, count });
+                    log('[delete_log] Delete result:', { error: deleteError?.message, count });
 
                     if (deleteError) return `Error deleting: ${deleteError.message}`;
                     return `Deleted entry: "${toDelete.content_raw?.substring(0, 50)}..." (${toDelete.log_type} from ${new Date(toDelete.logged_at).toLocaleTimeString()})`;

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export default function LoginPage() {
     const [view, setView] = useState<'login' | 'signup'>('login');
@@ -26,14 +27,14 @@ export default function LoginPage() {
         }
         setLoading(true);
         clearMessages();
-        console.log("Requesting password reset for:", email);
+        logger.debug("Requesting password reset for:", email);
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin + '/auth/callback?next=/settings',
         });
 
         if (error) {
-            console.error("Reset Password Error:", error);
+            logger.error("Reset Password Error:", error);
             setErrorMsg(error.message);
         } else {
             setSuccessMsg('✅ Password reset email sent. Click the link in the email to set a new password.');
@@ -51,7 +52,7 @@ export default function LoginPage() {
         });
 
         if (error) {
-            console.error("Login Error:", error);
+            logger.error("Login Error:", error);
             setErrorMsg(error.message === 'Invalid login credentials'
                 ? 'Invalid email or password. Do you need to create an account?'
                 : error.message);
@@ -76,7 +77,7 @@ export default function LoginPage() {
         });
 
         if (error) {
-            console.error("Signup Error:", error);
+            logger.error("Signup Error:", error);
             setErrorMsg(error.message);
         } else {
             setSuccessMsg("🎉 Account created! Your access is now pending admin approval. You will be able to log in once the admin has reviewed your account.");

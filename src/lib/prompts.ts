@@ -1,16 +1,39 @@
-
 import { Database } from '../types/database';
 
 // DietMode is now open-ended to allow for dynamic user-defined protocols, 
 // while retaining core types for Intellisense on built-in ones.
 type DietMode = Database['public']['Tables']['users_secure']['Row']['diet_mode'] | 'modified_keto' | (string & {});
 type CoachMode = 'hypertrophy' | 'fat_loss' | 'longevity';
-type SafetyFlags = {
+interface SafetyFlags {
    warn_seed_oils?: boolean;
    warn_sugar?: boolean;
    warn_gluten?: boolean;
-   [key: string]: any;
-};
+   [key: string]: boolean | undefined;
+}
+
+// User profile and goal type definitions for type safety
+interface UserBiometrics {
+   weight?: number;
+   weight_unit?: string;
+   height?: number;
+   height_unit?: string;
+   sex?: string;
+   age?: number;
+   birthdate?: string;
+   waist?: number;
+}
+
+interface UserProfile {
+   name?: string;
+   preferred_language?: string;
+   biometrics?: UserBiometrics;
+   [key: string]: unknown;
+}
+
+interface Goal {
+   type: string;
+   target: string;
+}
 
 // ============================================================================
 // SPECIALIST PERSONAS (Phase 2: Dynamic Injection)
@@ -166,16 +189,16 @@ At the end of **EVERY SINGLE RESPONSE**, you must provide the "Vault Status" usi
 // ============================================================================
 
 // Helper: Build Safety Guardrails based on user flags
-const buildGuardrails = (flags: Record<string, boolean> = {}): string => {
+const buildGuardrails = (flags: SafetyFlags = {}): string => {
    const items: string[] = [];
-   if (flags?.warn_seed_oils) items.push('**SEED OIL ALERT**: This product may contain inflammatory linoleic acid.');
-   if (flags?.warn_sugar) items.push('**SUGAR ALERT**: This product may contain hidden sugars.');
-   if (flags?.warn_gluten) items.push('**GLUTEN ALERT**: This product may contain gluten.');
+   if (flags.warn_seed_oils) items.push('**SEED OIL ALERT**: This product may contain inflammatory linoleic acid.');
+   if (flags.warn_sugar) items.push('**SUGAR ALERT**: This product may contain hidden sugars.');
+   if (flags.warn_gluten) items.push('**GLUTEN ALERT**: This product may contain gluten.');
    return items.length > 0 ? `\n### **SAFETY GUARDRAILS**\n${items.join('\n')}\n` : '';
 };
 
 // Helper: Format User Context
-const formatUserContext = (profile: any, goals: any[]): string => {
+const formatUserContext = (profile: UserProfile, goals: Goal[]): string => {
    const name = profile?.name || 'User';
    const b = profile?.biometrics || {};
 
@@ -223,8 +246,8 @@ When the user provides lab results (blood panels, lipid profiles, etc.):
 
 
 export const METABOLIC_COACH_PROMPT = (
-   userProfile: any,
-   activeGoals: any = [],
+   userProfile: UserProfile,
+   activeGoals: Goal[] = [],
    customConstitution: string = '',
    customSpecialist: string = '',
    currentTime: string = new Date().toLocaleString()
@@ -243,7 +266,7 @@ export const METABOLIC_COACH_PROMPT = (
 [FALLBACK: Attempting to load from src/knowledge/personas/persona_veteran.md]
 `;
 
-   const safetyGuardrails = buildGuardrails(userProfile?.safety_flags);
+   const safetyGuardrails = buildGuardrails(userProfile?.safety_flags as SafetyFlags | undefined);
    const contextBlock = formatUserContext(userProfile, activeGoals);
 
    // Assembly

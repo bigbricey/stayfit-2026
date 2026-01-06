@@ -4,7 +4,6 @@ import { useChat } from 'ai/react';
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { PanelLeftOpen, Sparkles, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 // Components
 import Sidebar from '@/components/chat/Sidebar';
@@ -86,7 +85,6 @@ export default function Chat() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isCompressing, setIsCompressing] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const router = useRouter();
 
     // Memoized Supabase client to prevent recreation on every render
     const supabase = useMemo(() => createClient(), []);
@@ -151,22 +149,14 @@ export default function Chat() {
             setSelectedImage(compressedDataUrl);
             setSelectedFile(file);
         } catch (err) {
-            console.error('[handleFileSelect] Compression failed:', err);
+            logger.error('[handleFileSelect] Compression failed:', err);
             // Fallback to original reader if compression fails
             const reader = new FileReader();
             reader.onload = (e) => {
                 const result = e.target?.result as string;
                 setSelectedImage(result);
                 setSelectedFile(file);
-                console.error('[handleFileSelect] Compression failed:', err);
-                // Fallback to original reader if compression fails
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const result = e.target?.result as string;
-                    setSelectedImage(result);
-                    setSelectedFile(file);
-                    logger.debug('[handleFileSelect] Fallback read complete', { length: result.length });
-                };
+                logger.debug('[handleFileSelect] Fallback read complete', { length: result.length });
             };
             reader.readAsDataURL(file);
         } finally {
@@ -185,7 +175,7 @@ export default function Chat() {
             const productInfo = `I've scanned ${data.brand || ''} ${data.name}. It has ${data.calories} calories, ${data.protein}g protein, ${data.fat}g fat, and ${data.carbs}g carbs per ${data.serving_size}. Please log this for me.`;
             setInput(productInfo);
         } catch (err) {
-            console.error('Barcode lookup failed:', err);
+            logger.error('Barcode lookup failed:', err);
             setInput(`I scanned code ${code}, but couldn't find it in the database. Can you help me log it manually?`);
         }
     };

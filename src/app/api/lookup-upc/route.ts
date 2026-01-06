@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+// Production-safe logging (suppressed in production unless explicitly enabled)
+const isLoggingEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_LOGGING === 'true';
+const log = (...args: unknown[]) => { if (isLoggingEnabled) console.log(...args); };
+
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const upc = searchParams.get('upc');
@@ -9,7 +13,7 @@ export async function GET(req: Request) {
     }
 
     try {
-        console.log(`[API/LookupUPC] Fetching data for UPC: ${upc}`);
+        log(`[API/LookupUPC] Fetching data for UPC: ${upc}`);
         const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${upc}.json`);
 
         if (!response.ok) {
@@ -37,8 +41,9 @@ export async function GET(req: Request) {
         };
 
         return NextResponse.json(nutrition);
-    } catch (error: any) {
+    } catch (error) {
         console.error('[API/LookupUPC] Error:', error);
         return NextResponse.json({ error: 'Failed to lookup product data' }, { status: 500 });
     }
 }
+

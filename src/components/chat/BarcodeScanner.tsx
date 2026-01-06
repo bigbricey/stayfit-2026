@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { X, Search, Camera, AlertCircle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface BarcodeScannerProps {
     onScan: (decodedText: string) => void;
@@ -38,7 +39,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                             aspectRatio: 1.0
                         },
                         (decodedText) => {
-                            console.log(`Code scanned: ${decodedText}`);
+                            logger.debug(`Code scanned: ${decodedText}`);
                             onScan(decodedText);
                         },
                         (errorMessage) => {
@@ -49,9 +50,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                 } else {
                     setError("No cameras found on this device.");
                 }
-            } catch (err: any) {
-                console.error("Failed to start scanner:", err);
-                setError(err.message || "Could not access camera. Please ensure you've granted permission.");
+            } catch (err) {
+                logger.error("Failed to start scanner:", err);
+                setError((err as Error).message || "Could not access camera. Please ensure you've granted permission.");
             }
         };
 
@@ -61,7 +62,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
             if (html5QrCodeRef.current?.isScanning) {
                 html5QrCodeRef.current.stop().then(() => {
                     html5QrCodeRef.current?.clear();
-                }).catch(err => console.error("Failed to stop scanner", err));
+                }).catch(err => logger.error("Failed to stop scanner", err));
             }
         };
     }, []);

@@ -3,12 +3,29 @@
 import ReactMarkdown from 'react-markdown';
 import { User, Sparkles, Quote, Info } from 'lucide-react';
 import NutritionLabel from './NutritionLabel';
+import { logger } from '@/lib/logger';
+
+// Type definitions for tool invocations and attachments
+interface ToolInvocation {
+    toolCallId: string;
+    toolName: string;
+    args?: Record<string, unknown>;
+    result?: unknown;
+}
+
+interface Attachment {
+    name?: string;
+    url: string;
+    contentType?: string;
+    type?: string;
+}
 
 interface Message {
     id: string;
     role: 'user' | 'assistant' | 'system' | 'function' | 'data' | 'tool';
     content: string;
-    toolInvocations?: any[];
+    toolInvocations?: ToolInvocation[];
+    experimental_attachments?: Attachment[];
 }
 
 interface ChatMessageProps {
@@ -70,7 +87,7 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                                             const nutritionData = JSON.parse(codeContent);
                                             return <NutritionLabel data={nutritionData} />;
                                         } catch (e) {
-                                            console.error('Failed to parse nutrition data:', e);
+                                            logger.error('Failed to parse nutrition data:', e);
                                         }
                                     }
                                 }
@@ -90,9 +107,9 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                 </div>
 
                 {/* Attachments */}
-                {Array.isArray((message as any).experimental_attachments) && (message as any).experimental_attachments.length > 0 && (
+                {Array.isArray(message.experimental_attachments) && message.experimental_attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
-                        {(message as any).experimental_attachments.map((attachment: any, index: number) => (
+                        {message.experimental_attachments.map((attachment, index) => (
                             <div key={`${attachment.name || attachment.url || 'attachment'}-${index}`} className="relative group/img max-w-[300px]">
                                 {attachment.contentType?.startsWith('image/') || attachment.type?.startsWith('image/') ? (
                                     <div className="rounded-xl overflow-hidden border border-[#2a2d34] bg-[#1a1d24]">
@@ -113,7 +130,7 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
                 )}
 
                 {/* Tool Logs */}
-                {Array.isArray(message.toolInvocations) && message.toolInvocations.map((tool: any) => (
+                {Array.isArray(message.toolInvocations) && message.toolInvocations.map((tool) => (
                     <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">
                         {tool.toolName === 'log_activity' && 'result' in tool && (
                             <div className="text-xs text-emerald-400 flex items-center gap-1.5 opacity-75">

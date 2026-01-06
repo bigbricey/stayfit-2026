@@ -1,6 +1,25 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Environment variable validation (Const Guard pattern)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
+}
+if (!supabaseAnonKey) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
+}
+
+// Type-safe validated values
+const SUPABASE_URL: string = supabaseUrl;
+const SUPABASE_ANON_KEY: string = supabaseAnonKey;
+
+// Production-safe logging (suppressed in production unless explicitly enabled)
+const isLoggingEnabled = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_LOGGING === 'true';
+const log = (...args: unknown[]) => { if (isLoggingEnabled) console.log(...args); };
+
 export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
         request: {
@@ -9,15 +28,15 @@ export async function middleware(request: NextRequest) {
     })
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
         {
             cookies: {
                 getAll() {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
                     response = NextResponse.next({
                         request: {
                             headers: request.headers,
@@ -35,7 +54,7 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    console.log('[Middleware] Path:', request.nextUrl.pathname, 'User:', !!user);
+    log('[Middleware] Path:', request.nextUrl.pathname, 'User:', !!user);
 
     // 1. Check Approval Status for Authenticated Users (Strict DB Audit)
     let isApproved = false;
@@ -46,7 +65,7 @@ export async function middleware(request: NextRequest) {
             .eq('id', user.id)
             .single();
         isApproved = !!profile?.is_approved;
-        console.log('[Middleware] User:', user.email, 'Approved:', isApproved);
+        log('[Middleware] User:', user.email, 'Approved:', isApproved);
     }
 
     // Protect all routes except public ones and Demo Mode
@@ -59,13 +78,13 @@ export async function middleware(request: NextRequest) {
 
     // REDIRECT LOGIC
     if (!user && !isPublic) {
-        console.log('[Middleware] Redirect to /login (Not Public + No User)');
+        log('[Middleware] Redirect to /login (Not Public + No User)');
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
     // Redirect unapproved users to /pending
     if (user && !isApproved && !isPublic) {
-        console.log('[Middleware] Redirect to /pending (User + Unapproved)');
+        log('[Middleware] Redirect to /pending (User + Unapproved)');
         return NextResponse.redirect(new URL('/pending', request.url))
     }
 
@@ -76,7 +95,7 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/pending')
     )) {
-        console.log('[Middleware] Redirect to /chat (Approved User on Splash/Login)');
+        log('[Middleware] Redirect to /chat (Approved User on Splash/Login)');
         return NextResponse.redirect(new URL('/chat', request.url))
     }
 
