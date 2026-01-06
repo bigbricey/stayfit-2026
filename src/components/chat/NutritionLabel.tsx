@@ -67,7 +67,7 @@ export default function NutritionLabel({ data }: { data: NutritionData }) {
 
             {/* Title / Food Name */}
             <div className="text-sm font-bold mt-1 border-b border-gray-400 pb-1">
-                {data.food_name || (isSummary ? `Logs for last ${data.days_count || 7} days` : 'Item Details')}
+                {data.food_name === 'Daily Totals' ? 'Personal Daily Totals' : (data.food_name || (isSummary ? `Logs for last ${data.days_count || 7} days` : 'Item Details'))}
             </div>
 
             {/* Context Line */}
@@ -170,7 +170,7 @@ export default function NutritionLabel({ data }: { data: NutritionData }) {
             {/* Micronutrients */}
             <div className="space-y-0">
                 <NutrientRow label="Potassium" value={data.potassium} avg={data.avg_potassium} unit="mg" />
-                <NutrientRow label="Magnesium" value={data.magnesium} avg={data.avg_magnesium} unit="mg" />
+                {data.magnesium !== undefined && <NutrientRow label="Magnesium" value={data.magnesium} avg={data.avg_magnesium} unit="mg" />}
                 <NutrientRow label="Calcium" value={data.calcium} avg={data.avg_calcium} unit="mg" />
                 <NutrientRow label="Iron" value={data.iron} avg={data.avg_iron} unit="mg" />
                 <NutrientRow label="Vitamin D" value={data.vitamin_d} avg={data.avg_vitamin_d} unit="mcg" />

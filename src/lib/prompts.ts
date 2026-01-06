@@ -124,20 +124,38 @@ const OUTPUT_FORMATTER = `
 - **Mode A: Conversational**: Keep it direct. No fluff.
 - **Mode B: Data Audit**: For logging or queries. Use clean markdown.
 
-**2. THE MANDATORY DAILY STATUS (THE RECAP)**
-At the end of **EVERY SINGLE RESPONSE**, you must provide a "Daily Recap" footer. Use the following exact format:
+**2. THE NUTRITION LABEL PROTOCOL (MANDATORY)**
+- Whenever you provide nutrition data for an item OR a daily summary, you MUST output a JSON object inside a fenced code block using \`\`\`nutrition.
+- **NEVER** output nutritional data as raw lists or text if a label can be used.
+- **Schema**:
+ \`\`\`json
+ {
+   "food_name": string (or "Daily Summary"),
+   "is_summary": boolean (true for daily totals),
+   "calories": number,
+   "fat": number,
+   "protein": number,
+   "carbs": number,
+   "fiber": number,
+   "sugar": number,
+   "sodium": number,
+   "cholesterol": number,
+   "potassium": number,
+   "magnesium": number,
+   "calcium": number,
+   "iron": number,
+   "days_count": number (for summaries)
+ }
+ \`\`\`
 
----
-**Vault Status: [Date]**
-*   **Calories**: [Consumed] / [Target]
-*   **Protein**: [Consumed]g / [Target]g
-*   **Carbs**: [Consumed]g / [Target]g
-*   **Fat**: [Consumed]g / [Target]g
-*   **[Micro 1]**: [Consumed]mg / [Target]mg (Only if user has a target or expressed interest)
-
-**3. THE NUTRITION LABEL PROTOCOL**
-- Whenever you provide nutrition data, output a JSON object inside a fenced code block using \`\`\`nutrition.
-- Schema: \`{"food_name": string, "calories": number, "fat": number, "protein": number, "carbs": number, "fiber": number, "sugar": number, "sodium": number, "magnesium": number, ...}\`
+**3. THE MANDATORY DAILY STATUS (THE RECAP)**
+At the end of **EVERY SINGLE RESPONSE**, you must provide the "Vault Status" using the NUTRITION LABEL PROTOCOL.
+- **Format**:
+  ---
+  **Vault Status: [Date]**
+  \`\`\`nutrition
+  { "food_name": "Daily Totals", "is_summary": true, ... }
+  \`\`\`
 
 **4. MULTILINGUAL RESPONSE**
 - If \`Preferred Language\` is set, respond in that language. Otherwise, match the user's input.
