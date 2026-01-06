@@ -80,7 +80,7 @@ export default function DashboardPage() {
 
                 {/* Today's Summary */}
                 <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-                    <h2 className="text-xl font-bold mb-4">Today's Fuel Summary</h2>
+                    <h2 className="text-xl font-bold mb-4">Today&apos;s Fuel Summary</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-gray-950 rounded-xl p-4 text-center">
                             <div className="text-3xl font-bold text-blue-400">{summary?.calories || 0}</div>
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                                     <div key={goal.id} className="bg-gray-950 rounded-xl p-4">
                                         <div className="flex justify-between mb-2">
                                             <span className="font-medium capitalize">{goal.metric}</span>
-                                            <span className="text-gray-400">{current} / {goal.target_value}{goal.metric === 'calories' ? '' : 'g'}</span>
+                                            <p className="text-gray-400">You haven&apos;t logged any meals or workouts yet.</p>
                                         </div>
                                         <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                                             <div

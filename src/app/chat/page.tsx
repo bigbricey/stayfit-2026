@@ -13,6 +13,8 @@ import ChatInput from '@/components/chat/ChatInput';
 import { resizeImage } from '@/lib/utils';
 import WelcomeScreen from '@/components/chat/WelcomeScreen';
 import PWAInstallPrompt from '@/components/chat/PWAInstallPrompt';
+import { logger } from '@/lib/logger';
+import { STORAGE_KEYS } from '@/lib/config';
 
 // Types
 interface Conversation {
@@ -27,10 +29,23 @@ interface DbMessage {
     conversation_id: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
-    tool_calls: any;
-    experimental_attachments?: any;
+    tool_calls: unknown;
+    experimental_attachments?: unknown;
     created_at: string;
 }
+
+interface UserConfig {
+    name?: string;
+    biometrics?: Record<string, unknown>;
+    [key: string]: unknown;
+}
+
+interface ToolInvocation {
+    toolName: string;
+    args: Record<string, unknown>;
+}
+
+// Toast notification component for errors
 
 // Toast notification component for errors
 interface ToastProps {
@@ -66,7 +81,7 @@ export default function Chat() {
     const [showSidebar, setShowSidebar] = useState(false); // Default to closed for better mobile UX
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
-    const [demoConfig, setDemoConfig] = useState<any>(null);
+    const [demoConfig, setDemoConfig] = useState<UserConfig | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isCompressing, setIsCompressing] = useState(false);
@@ -97,38 +112,42 @@ export default function Chat() {
     const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
         maxSteps: 3,
         body: () => {
-            console.log('[useChat] body() called. convRef:', conversationIdRef.current);
+            logger.debug('[useChat] body() called', { convRef: conversationIdRef.current });
             return { demoConfig, conversationId: conversationIdRef.current };
         },
         onResponse: (response) => {
-            console.log('[useChat] onResponse received:', response.status, response.statusText);
+            logger.debug('[useChat] onResponse received', { status: response.status, statusText: response.statusText });
         },
         onFinish: async (message) => {
             const activeId = conversationIdRef.current;
-            console.log('[useChat] onFinish. message:', message.content?.slice(0, 50), 'activeId:', activeId, 'userId:', userId);
-            console.log('[useChat] Current messages count:', messagesRef.current.length);
+            logger.debug('[useChat] onFinish', {
+                snippet: message.content?.slice(0, 50),
+                activeId,
+                userId,
+                msgCount: messagesRef.current.length
+            });
 
             if (activeId && userId) {
-                console.log('[useChat] Persisting messages for conv:', activeId);
+                logger.debug('[useChat] Persisting messages for conv', { activeId });
                 await saveMessagesToDb(activeId, [...messagesRef.current, message]);
                 loadConversations(userId);
             }
             else {
-                console.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
+                logger.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
             }
         },
         onError: (e) => {
-            console.error('[useChat] onError:', e);
+            logger.error('[useChat] onError', e);
             setErrorMessage(`Chat error: ${e.message}`);
         }
     });
 
     const handleFileSelect = async (file: File) => {
-        console.log('[handleFileSelect] File selected:', file.name, 'size:', file.size);
+        logger.debug('[handleFileSelect] File selected', { name: file.name, size: file.size });
         setIsCompressing(true);
         try {
             const compressedDataUrl = await resizeImage(file);
-            console.log('[handleFileSelect] Compression complete. Length:', compressedDataUrl.length);
+            logger.debug('[handleFileSelect] Compression complete', { length: compressedDataUrl.length });
             setSelectedImage(compressedDataUrl);
             setSelectedFile(file);
         } catch (err) {
@@ -139,7 +158,15 @@ export default function Chat() {
                 const result = e.target?.result as string;
                 setSelectedImage(result);
                 setSelectedFile(file);
-                console.log('[handleFileSelect] Fallback read complete. Length:', result.length);
+                console.error('[handleFileSelect] Compression failed:', err);
+                // Fallback to original reader if compression fails
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const result = e.target?.result as string;
+                    setSelectedImage(result);
+                    setSelectedFile(file);
+                    logger.debug('[handleFileSelect] Fallback read complete', { length: result.length });
+                };
             };
             reader.readAsDataURL(file);
         } finally {
@@ -148,7 +175,7 @@ export default function Chat() {
     };
 
     const handleBarcodeScan = async (code: string) => {
-        console.log('[handleBarcodeScan] Scanned code:', code);
+        logger.debug('[handleBarcodeScan] Scanned code', { code });
         try {
             const res = await fetch(`/api/lookup-upc?upc=${code}`);
             if (!res.ok) throw new Error('Product not found');
@@ -166,7 +193,7 @@ export default function Chat() {
     // Initialize
     useEffect(() => {
         const init = async () => {
-            const saved = localStorage.getItem('stayfit_demo_config');
+            const saved = localStorage.getItem(STORAGE_KEYS.DEMO_CONFIG);
             if (saved) {
                 const config = JSON.parse(saved);
                 setDemoConfig(config);
@@ -196,17 +223,18 @@ export default function Chat() {
 
         const lastMessage = messages[messages.length - 1];
         if (lastMessage?.role === 'assistant' && lastMessage.toolInvocations) {
-            lastMessage.toolInvocations.forEach((tool: any) => {
-                if (tool.toolName === 'update_profile' && tool.args) {
-                    const updates = tool.args;
-                    const newConfig = { ...demoConfig, ...updates };
+            lastMessage.toolInvocations.forEach((tool: unknown) => {
+                const typedTool = tool as ToolInvocation;
+                if (typedTool.toolName === 'update_profile' && typedTool.args) {
+                    const updates = typedTool.args as UserConfig;
+                    const newConfig: UserConfig = { ...(demoConfig || {}), ...updates };
 
                     if (updates.biometrics && demoConfig?.biometrics) {
                         newConfig.biometrics = { ...demoConfig.biometrics, ...updates.biometrics };
                     }
 
                     setDemoConfig(newConfig);
-                    localStorage.setItem('stayfit_demo_config', JSON.stringify(newConfig));
+                    localStorage.setItem(STORAGE_KEYS.DEMO_CONFIG, JSON.stringify(newConfig));
 
                     if (updates.name) setUserName(updates.name);
                 }
@@ -256,7 +284,7 @@ export default function Chat() {
     };
 
     const loadConversation = async (conversationId: string) => {
-        console.log('[loadConversation] Loading conversation:', conversationId);
+        logger.debug('[loadConversation] Loading conversation', { conversationId });
         setCurrentConversationId(conversationId);
         if (typeof window !== 'undefined' && window.innerWidth < 768) setShowSidebar(false);
 
@@ -266,20 +294,20 @@ export default function Chat() {
             .eq('conversation_id', conversationId)
             .order('created_at', { ascending: true });
 
-        console.log('[loadConversation] Query result:', { count: data?.length, error });
+        logger.debug('[loadConversation] Query result', { count: data?.length, error });
 
         if (data && data.length > 0) {
             const chatMessages = data.map((m: DbMessage) => {
                 // Defensive checks for JSONB columns which might be objects instead of arrays
                 let toolInvocations = m.tool_calls;
                 if (toolInvocations && !Array.isArray(toolInvocations)) {
-                    console.warn('[loadConversation] tool_calls is not an array, wrapping in array:', toolInvocations);
+                    logger.warn('[loadConversation] tool_calls is not an array, wrapping', { toolInvocations });
                     toolInvocations = [toolInvocations];
                 }
 
                 let attachments = m.experimental_attachments;
                 if (attachments && !Array.isArray(attachments)) {
-                    console.warn('[loadConversation] attachments is not an array, wrapping in array:', attachments);
+                    logger.warn('[loadConversation] attachments is not an array, wrapping', { attachments });
                     attachments = [attachments];
                 }
 
@@ -287,14 +315,14 @@ export default function Chat() {
                     id: m.id,
                     role: m.role as 'user' | 'assistant' | 'system',
                     content: m.content || '',
-                    toolInvocations: toolInvocations || undefined,
-                    experimental_attachments: attachments || undefined,
+                    toolInvocations: (toolInvocations || undefined) as any,
+                    experimental_attachments: (attachments || undefined) as any,
                 };
             });
-            console.log('[loadConversation] Setting messages:', chatMessages.length);
+            logger.debug('[loadConversation] Setting messages', { count: chatMessages.length });
             setMessages(chatMessages);
         } else {
-            console.log('[loadConversation] No messages found, clearing chat');
+            logger.debug('[loadConversation] No messages found, clearing chat');
             setMessages([]);
         }
     };
@@ -307,11 +335,11 @@ export default function Chat() {
 
     const saveMessagesToDb = async (conversationId: string, currentMessages: typeof messages) => {
         if (!userId || currentMessages.length === 0) {
-            console.warn('[saveMessagesToDb] Skip: no user or no messages', { userId, msgCount: currentMessages.length });
+            logger.warn('[saveMessagesToDb] Skip: no user or no messages', { userId, msgCount: currentMessages.length });
             return;
         }
 
-        console.log('[saveMessagesToDb] Saving', currentMessages.length, 'messages to conversation', conversationId);
+        logger.debug('[saveMessagesToDb] Saving messages', { count: currentMessages.length, conversationId });
 
         const { data: existingMessages } = await supabase
             .from('messages')
@@ -327,7 +355,7 @@ export default function Chat() {
         );
 
         if (newMessages.length === 0) {
-            console.log('[saveMessagesToDb] No new messages to save');
+            logger.debug('[saveMessagesToDb] No new messages to save');
             return;
         }
 
@@ -337,14 +365,14 @@ export default function Chat() {
             role: m.role,
             content: m.content,
             tool_calls: m.toolInvocations || null,
-            experimental_attachments: (m as any).experimental_attachments || null,
+            experimental_attachments: (m as { experimental_attachments?: unknown }).experimental_attachments || null,
         }));
 
         const { error } = await supabase.from('messages').insert(toInsert);
         if (error) {
-            console.error('[saveMessagesToDb] Insert error:', error);
+            logger.error('[saveMessagesToDb] Insert error:', error);
         } else {
-            console.log('[saveMessagesToDb] Saved', toInsert.length, 'new messages');
+            logger.debug('[saveMessagesToDb] Saved new messages', { count: toInsert.length });
         }
 
         // Update conversation title if first user message
@@ -390,20 +418,20 @@ export default function Chat() {
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('[onSubmit] Triggered. input:', input.trim(), 'hasImage:', !!selectedImage);
+        logger.debug('[onSubmit] Triggered', { input: input.trim(), hasImage: !!selectedImage });
 
         if (!input.trim() && !selectedImage) {
-            console.log('[onSubmit] Empty submission ignored');
+            logger.debug('[onSubmit] Empty submission ignored');
             return;
         }
 
-        console.log('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current });
+        logger.debug('[onSubmit] Start', { currentConversationId, userId, refValue: conversationIdRef.current });
 
         let convId = currentConversationId;
         if (!convId && userId) {
-            console.log('[onSubmit] Creating new conversation for user:', userId);
+            logger.debug('[onSubmit] Creating new conversation for user', { userId });
             convId = await createNewConversation();
-            console.log('[onSubmit] Created conversation:', convId);
+            logger.debug('[onSubmit] Created conversation', { convId });
             if (convId) {
                 setCurrentConversationId(convId);
                 conversationIdRef.current = convId;
@@ -412,7 +440,7 @@ export default function Chat() {
 
         // SAVE USER MESSAGE IMMEDIATELY for authenticated users
         if (convId && userId) {
-            console.log('[onSubmit] Saving user message to DB for conv:', convId);
+            logger.debug('[onSubmit] Saving user message to DB for conv:', { convId });
             const { error: saveError } = await supabase.from('messages').insert({
                 id: crypto.randomUUID(),
                 conversation_id: convId,
@@ -425,10 +453,10 @@ export default function Chat() {
                     url: selectedImage,
                 }] : null
             });
-            if (saveError) console.error('[onSubmit] DB Save Error:', saveError);
+            if (saveError) logger.error('[onSubmit] DB Save Error:', saveError);
         }
 
-        console.log('[onSubmit] Preparing options. hasImage:', !!selectedImage, 'urlLength:', selectedImage?.length);
+        logger.debug('[onSubmit] Preparing options', { hasImage: !!selectedImage, urlLength: selectedImage?.length });
 
         const options = selectedFile && selectedImage ? {
             experimental_attachments: [{
@@ -438,16 +466,16 @@ export default function Chat() {
             }]
         } : {};
 
-        console.log('[onSubmit] Calling handleSubmit. Attachments:', options.experimental_attachments?.length || 0);
+        logger.debug('[onSubmit] Calling handleSubmit', { attachmentCount: options.experimental_attachments?.length || 0 });
 
         try {
             handleSubmit(e, {
                 ...options,
                 allowEmptySubmit: true,
             });
-            console.log('[onSubmit] handleSubmit called successfully');
+            logger.debug('[onSubmit] handleSubmit called successfully');
         } catch (err) {
-            console.error('[onSubmit] handleSubmit CRASHED:', err);
+            logger.error('[onSubmit] handleSubmit CRASHED:', err);
         }
 
         // Reset image

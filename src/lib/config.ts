@@ -77,3 +77,14 @@ export const MEMORY_CONFIG = {
     /** Trigger summarization every N messages */
     SUMMARIZE_INTERVAL: 3,
 } as const;
+
+// ============================================================================
+// STORAGE CONFIGURATION
+// ============================================================================
+
+/**
+ * LocalStorage keys for client-side persistence
+ */
+export const STORAGE_KEYS = {
+    DEMO_CONFIG: 'stayfit_demo_config',
+} as const;

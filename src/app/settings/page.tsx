@@ -152,7 +152,7 @@ export default function SettingsPage() {
                 <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
                     <h2 className="text-xl font-bold mb-4">Diet Mode</h2>
                     <p className="text-gray-500 text-sm mb-4">
-                        This adjusts how the AI analyzes your food. It won't judge you—it just optimizes for your framework.
+                        This adjusts how the AI analyzes your food. It won&apos;t judge you—it just optimizes for your framework.
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {DIET_MODES.map((mode) => (

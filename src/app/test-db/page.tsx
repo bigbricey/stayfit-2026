@@ -25,7 +25,8 @@ export default function TestDbPage() {
             <h1 className="text-2xl font-bold">Manual Persistence Test</h1>
             <p className="text-gray-400">
                 This page bypasses the AI and attempts to write directly to the database using your current session.
-                It verifies if "Silent Failures" are happening at the database level.
+                Check the console for the &quot;Connection successful&quot; message.
+                It verifies if &quot;Silent Failures&quot; are happening at the database level.
             </p>
 
             <button
