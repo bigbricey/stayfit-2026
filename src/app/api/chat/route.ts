@@ -419,7 +419,7 @@ export async function POST(req: Request) {
                     }).optional().describe('Standardized metabolic metrics'),
                     flexible: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
                         .optional()
-                        .describe('Dynamic context: { "pain_level": 9, "stress_trigger": "traffic", "magnesium_mg": 400 }'),
+                        .describe('Mandatory for minerals/vitamins. If user doesn\'t specify, use your knowledge to estimate: { "magnesium_mg": 400, "potassium_mg": 1200, "zinc_mg": 10, "iron_mg": 8, "pain_level": 9 }. Always use _mg or _mcg suffixes for clarity.'),
                     is_estimated: z.boolean().default(false).describe('True if this is a guess/restaraunt meal'),
                     confidence_score: z.number().min(0).max(1).default(1).describe('0.0 to 1.0 (1.0 = Measured, 0.7 = Guesstimated)'),
                     date: z.string().optional().describe('The date (YYYY-MM-DD). Defaults to now.'),
