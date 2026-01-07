@@ -244,12 +244,16 @@ export async function POST(req: Request) {
                         activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
                         goals: z.array(z.string()).optional().describe('Fitness goals like "lose fat", "gain muscle"'),
                     }).passthrough().optional().describe('Body metrics - weight changes are logged to history'),
+                    date: z.string().optional().describe('The date of the update (YYYY-MM-DD). Defaults to today if not provided.'),
                 }),
-                execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics }) => {
+                execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics, date }) => {
                     if (!user) {
                         logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}, Language=${preferred_language}`;
                     }
+
+                    const targetDate = date || new Date().toISOString().split('T')[0];
+                    const timestamp = date ? `${date}T12:00:00Z` : new Date().toISOString();
 
                     // Fetch current profile for comparison and merging
                     const { data: currentProfile } = await supabase
@@ -275,6 +279,7 @@ export async function POST(req: Request) {
                             user_id: user.id,
                             log_type: 'note',
                             content_raw: `Switched diet to ${diet_mode}`,
+                            logged_at: timestamp,
                             data_structured: {
                                 event_type: 'diet_change',
                                 old_mode: currentProfile?.diet_mode || 'standard',
@@ -304,6 +309,7 @@ export async function POST(req: Request) {
                                 user_id: user.id,
                                 log_type: 'biometric',
                                 content_raw: `Weighed ${biometrics.weight} ${unit}`,
+                                logged_at: timestamp,
                                 data_structured: {
                                     event_type: 'weight_check',
                                     weight: biometrics.weight,
@@ -320,6 +326,7 @@ export async function POST(req: Request) {
                                 user_id: user.id,
                                 log_type: 'biometric',
                                 content_raw: `Waist measurement: ${biometrics.waist} inches`,
+                                logged_at: timestamp,
                                 data_structured: {
                                     event_type: 'waist_check',
                                     waist: biometrics.waist,
@@ -363,12 +370,15 @@ export async function POST(req: Request) {
                         notes: z.string().optional(),
                         insulin_load: z.enum(['high', 'medium', 'low', 'zero']).optional(),
                     }).describe('The AI-extracted JSON data'),
+                    date: z.string().optional().describe('The date of the activity (YYYY-MM-DD). Use this for historical logging if the user says "Yesterday I ate X". Defaults to now.'),
                 }),
-                execute: async ({ log_type, content_raw, data_structured }) => {
+                execute: async ({ log_type, content_raw, data_structured, date }) => {
                     if (!user) {
                         logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): log_activity');
                         return `[DEMO MODE] Item NOT saved to Vault (Sign in to save). Analysis: ${JSON.stringify(data_structured)}`;
                     }
+
+                    const timestamp = date ? `${date}T12:00:00Z` : new Date().toISOString();
 
                     const { error } = await supabase
                         .from('metabolic_logs')
@@ -377,6 +387,7 @@ export async function POST(req: Request) {
                             log_type,
                             content_raw,
                             data_structured,
+                            logged_at: timestamp,
                         });
                     return error ? `Error logging data: ${error.message}` : 'Item secured in Data Vault.';
                 },
