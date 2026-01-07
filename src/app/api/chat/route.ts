@@ -414,12 +414,18 @@ export async function POST(req: Request) {
                         fat: z.number().optional(),
                         carbs: z.number().optional(),
                         fiber: z.number().optional(),
-                        sugar: z.number().optional(),
+                        sugar_g: z.number().optional(),
+                        magnesium_mg: z.number().optional().describe("Estimate using USDA data if missing"),
+                        potassium_mg: z.number().optional(),
+                        zinc_mg: z.number().optional(),
+                        sodium_mg: z.number().optional(),
+                        vitamin_d_iu: z.number().optional(),
+                        vitamin_b12_ug: z.number().optional(),
                         items: z.array(z.string()).optional(),
                     }).optional().describe('Standardized metabolic metrics'),
                     flexible: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
                         .optional()
-                        .describe('Mandatory for minerals/vitamins. If user doesn\'t specify, use your knowledge to estimate: { "magnesium_mg": 400, "potassium_mg": 1200, "zinc_mg": 10, "iron_mg": 8, "pain_level": 9 }. Always use _mg or _mcg suffixes for clarity.'),
+                        .describe('Mandatory for non-mineral context. If user specifies a feeling, pain level, or symptom, put it here.'),
                     is_estimated: z.boolean().default(false).describe('True if this is a guess/restaraunt meal'),
                     confidence_score: z.number().min(0).max(1).default(1).describe('0.0 to 1.0 (1.0 = Measured, 0.7 = Guesstimated)'),
                     date: z.string().optional().describe('The date (YYYY-MM-DD). Defaults to now.'),
@@ -456,10 +462,16 @@ export async function POST(req: Request) {
                             fat: core?.fat,
                             carbs: core?.carbs,
                             fiber: core?.fiber,
+                            sugar_g: core?.sugar_g,
+                            magnesium_mg: core?.magnesium_mg,
+                            potassium_mg: core?.potassium_mg,
+                            zinc_mg: core?.zinc_mg,
+                            sodium_mg: core?.sodium_mg,
+                            vitamin_d_iu: core?.vitamin_d_iu,
+                            vitamin_b12_ug: core?.vitamin_b12_ug,
                             // Dump the rest into flexible_data
                             flexible_data: {
                                 ...flexible,
-                                sugar: core?.sugar,
                                 items: core?.items
                             },
                             is_estimated,
@@ -467,6 +479,36 @@ export async function POST(req: Request) {
                             logged_at: timestamp,
                         });
                     return error ? `Error logging data: ${error.message}` : 'Item secured in Data Vault.';
+                },
+            }),
+            repair_log_entry: tool({
+                description: 'Refine or repair an existing log entry with precise USDA chemical data. Use when a log is missing minerals or needs macro corrections.',
+                parameters: z.object({
+                    log_id: z.string().describe('The ID of the log to repair'),
+                    updates: z.object({
+                        calories: z.number().optional(),
+                        protein: z.number().optional(),
+                        fat: z.number().optional(),
+                        carbs: z.number().optional(),
+                        fiber: z.number().optional(),
+                        sugar_g: z.number().optional(),
+                        magnesium_mg: z.number().optional(),
+                        potassium_mg: z.number().optional(),
+                        zinc_mg: z.number().optional(),
+                        sodium_mg: z.number().optional(),
+                        vitamin_d_iu: z.number().optional(),
+                        vitamin_b12_ug: z.number().optional(),
+                        flexible_data: z.record(z.string(), z.any()).optional(),
+                    }),
+                }),
+                execute: async ({ log_id, updates }) => {
+                    if (!user) return '[DEMO MODE] Repair simulated.';
+                    const { error } = await supabase
+                        .from('metabolic_logs')
+                        .update(updates)
+                        .eq('id', log_id)
+                        .eq('user_id', user.id);
+                    return error ? `Error repairing log: ${error.message}` : `Log ${log_id} repaired with updated chemical profile.`;
                 },
             }),
             set_goal: tool({
