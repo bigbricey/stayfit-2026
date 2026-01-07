@@ -510,11 +510,11 @@ export async function POST(req: Request) {
 
                     const { data: logs } = await supabase
                         .from('metabolic_logs')
-                        .select('*')
+                        .select('*, id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
                         .eq('log_type', 'meal')
-                        .gte('logged_at', `${today}T00:00:00`)
-                        .lte('logged_at', `${today}T23:59:59`);
+                        .gte('logged_at', `${today}T00:00:00.000Z`)
+                        .lte('logged_at', `${today}T23:59:59.999Z`);
 
                     if (!logs || logs.length === 0) {
                         return JSON.stringify({ message: 'No meals logged today yet.', totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }, goals: activeGoals });
@@ -522,15 +522,18 @@ export async function POST(req: Request) {
 
                     const totals = logs.reduce((acc, log) => {
                         const d = log.data_structured || {};
+                        const f = log.flexible_data || {};
                         return {
                             calories: acc.calories + (d.calories || 0),
                             protein: acc.protein + (d.protein || 0),
                             fat: acc.fat + (d.fat || 0),
                             carbs: acc.carbs + (d.carbs || 0),
+                            fiber: acc.fiber || d.fiber || 0,
+                            sugar: f.sugar || d.sugar || 0,
                         };
-                    }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+                    }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0 });
 
-                    return JSON.stringify({ totals, meals_count: logs.length, goals: activeGoals });
+                    return JSON.stringify({ totals, meals_count: logs.length, goals: activeGoals, logs });
                 },
             }),
             delete_log: tool({
@@ -559,10 +562,10 @@ export async function POST(req: Request) {
                     const searchDate = date || new Date().toISOString().split('T')[0];
                     let query = supabase
                         .from('metabolic_logs')
-                        .select('id, log_type, content_raw, data_structured, logged_at')
+                        .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', `${searchDate}T00:00:00`)
-                        .lte('logged_at', `${searchDate}T23:59:59`)
+                        .gte('logged_at', `${searchDate}T00:00:00.000Z`)
+                        .lte('logged_at', `${searchDate}T23:59:59.999Z`)
                         .order('logged_at', { ascending: false });
 
                     if (log_type) query = query.eq('log_type', log_type);
@@ -624,10 +627,10 @@ export async function POST(req: Request) {
                         const searchDate = date || new Date().toISOString().split('T')[0];
                         const { data: logs } = await supabase
                             .from('metabolic_logs')
-                            .select('id, content_raw, data_structured')
+                            .select('id, content_raw, data_structured, flexible_data')
                             .eq('user_id', user.id)
-                            .gte('logged_at', `${searchDate}T00:00:00`)
-                            .lte('logged_at', `${searchDate}T23:59:59`)
+                            .gte('logged_at', `${searchDate}T00:00:00.000Z`)
+                            .lte('logged_at', `${searchDate}T23:59:59.999Z`)
                             .order('logged_at', { ascending: false });
 
                         const searchLower = search_text.toLowerCase();
@@ -645,7 +648,7 @@ export async function POST(req: Request) {
                     // Fetch current data to merge
                     const { data: current } = await supabase
                         .from('metabolic_logs')
-                        .select('data_structured')
+                        .select('data_structured, flexible_data')
                         .eq('id', targetId)
                         .single();
 
@@ -673,10 +676,10 @@ export async function POST(req: Request) {
 
                     let query = supabase
                         .from('metabolic_logs')
-                        .select('id, log_type, content_raw, data_structured, logged_at')
+                        .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', `${start_date}T00:00:00`)
-                        .lte('logged_at', `${end_date}T23:59:59`)
+                        .gte('logged_at', `${start_date}T00:00:00.000Z`)
+                        .lte('logged_at', `${end_date}T23:59:59.999Z`)
                         .order('logged_at', { ascending: false })
                         .limit(limit);
 
@@ -693,6 +696,7 @@ export async function POST(req: Request) {
                             type: log.log_type,
                             description: log.content_raw,
                             data: log.data_structured,
+                            flexible: log.flexible_data,
                             logged_at: log.logged_at,
                         })) || [],
                     });
