@@ -32,10 +32,12 @@ const RequestSchema = z.object({
     demoConfig: z.object({
         diet_mode: z.string().optional(),
         active_coach: z.string().optional(),
+        preferred_language: z.string().optional(),
         name: z.string().optional(),
         biometrics: z.any().optional(),
+        cooldowns: z.record(z.string()).optional(),
     }).optional(),
-}).passthrough(); // Allow extra fields like 'attachments'
+}).passthrough();
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -89,7 +91,15 @@ export async function POST(req: Request) {
     });
 
     // 2. Fetch User Profile & Memory Summary
-    let userProfile: { diet_mode: string; safety_flags: Record<string, boolean>; active_coach?: string; preferred_language?: string;[key: string]: any } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss', preferred_language: 'en' };
+    let userProfile: {
+        diet_mode: string;
+        safety_flags: Record<string, boolean>;
+        active_coach?: string;
+        preferred_language?: string;
+        cooldowns?: Record<string, string>;
+        active_radar?: any;
+        [key: string]: any
+    } = { diet_mode: 'standard', safety_flags: {}, active_coach: 'fat_loss', preferred_language: 'en' };
     let activeGoals: any[] = [];
     let memorySummary: string | null = null;
 
@@ -104,6 +114,36 @@ export async function POST(req: Request) {
         if (profileRes.data) userProfile = profileRes.data;
         if (goalsRes.data) activeGoals = goalsRes.data;
         if (convRes.data) memorySummary = convRes.data.memory_summary;
+
+        // Fetch "Active Radar" (Last 7 Days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data: radarData } = await supabase
+            .from('metabolic_logs')
+            .select('calories, protein, carbs, fat, logged_at')
+            .eq('user_id', user.id)
+            .gte('logged_at', sevenDaysAgo.toISOString())
+            .order('logged_at', { ascending: false });
+
+        // Calculate 7-day averages for the prompt injection
+        if (radarData && radarData.length > 0) {
+            const totals = radarData.reduce((acc: any, log: any) => ({
+                calories: acc.calories + (log.calories || 0),
+                protein: acc.protein + (log.protein || 0),
+                carbs: acc.carbs + (log.carbs || 0),
+                fat: acc.fat + (log.fat || 0),
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+            const daysCount = 7;
+            userProfile.active_radar = {
+                avg_calories: Math.round(totals.calories / daysCount),
+                avg_protein: Math.round(totals.protein / daysCount),
+                avg_carbs: Math.round(totals.carbs / daysCount),
+                avg_fat: Math.round(totals.fat / daysCount),
+                raw_logs_count: radarData.length
+            };
+        }
 
         // SECURITY: Block unapproved users (VIP Whitelist)
         // Admin always bypasses
@@ -244,9 +284,10 @@ export async function POST(req: Request) {
                         activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
                         goals: z.array(z.string()).optional().describe('Fitness goals like "lose fat", "gain muscle"'),
                     }).passthrough().optional().describe('Body metrics - weight changes are logged to history'),
+                    cooldowns: z.record(z.string(), z.string()).optional().describe('Internal advocacy state cooldowns (ISO timestamps)'),
                     date: z.string().optional().describe('The date of the update (YYYY-MM-DD). Defaults to today if not provided.'),
                 }),
-                execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics, date }) => {
+                execute: async ({ diet_mode, preferred_language, active_coach, safety_flags, name, biometrics, cooldowns, date }) => {
                     if (!user) {
                         logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): update_profile');
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}, Language=${preferred_language}`;
@@ -258,12 +299,19 @@ export async function POST(req: Request) {
                     // Fetch current profile for comparison and merging
                     const { data: currentProfile } = await supabase
                         .from('users_secure')
-                        .select('diet_mode, active_coach, biometrics, name, preferred_language')
+                        .select('diet_mode, active_coach, biometrics, name, preferred_language, cooldowns')
                         .eq('id', user.id)
                         .single();
 
                     const updates: any = {};
                     const loggedEvents: string[] = [];
+
+                    // Handle cooldown updates
+                    if (cooldowns) {
+                        const existingCooldowns = currentProfile?.cooldowns || {};
+                        updates.cooldowns = { ...existingCooldowns, ...cooldowns };
+                        loggedEvents.push('cooldowns updated');
+                    }
 
                     // Handle language change
                     if (preferred_language && preferred_language !== currentProfile?.preferred_language) {
@@ -356,26 +404,42 @@ export async function POST(req: Request) {
                 },
             }),
             log_activity: tool({
-                description: 'Log a meal, workout, or biometric data to the Data Vault. EXECUTE THIS SILENTLY AND IMMEDIATELY when data is detected. DO NOT ASK FOR CONFIRMATION.',
+                description: 'The Universal Logger. Use "core" for standard metrics. Use "flexible" for EVERYTHING else (symptoms, pain levels, stress context).',
                 parameters: z.object({
-                    log_type: z.enum(['meal', 'workout', 'blood_work', 'biometric', 'note']),
+                    log_type: z.enum(['meal', 'workout', 'symptom', 'biometric', 'environment', 'note']),
                     content_raw: z.string().describe('The original text input from user'),
-                    data_structured: z.object({
+                    core: z.object({
                         calories: z.number().optional(),
                         protein: z.number().optional(),
                         fat: z.number().optional(),
                         carbs: z.number().optional(),
                         fiber: z.number().optional(),
+                        sugar: z.number().optional(),
                         items: z.array(z.string()).optional(),
-                        notes: z.string().optional(),
-                        insulin_load: z.enum(['high', 'medium', 'low', 'zero']).optional(),
-                    }).describe('The AI-extracted JSON data'),
-                    date: z.string().optional().describe('The date of the activity (YYYY-MM-DD). Use this for historical logging if the user says "Yesterday I ate X". Defaults to now.'),
+                    }).optional().describe('Standardized metabolic metrics'),
+                    flexible: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+                        .optional()
+                        .describe('Dynamic context: { "pain_level": 9, "stress_trigger": "traffic", "magnesium_mg": 400 }'),
+                    is_estimated: z.boolean().default(false).describe('True if this is a guess/restaraunt meal'),
+                    confidence_score: z.number().min(0).max(1).default(1).describe('0.0 to 1.0 (1.0 = Measured, 0.7 = Guesstimated)'),
+                    date: z.string().optional().describe('The date (YYYY-MM-DD). Defaults to now.'),
                 }),
-                execute: async ({ log_type, content_raw, data_structured, date }) => {
+                execute: async ({ log_type, content_raw, core, flexible, is_estimated, confidence_score, date }) => {
                     if (!user) {
                         logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): log_activity');
-                        return `[DEMO MODE] Item NOT saved to Vault (Sign in to save). Analysis: ${JSON.stringify(data_structured)}`;
+                        return `[DEMO MODE] Item NOT saved to Vault. Analysis: ${JSON.stringify({ core, flexible })}`;
+                    }
+
+                    // HARD-LOCK: Enforce biometrics onboarding
+                    const { data: profile } = await supabase
+                        .from('users_secure')
+                        .select('biometrics')
+                        .eq('id', user.id)
+                        .single();
+
+                    const bio = profile?.biometrics || {};
+                    if (!bio.weight || !bio.height || !bio.sex) {
+                        return "SYSTEM ERROR: Log BLOCKED. User profile is incomplete. You MUST ask the user for Height, Weight, and Biological Sex before I can perform metabolic calculations.";
                     }
 
                     const timestamp = date ? `${date}T12:00:00Z` : new Date().toISOString();
@@ -386,7 +450,20 @@ export async function POST(req: Request) {
                             user_id: user.id,
                             log_type,
                             content_raw,
-                            data_structured,
+                            // Spread core metrics directly into columns
+                            calories: core?.calories,
+                            protein: core?.protein,
+                            fat: core?.fat,
+                            carbs: core?.carbs,
+                            fiber: core?.fiber,
+                            // Dump the rest into flexible_data
+                            flexible_data: {
+                                ...flexible,
+                                sugar: core?.sugar,
+                                items: core?.items
+                            },
+                            is_estimated,
+                            confidence_score,
                             logged_at: timestamp,
                         });
                     return error ? `Error logging data: ${error.message}` : 'Item secured in Data Vault.';

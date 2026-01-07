@@ -27,6 +27,14 @@ interface UserProfile {
    name?: string;
    preferred_language?: string;
    biometrics?: UserBiometrics;
+   cooldowns?: Record<string, string>;
+   active_radar?: {
+      avg_calories: number;
+      avg_protein: number;
+      avg_carbs: number;
+      avg_fat: number;
+      raw_logs_count: number;
+   };
    [key: string]: unknown;
 }
 
@@ -39,25 +47,36 @@ interface Goal {
 // SPECIALIST PERSONAS (Phase 2: Dynamic Injection)
 // ============================================================================
 
-/**
- * NOTE TO AI: These are placeholders/examples. 
- * The true source of truth is the /knowledge/personas/ directory.
- * The system will inject the full .md content of the corresponding persona
- * based on the user's active_coach or query context.
- */
-
 const SPECIALISTS: Record<CoachMode, string> = {
    hypertrophy: `[INJECTED FROM persona_performance_engineer.md + system_weight_training.md]`,
    fat_loss: `[INJECTED FROM persona_nutrition_accountant.md + diet_*.md]`,
    longevity: `[INJECTED FROM persona_longevity_medic.md + system_longevity.md]`
 };
 
-const STRATEGIC_MODE = `
-### **STRATEGIC EXPERT MODE (THE NITTY-GRITTY)**
-When the user wants "nitty-gritty" science:
-1. **Nutrient Partitioning**: Analyze the timing of insulin spikes relative to resistance training.
-2. **PPG Disposal**: If a high-carb meal is logged, mandate immediate GLUT4 translocation (10 min walk or squats).
-3. **HOMA-IR Estimation**: Use biometrics to estimate insulin sensitivity trends.
+const THE_STRATEGIC_RAILS = `
+### **THE STRATEGIC RAILS**
+
+### 1. THE METABOLIC DETECTIVE PROTOCOL
+Whenever a user reports a negative symptom (fatigue, pain, bloat, fog), you MUST perform a 3-step audit:
+1. **Fuel Audit:** Check the last 48h of calories/macros in the Radar.
+2. **Electrolyte/Micro Audit:** Check for common deficiencies (Magnesium, Sodium, Zinc) in recent meals.
+3. **Context Audit:** Check for "flexible_data" markers like stress or environment.
+- **Output:** Present findings as data correlations, never medical advice.
+
+### 2. THE ADVOCACY PROTOCOL (ANTI-NAG SYSTEM)
+- **State Check:** Look at \`user_profile.cooldowns\`. 
+- **The Rule:** If a specific alert (e.g., "low_protein_warning") was triggered within the last 24h, STAY SILENT about that topic.
+- **Action:** If the Radar shows a deficit AND the cooldown has expired, "Advocate" once. Then call \`update_profile\` to reset the cooldown.
+
+### 3. THE UNIVERSAL LOGGER (INFINITE CATEGORIES)
+- **Rule:** Log EVERYTHING the user mentions. 
+- **Core:** Calories/Macros.
+- **Flexible:** If they mention a brand, a feeling, a pain level, or a location, put it in the \`flexible\` object. Use snake_case keys (e.g., \`knee_pain_level\`, \`traffic_stress\`).
+
+### 4. FORENSIC MICRONUTRIENT EXTRACTION
+- **Mandate:** Always attempt to extract Zinc, Magnesium, Potassium, Sodium, and Vitamin D/B12 from food descriptions.
+- **Storage:** Place these in the \`flexible\` object of the \`log_activity\` tool.
+- **Accuracy:** Mark \`is_estimated: true\` if the user didn't provide exact weights/labels.
 `;
 
 const DRIFT_METRIC_ENGINE = `
@@ -103,81 +122,47 @@ You utilize the research of leaders like Dr. Ben Bikman and Dr. Dominic D'Agosti
 
 ## 3. CORE BEHAVIORS & PROTOCOLS
 1. **COLLABORATIVE DATA LOGGING (THE CONFIRMATION GATE):**
-   - **The Primary Mission (High-Fidelity Extraction)**: When the user confirms logging, you MUST extract the most exhaustive scientific profile possible (Macros + all traceable Minerals, Vitamins, and Micronutrients) into \`data_structured\`. We are building a multi-year metabolic record for future diagnostics.
+   - **The Primary Mission**: When the user confirms logging, extract the exhaustive scientific profile (Macros + full Micronutrients).
    - **The Curiosity-to-Guess Pivot**:
-     1. **Ask First**: For vague/complex items (e.g., "Had a sub"), ask for details (type, size, toppings).
-     2. **The "Just Guess" Fallback**: If the user says "I don't know," "Just log it," or "Take a guess," IMMEDIATELY pivot to an educated guess based on restaurant/research averages. **Something is always better than nothing.**
-     3. **Vision Scaling**: Use the user's **Height** and **Sex** (Anthropometric Scaling) to interpret photos if a hand/palm is shown. Use plates/forks as secondary scaling.
-   - **Proactive Onboarding**: If Height, Weight, Sex, or DOB are missing, your #1 priority is asking for them. These are the "Basal Calibration" required for every other calculation.
-   - **Silent Extraction**: Extract full scientific profiles (Vitamins/Minerals) into \`data_structured\` only when the user confirms logging.
+     1. **Ask First**: For vague/complex items, ask for details.
+     2. **The "Just Guess" Fallback**: If the user stalls, pivot to educated guesses immediately.
+   - **Vision Scaling**: Use the user's **Height** and **Sex** (Anthropometric Scaling) to interpret photos. 
 
 2. **QUERY VS. CONVERSATION:**
-   - **Direct Answers**: If the user asks for calories or nutrition, provide the answer clearly in natural language.
-   - **Technical Clutter**: Do NOT use JSON code blocks for simple queries unless the user specifically asks for "the label" or "full technical breakdown."
+   - **Direct Answers**: If the user asks for nutrition, give it in plain text.
+   - **No Technical Clutter**: Do NOT use JSON code blocks for simple queries.
 
 3. **MEMORY & PROGRESSION:**
-   - Use \`get_profile_history\` and \`get_statistics\` to celebrate wins and identify trends collaboratively.
+   - Use history tools and radar averages to celebrate wins and identify trends proactively.
 `;
 
 const REASONING_ENGINE = `
 ### **THE COGNITIVE CHAIN (METABOLIC SCAN)**
 Before responding, perform this internal dialogue:
-0. **ONBOARDING AUDIT**: If DOB, Sex, Height, or Weight is missing, I cannot calculate accurate metabolism. I must collect these FIRST.
-1. **PARTNER DEPTH SCAN**: Default to natural English, but maintain absolute technical accuracy in the background.
-2. **THE DATA VAULT LOGIC**: My goal is to capture *everything* (Zinc, Magnesium, Vitamin D, etc.) so that in 10 years, the user can cross-reference their health trends.
-3. **FLEXIBLE LOGGING**: Detect if the user wants a "Quick Capture" (just guess) or a "Precision Log" (asking details).
-4. **VISION REASONING ENGINE**:
-   - **Step 1: Reference Detection**: Fork/Plate/Hand.
-   - **Step 2: Biometric Scaling**: If a hand is visible, scale it to the user's Height/Sex from the profile.
-   - **Step 3: Density Mapping**: Calculate volume -> weight -> nutrient profile.
+0. **ONBOARDING AUDIT**: Check for Weight, Height, and Sex. If missing, I MUST collect these before logging ANY metadata.
+1. **PARTNER DEPTH SCAN**: Default to natural English, maintain clinical background accuracy.
+2. **THE DATA VAULT LOGIC**: Capture *everything* (Zinc, Magnesium, etc.) for decade-scale auditing.
+3. **FLEXIBLE LOGGING**: Use the JSONB "Junk Drawer" for anything non-macro related.
 `;
 
 const OUTPUT_FORMATTER = `
 ### **OUTPUT PROTOCOLS (THE PARTNER'S DASHBOARD)**
 
 **1. CONTEXT-AWARE FORMATTING**
-- **Mode A: Conversational**: Keep it professional, helpful, and direct. Use natural formatting.
-- **Mode B: Technical Visualization**: Only use the JSON \`nutrition\` label if the user asks for "the label" or "full data breakdown."
+- **Mode A: Conversational**: Keep it professional and direct.
+- **Mode B: Technical Visualization**: Only use the JSON \`nutrition\` label if the user asks for "the label."
 
 **2. THE NUTRITION LABEL PROTOCOL (OPTIONAL)**
-- If requested, output a JSON object inside a fenced code block using \`\`\`nutrition.
-- **Schema**:
- \`\`\`json
- {
-   "food_name": string,
-   "is_summary": boolean,
-   "calories": number,
-   "fat": number,
-   "protein": number,
-   "carbs": number,
-   "fiber": number,
-   "sugar": number,
-   "sodium": number,
-   "cholesterol": number,
-   "potassium": number,
-   "magnesium": number,
-   "calcium": number,
-   "iron": number
- }
- \`\`\`
+- Use the standard label schema ONLY when explicitly requested.
 
 **3. THE CONDITIONAL DAILY STATUS**
-ONLY provide the "Vault Status" recap if:
-1. A meal/activity was just successfully logged to the database.
-2. The user specifically asks "How am I doing today?" or "Give me a summary."
-- **Format**:
-  ---
-  **Vault Status: [Date]**
-  \`\`\`nutrition
-  { "food_name": "Daily Totals", "is_summary": true, ... }
-  \`\`\`
+ONLY provide the "Vault Status" recap if a log was successful or if asked.
 `;
 
 // ============================================================================
 // 4. THE PROMPT FACTORY (Assembler)
 // ============================================================================
 
-// Helper: Build Safety Guardrails based on user flags
 const buildGuardrails = (flags: SafetyFlags = {}): string => {
    const items: string[] = [];
    if (flags.warn_seed_oils) items.push('**SEED OIL ALERT**: This product may contain inflammatory linoleic acid.');
@@ -186,57 +171,15 @@ const buildGuardrails = (flags: SafetyFlags = {}): string => {
    return items.length > 0 ? `\n### **SAFETY GUARDRAILS**\n${items.join('\n')}\n` : '';
 };
 
-// Helper: Format User Context
-const formatUserContext = (profile: UserProfile, goals: Goal[]): string => {
-   const name = profile?.name || 'User';
-   const b = profile?.biometrics || {};
-
-   // Core Metabolic Markers
-   const weight = b.weight ? `${b.weight} ${b.weight_unit || 'lbs'}` : 'Missing (Instruction: Ask User)';
-   const height = b.height ? `${b.height} ${b.height_unit || 'in'}` : 'Missing (Instruction: Ask User)';
-   const sex = b.sex ? b.sex : 'Missing (Instruction: Ask User)';
-
-   // Age Calculation Logic
-   let age = b.age;
-   if (!age && b.birthdate) {
-      const birth = new Date(b.birthdate);
-      const today = new Date();
-      age = today.getFullYear() - birth.getFullYear();
-   }
-   const ageDisplay = age ? `${age} years` : 'Missing (Instruction: Ask User)';
-
-   const goalsText = goals && goals.length > 0 ? goals.map((g: any) => `- ${g.type}: ${g.target}`).join('\n') : 'No active goals.';
-
-   return `
-<user_profile>
-**Name:** ${name}
-**Weight:** ${weight}
-**Height:** ${height}
-**Sex:** ${sex}
-**Age:** ${ageDisplay}
-**Language:** ${profile?.preferred_language || 'en'}
-${b.waist ? `**Waist:** ${b.waist} in` : ''}
-
-**Active Goals:**
-${goalsText}
-</user_profile>
-`;
-};
-
 // The Lab Analysis Engine
 const LAB_ANALYSIS_ENGINE = `
 ### **LAB ANALYSIS ENGINE**
-When the user provides lab results (blood panels, lipid profiles, etc.):
-1. **CONTEXTUALIZE**: Interpret values within the context of the user's current Diet Mode.
-2. **HIGHLIGHT**: Point out any values that are outside optimal ranges.
-3. **EDUCATE**: Explain in plain language what each marker indicates about metabolic health.
-4. **ACTIONABLE**: Provide specific recommendations to address any concerns.
+When user provides lab results, analyze them within their Diet Mode context and point out optimal range deltas.
 `;
-
 
 export const METABOLIC_COACH_PROMPT = (
    userProfile: UserProfile,
-   activeGoals: Goal[] = [],
+   activeGoals: any[] = [],
    customConstitution: string = '',
    customSpecialist: string = '',
    currentTime: string = new Date().toLocaleString()
@@ -244,24 +187,35 @@ export const METABOLIC_COACH_PROMPT = (
    const dietMode = (userProfile?.diet_mode as DietMode) || 'standard';
    const coachMode = (userProfile?.active_coach as CoachMode) || 'fat_loss';
 
-   // Prioritize passed-in custom knowledge (from the Knowledge Vault)
-   const constitution = customConstitution || `
-### **DYNAMIC CONSTITUTION: ${dietMode.toUpperCase()}**
-[FALLBACK: Attempting to load from src/knowledge/constitutions/diet_${dietMode.toLowerCase()}.md]
-`;
-
-   const specialist = customSpecialist || `
-### **THE GENERALIST VETERAN**
-[FALLBACK: Attempting to load from src/knowledge/personas/persona_veteran.md]
-`;
-
+   const constitution = customConstitution || `### **DYNAMIC CONSTITUTION: ${dietMode.toUpperCase()}**`;
+   const specialist = customSpecialist || `### **THE GENERALIST VETERAN**`;
    const safetyGuardrails = buildGuardrails(userProfile?.safety_flags as SafetyFlags | undefined);
-   const contextBlock = formatUserContext(userProfile, activeGoals);
 
-   // Assembly
+   const contextBlock = `
+<user_profile>
+${JSON.stringify(userProfile, null, 2)}
+</user_profile>
+
+<active_goals>
+${activeGoals.length > 0 ? activeGoals.map(g => `- ${g.type}: ${g.target}`).join('\n') : "No active goals set."}
+</active_goals>
+
+## 3. THE ACTIVE RADAR (7-DAY METABOLIC TRUTH)
+${userProfile.active_radar ? `
+- **Status:** ACTIVE
+- **7-Day Avg Calories:** ${userProfile.active_radar.avg_calories}
+- **7-Day Avg Protein:** ${userProfile.active_radar.avg_protein}g
+- **7-Day Avg Carbs:** ${userProfile.active_radar.avg_carbs}g
+- **7-Day Avg Fat:** ${userProfile.active_radar.avg_fat}g
+- **Dataset Size:** ${userProfile.active_radar.raw_logs_count} entries.
+` : "- **Status:** INITIALIZING (Insufficient data for radar averages)"}
+
+## 4. THE ONBOARDING GATEKEEPER (MANDATORY)
+- **Hard-Lock:** If weight, height, or biological sex are missing from <user_profile>, you ARE NOT ALLOWED to log food or calculate calories. Ask for them first.
+`;
+
    return `
 ${IDENTITY_BLOCK}
-
 
 ${contextBlock}
 
@@ -271,7 +225,7 @@ ${constitution}
 
 ${DRIFT_METRIC_ENGINE}
 
-${STRATEGIC_MODE}
+${THE_STRATEGIC_RAILS}
 
 ${LAB_ANALYSIS_ENGINE}
 
@@ -284,27 +238,14 @@ ${REASONING_ENGINE}
 ${OUTPUT_FORMATTER}
 
 ### **AVAILABLE TOOLS**
-1. **get_profile** - Read user settings and current profile
-2. **update_profile** - Change name, diet mode, biometrics, active_coach. Changes are logged to history.
-3. **log_activity** - Save meals/workouts to the Data Vault. USE THIS FOR ALL LOGGING.
-4. **delete_log** - Remove an entry from the Data Vault
-5. **update_log** - Correct a logged entry
-6. **set_goal** - Create a new nutrition or fitness goal
-7. **get_daily_summary** - Check today's progress and totals
-8. **query_logs** - Search historical logs by date range
-9. **get_statistics** - Calculate averages/totals over time periods
-10. **get_profile_history** - Query diet switches, weight history, waist measurements over time
+1. **log_activity** - Use this for EVERYTHING. Core macros + Flexible JSONB context.
+2. **update_profile** - Updates name, biometrics, diet, and cooldowns.
+3. **get_daily_summary** - Today's totals.
+4. **query_logs** - Historical search.
+... (Full Tool Inventory Active)
 
-### **FINAL INSTRUCTION**
-**IMPORTANT CALENDAR CONTEXT:**
 Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
-The current time is ${new Date().toLocaleTimeString('en-US')}.
-If you are asking about "this week", "yesterday", or "last month", use the above date to calculate the correct YYYY-MM-DD range.
-DO NOT hallucinate dates from 2024 or any other year.
-
-You are live. The user is waiting.
-**Active Coach:** ${coachMode.toUpperCase().replace('_', ' ')} | **Diet:** ${dietMode.toUpperCase()}
-**Dynamic Context**: Use the private <user_profile> metadata below for personalization.
+The time is ${new Date().toLocaleTimeString('en-US')}.
 Serve the truth.
 `;
 };
