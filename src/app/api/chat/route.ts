@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, generateText, tool, Message } from 'ai';
 import { z } from 'zod';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz'; // New imports
 import { createClient } from '@/lib/supabase/server';
 import { METABOLIC_COACH_PROMPT } from '@/lib/prompts';
 import { getKnowledgeItem } from '@/lib/knowledge';
@@ -29,6 +30,7 @@ const MAX_REQUESTS = RATE_LIMIT.MAX_GUEST_REQUESTS;
 const RequestSchema = z.object({
     messages: z.array(z.any()),
     conversationId: z.string().uuid().optional(),
+    clientTimezone: z.string().optional().default('UTC'), // New field
     demoConfig: z.object({
         diet_mode: z.string().optional(),
         active_coach: z.string().optional(),
@@ -52,7 +54,7 @@ export async function POST(req: Request) {
         return new Response(JSON.stringify({ error: 'Invalid Request Data', details: result_validate.error.format() }), { status: 400 });
     }
 
-    const { messages, demoConfig, conversationId } = result_validate.data;
+    const { messages, demoConfig, conversationId, clientTimezone } = result_validate.data;
     const attachments = (body as any).attachments || (body as any).experimental_attachments || [];
     const supabase = await createClient();
 
@@ -546,17 +548,26 @@ export async function POST(req: Request) {
                 description: 'Get a summary of today\'s logged meals and progress toward goals.',
                 parameters: z.object({}),
                 execute: async () => {
-                    if (!user) return JSON.stringify({ message: '[DEMO MODE] No history available.', totals: { calories: 0, protein: 0, fat: 0, carbs: 0 } });
+                    if (!user) return JSON.stringify({ message: '[DEMO MODE] No summary available.' });
 
-                    const today = new Date().toISOString().split('T')[0];
+                    // TIMEZONE AWARE 'TODAY'
+                    // Calculate 'Today' relative to client timezone
+                    const nowUtc = new Date();
+                    const nowLocal = toZonedTime(nowUtc, clientTimezone);
+                    const todayStr = nowLocal.toISOString().split('T')[0]; // "2026-01-07"
+
+                    const startLocal = new Date(`${todayStr}T00:00:00`);
+                    const endLocal = new Date(`${todayStr}T23:59:59.999`);
+                    const utcStart = fromZonedTime(startLocal, clientTimezone).toISOString();
+                    const utcEnd = fromZonedTime(endLocal, clientTimezone).toISOString();
 
                     const { data: logs } = await supabase
                         .from('metabolic_logs')
                         .select('*, id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
                         .eq('log_type', 'meal')
-                        .gte('logged_at', `${today}T00:00:00.000Z`)
-                        .lte('logged_at', `${today}T23:59:59.999Z`);
+                        .gte('logged_at', utcStart)
+                        .lte('logged_at', utcEnd);
 
                     if (!logs || logs.length === 0) {
                         return JSON.stringify({ message: 'No meals logged today yet.', totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }, goals: activeGoals });
@@ -706,7 +717,7 @@ export async function POST(req: Request) {
                 },
             }),
             query_logs: tool({
-                description: 'Query historical logs. NOTE: Returns data with a +/- 24h buffer to account for timezone differences. Use for "what did I eat yesterday", "history check".',
+                description: 'Query historical logs. Uses precise local-time boundaries to find logs. Use for "what did I eat yesterday", "history check".',
                 parameters: z.object({
                     log_type: z.enum(['meal', 'workout', 'blood_work', 'biometric', 'note', 'all']).describe('Type of logs to retrieve, or "all" for everything'),
                     start_date: z.string().describe('Start date (YYYY-MM-DD format)'),
@@ -716,22 +727,29 @@ export async function POST(req: Request) {
                 execute: async ({ log_type, start_date, end_date, limit = 50 }) => {
                     if (!user) return JSON.stringify({ message: '[DEMO MODE] No history available. Sign in to access your data.' });
 
-                    // TIMEZONE FIX: Widen search window by -1/+1 day to catch late night logs
-                    // e.g. 8PM EST Jan 7 is 1AM UTC Jan 8. Strict Jan 7 query misses it.
-                    const startRaw = new Date(start_date);
-                    startRaw.setDate(startRaw.getDate() - 1);
-                    const safeStart = startRaw.toISOString().split('T')[0];
+                    // TIMEZONE AWARE QUERY LOGIC
+                    // Convert Local Day Start/End -> UTC Timestamps
+                    // E.g. "2026-01-07" in NY -> 2026-01-07 05:00 UTC to 2026-01-08 05:00 UTC
+                    let utcStart: string, utcEnd: string;
 
-                    const endRaw = new Date(end_date);
-                    endRaw.setDate(endRaw.getDate() + 1);
-                    const safeEnd = endRaw.toISOString().split('T')[0];
+                    try {
+                        const startLocal = new Date(`${start_date}T00:00:00`);
+                        const endLocal = new Date(`${end_date}T23:59:59.999`);
+                        // fromZonedTime takes a Local Date and a Timezone, returns UTC Date
+                        utcStart = fromZonedTime(startLocal, clientTimezone).toISOString();
+                        utcEnd = fromZonedTime(endLocal, clientTimezone).toISOString();
+                    } catch (e) {
+                        logWarn('Timezone conversion failed, falling back to simple UTC', e);
+                        utcStart = `${start_date}T00:00:00.000Z`;
+                        utcEnd = `${end_date}T23:59:59.999Z`;
+                    }
 
                     let query = supabase
                         .from('metabolic_logs')
                         .select('id, log_type, content_raw, calories, protein, fat, carbs, fiber, sugar_g, magnesium_mg, potassium_mg, zinc_mg, sodium_mg, vitamin_d_iu, vitamin_b12_ug, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', `${safeStart}T00:00:00.000Z`)
-                        .lte('logged_at', `${safeEnd}T23:59:59.999Z`)
+                        .gte('logged_at', utcStart)
+                        .lte('logged_at', utcEnd)
                         .order('logged_at', { ascending: false })
                         .limit(limit);
 
@@ -742,7 +760,11 @@ export async function POST(req: Request) {
 
                     return JSON.stringify({
                         count: logs?.length || 0,
-                        query_window: { start: safeStart, end: safeEnd, note: "Includes +/- 24h buffer for timezone safety" },
+                        query_window: {
+                            client_timezone: clientTimezone,
+                            start_utc: utcStart,
+                            end_utc: utcEnd
+                        },
                         entries: logs?.map(log => ({
                             id: log.id,
                             type: log.log_type,

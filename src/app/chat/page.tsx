@@ -109,7 +109,11 @@ export default function Chat() {
         maxSteps: 3,
         body: () => {
             logger.debug('[useChat] body() called', { convRef: conversationIdRef.current });
-            return { demoConfig, conversationId: conversationIdRef.current };
+            return {
+                demoConfig,
+                conversationId: conversationIdRef.current,
+                clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // e.g. "America/New_York"
+            };
         },
         onResponse: (response) => {
             logger.debug('[useChat] onResponse received', { status: response.status, statusText: response.statusText });
