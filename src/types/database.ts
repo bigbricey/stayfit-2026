@@ -45,6 +45,21 @@ export interface Database {
                     log_type: 'meal' | 'workout' | 'blood_work' | 'biometric' | 'note'
                     content_raw: string | null
                     data_structured: Json
+                    flexible_data: Json
+                    // Core Macros
+                    calories: number | null
+                    protein: number | null
+                    fat: number | null
+                    carbs: number | null
+                    fiber: number | null
+                    sugar_g: number | null
+                    // Core Minerals
+                    magnesium_mg: number | null
+                    potassium_mg: number | null
+                    zinc_mg: number | null
+                    sodium_mg: number | null
+                    vitamin_d_iu: number | null
+                    vitamin_b12_ug: number | null
                     logged_at: string
                     created_at: string
                 }
@@ -54,6 +69,21 @@ export interface Database {
                     log_type: 'meal' | 'workout' | 'blood_work' | 'biometric' | 'note'
                     content_raw?: string | null
                     data_structured?: Json
+                    flexible_data?: Json
+                    // Core Macros
+                    calories?: number | null
+                    protein?: number | null
+                    fat?: number | null
+                    carbs?: number | null
+                    fiber?: number | null
+                    sugar_g?: number | null
+                    // Core Minerals
+                    magnesium_mg?: number | null
+                    potassium_mg?: number | null
+                    zinc_mg?: number | null
+                    sodium_mg?: number | null
+                    vitamin_d_iu?: number | null
+                    vitamin_b12_ug?: number | null
                     logged_at?: string
                     created_at?: string
                 }
@@ -63,6 +93,21 @@ export interface Database {
                     log_type?: 'meal' | 'workout' | 'blood_work' | 'biometric' | 'note'
                     content_raw?: string | null
                     data_structured?: Json
+                    flexible_data?: Json
+                    // Core Macros
+                    calories?: number | null
+                    protein?: number | null
+                    fat?: number | null
+                    carbs?: number | null
+                    fiber?: number | null
+                    sugar_g?: number | null
+                    // Core Minerals
+                    magnesium_mg?: number | null
+                    potassium_mg?: number | null
+                    zinc_mg?: number | null
+                    sodium_mg?: number | null
+                    vitamin_d_iu?: number | null
+                    vitamin_b12_ug?: number | null
                     logged_at?: string
                     created_at?: string
                 }
