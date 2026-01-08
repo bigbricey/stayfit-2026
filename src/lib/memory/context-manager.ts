@@ -47,6 +47,20 @@ export class ContextManager {
             ...slidingWindow,
         ];
 
+        // 5. TEMPORAL GUARDIAN (Prevent Context Drift)
+        // If there is history, append a fresh reminder of the current year.
+        if (slidingWindow.length > 0) {
+            const now = new Date();
+            if (now.getFullYear() < 2026) now.setFullYear(2026);
+
+            finalMessages.push({
+                id: 'system-temporal-guardian',
+                role: 'system',
+                content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). Ensure all retroactive logs use this year.`,
+            });
+        }
+
+
         return finalMessages;
     }
 

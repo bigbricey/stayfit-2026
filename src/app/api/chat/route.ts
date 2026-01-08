@@ -458,13 +458,6 @@ export async function POST(req: Request) {
                     }
 
                     let targetDate = date || new Date().toISOString().split('T')[0];
-
-                    // Smart Year Resolver: Auto-correct 2024/2025 fallback to 2026 if system is in 2026
-                    if (targetDate.match(/^202[45]-/) && new Date().getFullYear() === 2026) {
-                        logWarn(`[API/Chat] log_activity: Correcting Year Drift ${targetDate.substring(0, 4)} -> 2026`);
-                        targetDate = targetDate.replace(/^202[45]-/, '2026-');
-                    }
-
                     const timestamp = targetDate.includes('T') ? targetDate : `${targetDate}T12:00:00Z`;
 
                     const { error } = await supabase
@@ -761,7 +754,7 @@ export async function POST(req: Request) {
 
                     let query = supabase
                         .from('metabolic_logs')
-                        .select('id, log_type, content_raw, calories, protein, fat, carbs, fiber, sugar_g, magnesium_mg, potassium_mg, zinc_mg, sodium_mg, vitamin_d_iu, vitamin_b12_ug, flexible_data, logged_at')
+                        .select('*') // Simplify to avoid schema mismatches (e.g. if a column was renamed or type changed)
                         .eq('user_id', user.id)
                         .gte('logged_at', utcStart)
                         .lte('logged_at', utcEnd)

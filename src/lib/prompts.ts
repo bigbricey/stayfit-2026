@@ -240,7 +240,17 @@ ${safetyGuardrails}
 </context>
 `;
 
+   const now = new Date();
+   if (now.getFullYear() < 2026) now.setFullYear(2026);
+
    return `
+## 🚨 TEMPORAL REALITY CHECK (ABSOLUTE PRIORITY)
+- **CURRENT YEAR**: **2026**
+- **DATE**: ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+- **TIME**: ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+- **INSTRUCTION**: Use **2026** for all current and retroactive logs. Do NOT default to 2024/2025. Data logged with wrong years is LOST.
+- **YESTERDAY**: If "yesterday" logic is required, calculate: Current Date - 1 Day.
+
 ${ANTI_REPETITION_PROTOCOL}
 
 ${IDENTITY_BLOCK}
@@ -254,13 +264,5 @@ ${BEHAVIORAL_PROTOCOLS}
 ${OUTPUT_FORMATTER}
 
 ${TOOLS_SUMMARY}
-
-**CURRENT DATE**: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
-**CURRENT TIME**: ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-
-### TEMPORAL REALITY CHECK
-- **Year awareness**: We are currently in the year **2026**.
-- **Retroactive Strategy**: When logging for "yesterday" (Jan 7), you MUST use **2026-01-07** as the date.
-- **Fail-Safe**: Do NOT use 2024 or 2025. Data logged with incorrect years will be lost to the user's current timeline.
 `;
 };
