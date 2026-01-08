@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const result_validate = RequestSchema.safeParse(body);
 
     if (!result_validate.success) {
-        console.error('[API/Chat] Validation Error:', result_validate.error);
+        logWarn('[API/Chat] Validation Error:', result_validate.error);
         return new Response(JSON.stringify({ error: 'Invalid Request Data', details: result_validate.error.format() }), { status: 400 });
     }
 
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
                         tool_calls: event.toolCalls && event.toolCalls.length > 0 ? event.toolCalls : null,
                         experimental_attachments: (event as any).attachments && (event as any).attachments.length > 0 ? (event as any).attachments : null,
                     });
-                    if (error) console.error('[API/Chat] Server Save Error:', error);
+                    if (error) logWarn('[API/Chat] Server Save Error:', error);
                     else log('[API/Chat] Server Saved Assistant Message');
 
                     // Tiered Memory: Recursive Background Summarization
@@ -245,11 +245,11 @@ export async function POST(req: Request) {
                                 log('[API/Chat] Memory Summary Updated');
                             }
                         } catch (summaryErr) {
-                            console.error('[API/Chat] background-summarization error:', summaryErr);
+                            logWarn('[API/Chat] background-summarization error:', summaryErr);
                         }
                     }
                 } catch (e) {
-                    console.error('[API/Chat] Server Save Exception:', e);
+                    logWarn('[API/Chat] Server Save Exception:', e);
                 }
             } else {
                 log('[API/Chat] Skip Save: No User or ConversationId', { hasUser: !!user, conversationId });
@@ -562,16 +562,16 @@ export async function POST(req: Request) {
                         return JSON.stringify({ message: 'No meals logged today yet.', totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }, goals: activeGoals });
                     }
 
+                    // CRITICAL: Macros are stored in dedicated columns, NOT data_structured
                     const totals = logs.reduce((acc, log) => {
-                        const d = log.data_structured || {};
                         const f = log.flexible_data || {};
                         return {
-                            calories: acc.calories + (d.calories || 0),
-                            protein: acc.protein + (d.protein || 0),
-                            fat: acc.fat + (d.fat || 0),
-                            carbs: acc.carbs + (d.carbs || 0),
-                            fiber: acc.fiber || d.fiber || 0,
-                            sugar: f.sugar || d.sugar || 0,
+                            calories: acc.calories + (log.calories || 0),
+                            protein: acc.protein + (log.protein || 0),
+                            fat: acc.fat + (log.fat || 0),
+                            carbs: acc.carbs + (log.carbs || 0),
+                            fiber: acc.fiber + (log.fiber || 0),
+                            sugar: acc.sugar + (f.sugar || 0),
                         };
                     }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0 });
 

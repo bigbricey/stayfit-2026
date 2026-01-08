@@ -45,8 +45,6 @@ interface ToolInvocation {
 }
 
 // Toast notification component for errors
-
-// Toast notification component for errors
 interface ToastProps {
     message: string;
     onDismiss: () => void;
@@ -265,7 +263,7 @@ export default function Chat() {
             .single();
 
         if (error || !data) {
-            console.error('Failed to create conversation:', error);
+            logger.error('Failed to create conversation:', error);
             return null;
         }
 

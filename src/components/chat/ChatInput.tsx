@@ -36,15 +36,18 @@ export default function ChatInput({
 
     const { isListening, toggleListening, isSupported } = useSpeechToText({
         onTranscript: (transcript) => {
-            if (setInput) {
-                // For interim results, we can show them in the input
-                // but we might want to preserve what was already there
-                // For now, let's just append or replace
+            // Show interim results in real-time for visual feedback
+            if (setInput && transcript) {
+                // Append interim results to existing input (will be replaced by final)
+                const baseInput = input.replace(/\s*🎤.*$/, ''); // Remove previous interim
+                setInput(baseInput + (baseInput ? ' ' : '') + '🎤 ' + transcript);
             }
         },
         onFinalTranscript: (transcript) => {
             if (setInput) {
-                const newValue = input ? `${input.trim()} ${transcript}` : transcript;
+                // Replace interim with final transcript
+                const baseInput = input.replace(/\s*🎤.*$/, ''); // Remove interim marker
+                const newValue = baseInput ? `${baseInput.trim()} ${transcript}` : transcript;
                 setInput(newValue);
             }
         }
@@ -195,8 +198,8 @@ export default function ChatInput({
                                 type="submit"
                                 disabled={!input.trim() && !selectedImage}
                                 className={`p-2.5 rounded-lg transition-colors ml-1 ${input.trim() || selectedImage
-                                        ? 'bg-[#22c55e] text-white hover:bg-[#16a34a]'
-                                        : 'bg-[#2a2d34] text-gray-500 cursor-not-allowed'
+                                    ? 'bg-[#22c55e] text-white hover:bg-[#16a34a]'
+                                    : 'bg-[#2a2d34] text-gray-500 cursor-not-allowed'
                                     }`}
                             >
                                 <SendHorizontal size={20} />

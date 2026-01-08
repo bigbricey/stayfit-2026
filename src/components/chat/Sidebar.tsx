@@ -61,6 +61,7 @@ export default function Sidebar({
 }: SidebarProps) {
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingConversation, setEditingConversation] = useState<{ id: string; title: string } | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     // Group conversations by time
     const groupConversations = (convs: Conversation[]) => {
@@ -104,12 +105,38 @@ export default function Sidebar({
     };
 
     const handleDelete = (id: string) => {
-        onDelete(id);
+        setConfirmDeleteId(id);
         setOpenMenuId(null);
+    };
+
+    const confirmDelete = () => {
+        if (confirmDeleteId) {
+            onDelete(confirmDeleteId);
+            setConfirmDeleteId(null);
+        }
     };
 
     return (
         <>
+            {/* Delete Confirmation Modal */}
+            {confirmDeleteId && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setConfirmDeleteId(null)}>
+                    <div className="bg-[#1a1d24] border border-[#2a2d34] rounded-xl p-6 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-white mb-2">Delete Conversation?</h3>
+                        <p className="text-gray-400 text-sm mb-6">This action cannot be undone. All messages in this conversation will be permanently deleted.</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 text-sm text-gray-300 hover:text-white rounded-lg hover:bg-[#22262f] transition-colors">Cancel</button>
+                            <button onClick={confirmDelete} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Menu Backdrop - closes dropdown when clicking outside */}
+            {openMenuId && (
+                <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+            )}
+
             {/* Backdrop for mobile */}
             {showSidebar && (
                 <div
