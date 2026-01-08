@@ -718,7 +718,7 @@ export async function POST(req: Request) {
 
                     let query = supabase
                         .from('metabolic_logs')
-                        .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
+                        .select('id, log_type, content_raw, calories, protein, fat, carbs, fiber, sugar_g, magnesium_mg, potassium_mg, zinc_mg, sodium_mg, vitamin_d_iu, vitamin_b12_ug, flexible_data, logged_at')
                         .eq('user_id', user.id)
                         .gte('logged_at', `${start_date}T00:00:00.000Z`)
                         .lte('logged_at', `${end_date}T23:59:59.999Z`)
@@ -737,7 +737,20 @@ export async function POST(req: Request) {
                             id: log.id,
                             type: log.log_type,
                             description: log.content_raw,
-                            data: log.data_structured,
+                            calories: log.calories,
+                            protein: log.protein,
+                            fat: log.fat,
+                            carbs: log.carbs,
+                            fiber: log.fiber,
+                            sugar_g: log.sugar_g,
+                            minerals: {
+                                magnesium_mg: log.magnesium_mg,
+                                potassium_mg: log.potassium_mg,
+                                zinc_mg: log.zinc_mg,
+                                sodium_mg: log.sodium_mg,
+                                vitamin_d_iu: log.vitamin_d_iu,
+                                vitamin_b12_ug: log.vitamin_b12_ug,
+                            },
                             flexible: log.flexible_data,
                             logged_at: log.logged_at,
                         })) || [],
@@ -777,7 +790,7 @@ export async function POST(req: Request) {
                     // For nutrition metrics, fetch all meals and calculate
                     const { data: logs, error } = await supabase
                         .from('metabolic_logs')
-                        .select('data_structured, logged_at')
+                        .select('calories, protein, fat, carbs, fiber, logged_at')
                         .eq('user_id', user.id)
                         .eq('log_type', 'meal')
                         .gte('logged_at', `${start_date}T00:00:00`)
@@ -787,9 +800,9 @@ export async function POST(req: Request) {
                     if (error) return JSON.stringify({ error: error.message });
                     if (!logs || logs.length === 0) return JSON.stringify({ message: 'No data found for this period.', value: 0 });
 
-                    // Extract values for the metric
+                    // Extract values for the metric from dedicated columns
                     const values = logs
-                        .map(log => log.data_structured?.[metric])
+                        .map(log => (log as Record<string, unknown>)[metric])
                         .filter(v => typeof v === 'number') as number[];
 
                     if (values.length === 0) return JSON.stringify({ message: `No ${metric} data logged in this period.`, value: 0 });
