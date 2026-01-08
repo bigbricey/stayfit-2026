@@ -706,7 +706,7 @@ export async function POST(req: Request) {
                 },
             }),
             query_logs: tool({
-                description: 'Query historical logs by date range. Use for "show me meals from last week", "what did I eat yesterday", "list my workouts this month".',
+                description: 'Query historical logs. NOTE: Returns data with a +/- 24h buffer to account for timezone differences. Use for "what did I eat yesterday", "history check".',
                 parameters: z.object({
                     log_type: z.enum(['meal', 'workout', 'blood_work', 'biometric', 'note', 'all']).describe('Type of logs to retrieve, or "all" for everything'),
                     start_date: z.string().describe('Start date (YYYY-MM-DD format)'),
@@ -716,12 +716,22 @@ export async function POST(req: Request) {
                 execute: async ({ log_type, start_date, end_date, limit = 50 }) => {
                     if (!user) return JSON.stringify({ message: '[DEMO MODE] No history available. Sign in to access your data.' });
 
+                    // TIMEZONE FIX: Widen search window by -1/+1 day to catch late night logs
+                    // e.g. 8PM EST Jan 7 is 1AM UTC Jan 8. Strict Jan 7 query misses it.
+                    const startRaw = new Date(start_date);
+                    startRaw.setDate(startRaw.getDate() - 1);
+                    const safeStart = startRaw.toISOString().split('T')[0];
+
+                    const endRaw = new Date(end_date);
+                    endRaw.setDate(endRaw.getDate() + 1);
+                    const safeEnd = endRaw.toISOString().split('T')[0];
+
                     let query = supabase
                         .from('metabolic_logs')
                         .select('id, log_type, content_raw, calories, protein, fat, carbs, fiber, sugar_g, magnesium_mg, potassium_mg, zinc_mg, sodium_mg, vitamin_d_iu, vitamin_b12_ug, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', `${start_date}T00:00:00.000Z`)
-                        .lte('logged_at', `${end_date}T23:59:59.999Z`)
+                        .gte('logged_at', `${safeStart}T00:00:00.000Z`)
+                        .lte('logged_at', `${safeEnd}T23:59:59.999Z`)
                         .order('logged_at', { ascending: false })
                         .limit(limit);
 
@@ -732,7 +742,7 @@ export async function POST(req: Request) {
 
                     return JSON.stringify({
                         count: logs?.length || 0,
-                        date_range: { start: start_date, end: end_date },
+                        query_window: { start: safeStart, end: safeEnd, note: "Includes +/- 24h buffer for timezone safety" },
                         entries: logs?.map(log => ({
                             id: log.id,
                             type: log.log_type,
