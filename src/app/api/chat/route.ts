@@ -295,8 +295,15 @@ export async function POST(req: Request) {
                         return `[DEMO MODE] Profile update simulated: Name=${name}, Mode=${diet_mode}, Language=${preferred_language}`;
                     }
 
-                    const targetDate = date || new Date().toISOString().split('T')[0];
-                    const timestamp = date ? `${date}T12:00:00Z` : new Date().toISOString();
+                    let targetDate = date || new Date().toISOString().split('T')[0];
+
+                    // Smart Year Resolver: Auto-correct 2024/2025 fallback to 2026 if system is in 2026
+                    if (targetDate.match(/^202[45]-/) && new Date().getFullYear() === 2026) {
+                        logWarn(`[API/Chat] update_profile: Correcting Year Drift ${targetDate.substring(0, 4)} -> 2026`);
+                        targetDate = targetDate.replace(/^202[45]-/, '2026-');
+                    }
+
+                    const timestamp = targetDate.includes('T') ? targetDate : `${targetDate}T12:00:00Z`;
 
                     // Fetch current profile for comparison and merging
                     const { data: currentProfile } = await supabase
@@ -450,7 +457,15 @@ export async function POST(req: Request) {
                         return "SYSTEM ERROR: Log BLOCKED. User profile is incomplete. You MUST ask the user for Height, Weight, and Biological Sex before I can perform metabolic calculations.";
                     }
 
-                    const timestamp = date ? `${date}T12:00:00Z` : new Date().toISOString();
+                    let targetDate = date || new Date().toISOString().split('T')[0];
+
+                    // Smart Year Resolver: Auto-correct 2024/2025 fallback to 2026 if system is in 2026
+                    if (targetDate.match(/^202[45]-/) && new Date().getFullYear() === 2026) {
+                        logWarn(`[API/Chat] log_activity: Correcting Year Drift ${targetDate.substring(0, 4)} -> 2026`);
+                        targetDate = targetDate.replace(/^202[45]-/, '2026-');
+                    }
+
+                    const timestamp = targetDate.includes('T') ? targetDate : `${targetDate}T12:00:00Z`;
 
                     const { error } = await supabase
                         .from('metabolic_logs')

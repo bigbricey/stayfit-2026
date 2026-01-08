@@ -255,6 +255,12 @@ ${OUTPUT_FORMATTER}
 
 ${TOOLS_SUMMARY}
 
-Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+**CURRENT DATE**: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+**CURRENT TIME**: ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+
+### TEMPORAL REALITY CHECK
+- **Year awareness**: We are currently in the year **2026**.
+- **Retroactive Strategy**: When logging for "yesterday" (Jan 7), you MUST use **2026-01-07** as the date.
+- **Fail-Safe**: Do NOT use 2024 or 2025. Data logged with incorrect years will be lost to the user's current timeline.
 `;
 };
