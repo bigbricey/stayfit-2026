@@ -457,8 +457,14 @@ export async function POST(req: Request) {
                         return "SYSTEM ERROR: Log BLOCKED. User profile is incomplete. You MUST ask the user for Height, Weight, and Biological Sex before I can perform metabolic calculations.";
                     }
 
-                    let targetDate = date || new Date().toISOString().split('T')[0];
-                    const timestamp = targetDate.includes('T') ? targetDate : `${targetDate}T12:00:00Z`;
+                    let timestamp: string;
+                    if (date) {
+                        // Retroactive: Snap to Noon UTC on that date
+                        timestamp = date.includes('T') ? date : `${date}T12:00:00Z`;
+                    } else {
+                        // Live: Exact current time
+                        timestamp = new Date().toISOString();
+                    }
 
                     const { error } = await supabase
                         .from('metabolic_logs')
@@ -619,14 +625,20 @@ export async function POST(req: Request) {
                         return error ? `Error deleting: ${error.message}` : 'Entry deleted from Data Vault.';
                     }
 
-                    // Otherwise, search for matching entries
-                    const searchDate = date || new Date().toISOString().split('T')[0];
+                    // Timezone-aware search window
+                    const nowLocal = toZonedTime(new Date(), clientTimezone);
+                    const searchDate = date || nowLocal.toISOString().split('T')[0];
+                    const startLocal = new Date(`${searchDate}T00:00:00`);
+                    const endLocal = new Date(`${searchDate}T23:59:59.999`);
+                    const utcStart = fromZonedTime(startLocal, clientTimezone).toISOString();
+                    const utcEnd = fromZonedTime(endLocal, clientTimezone).toISOString();
+
                     let query = supabase
                         .from('metabolic_logs')
                         .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', `${searchDate}T00:00:00.000Z`)
-                        .lte('logged_at', `${searchDate}T23:59:59.999Z`)
+                        .gte('logged_at', utcStart)
+                        .lte('logged_at', utcEnd)
                         .order('logged_at', { ascending: false });
 
                     if (log_type) query = query.eq('log_type', log_type);
@@ -685,13 +697,20 @@ export async function POST(req: Request) {
 
                     // If no ID, search for the entry
                     if (!targetId && search_text) {
-                        const searchDate = date || new Date().toISOString().split('T')[0];
+                        // Timezone-aware search window
+                        const nowLocal = toZonedTime(new Date(), clientTimezone);
+                        const searchDate = date || nowLocal.toISOString().split('T')[0];
+                        const startLocal = new Date(`${searchDate}T00:00:00`);
+                        const endLocal = new Date(`${searchDate}T23:59:59.999`);
+                        const utcStart = fromZonedTime(startLocal, clientTimezone).toISOString();
+                        const utcEnd = fromZonedTime(endLocal, clientTimezone).toISOString();
+
                         const { data: logs } = await supabase
                             .from('metabolic_logs')
                             .select('id, content_raw, data_structured, flexible_data')
                             .eq('user_id', user.id)
-                            .gte('logged_at', `${searchDate}T00:00:00.000Z`)
-                            .lte('logged_at', `${searchDate}T23:59:59.999Z`)
+                            .gte('logged_at', utcStart)
+                            .lte('logged_at', utcEnd)
                             .order('logged_at', { ascending: false });
 
                         const searchLower = search_text.toLowerCase();
