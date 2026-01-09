@@ -661,17 +661,38 @@ export async function POST(req: Request) {
 
                     // Delete the most recent match (or first match)
                     const toDelete = matches[0];
-                    log('[delete_log] Attempting to delete:', { id: toDelete.id, user_id: user.id, content: toDelete.content_raw?.substring(0, 30) });
+                    log('[delete_log] Attempting to delete:', {
+                        id: toDelete.id,
+                        user_id: user.id,
+                        content: toDelete.content_raw?.substring(0, 50),
+                        logged_at: toDelete.logged_at,
+                        search_window: { utcStart, utcEnd, searchDate }
+                    });
 
-                    const { error: deleteError, count } = await supabase
+                    const { error: deleteError } = await supabase
                         .from('metabolic_logs')
                         .delete()
                         .eq('id', toDelete.id)
-                        .eq('user_id', user.id);  // CRITICAL: Must include user_id for RLS
+                        .eq('user_id', user.id);
 
-                    log('[delete_log] Delete result:', { error: deleteError?.message, count });
+                    if (deleteError) {
+                        logWarn('[delete_log] Delete error:', deleteError);
+                        return `Error deleting: ${deleteError.message}`;
+                    }
 
-                    if (deleteError) return `Error deleting: ${deleteError.message}`;
+                    // VERIFICATION: Confirm the row is actually gone
+                    const { data: verifyGone } = await supabase
+                        .from('metabolic_logs')
+                        .select('id')
+                        .eq('id', toDelete.id)
+                        .single();
+
+                    if (verifyGone) {
+                        logWarn('[delete_log] CRITICAL: Delete reported success but row still exists!', { id: toDelete.id });
+                        return `Error: Delete operation failed silently. The entry "${toDelete.content_raw?.substring(0, 30)}..." could not be removed. This may be a permissions issue.`;
+                    }
+
+                    log('[delete_log] Delete verified successful');
                     return `Deleted entry: "${toDelete.content_raw?.substring(0, 50)}..." (${toDelete.log_type} from ${new Date(toDelete.logged_at).toLocaleTimeString()})`;
                 },
             }),
