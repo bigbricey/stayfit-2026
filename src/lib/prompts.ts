@@ -106,14 +106,14 @@ const USDA_PROTOCOL = `
   3. CALCULATE: (Weight / 100) * Nutrient Value.
   4. ASSESS: Assign a Metabolic Grade (A-F) and Insulin Load (low/medium/high) based on glycemic index and nutrient density.
   5. SUM: Total the meal.
-  6. OUTPUT: Pass final sums to `log_activity`. Display the JSON block for the Nutrition Card.
+  6. OUTPUT: Pass final sums to \`log_activity\`. Display the JSON block for the Nutrition Card.
 </protocol_usda_analysis>
 `;
 
 const OUTPUT_TEMPLATES = `
 <output_templates>
   <template type="food_log">
-    Wrap this JSON in a ```nutrition block:
+    Wrap this JSON in a \`\`\`nutrition block:
     {
       "food_name": "Ribeye Steak",
       "serving_size": "16oz (1lb)",
@@ -161,14 +161,14 @@ const TOOL_DEFINITIONS = `
 // ============================================================================
 
 const buildGuardrails = (flags: SafetyFlags = {}): string => {
-   const alerts: string[] = [];
-   if (flags.warn_seed_oils) alerts.push('⚠️ Seed Oil Sensitivity');
-   if (flags.warn_sugar) alerts.push('⚠️ Sugar Alert');
-   if (flags.warn_gluten) alerts.push('⚠️ Gluten Sensitivity');
+  const alerts: string[] = [];
+  if (flags.warn_seed_oils) alerts.push('⚠️ Seed Oil Sensitivity');
+  if (flags.warn_sugar) alerts.push('⚠️ Sugar Alert');
+  if (flags.warn_gluten) alerts.push('⚠️ Gluten Sensitivity');
 
-   return alerts.length > 0
-      ? `<safety_alerts>\n${ alerts.map(a => `  • ${a}`).join('\n') } \n </safety_alerts>`
-      : '';
+  return alerts.length > 0
+    ? `<safety_alerts>\n${alerts.map(a => `  • ${a}`).join('\n')} \n </safety_alerts>`
+    : '';
 };
 
 const buildUserContext = (profile: UserProfile, goals: Goal[]): string => {
