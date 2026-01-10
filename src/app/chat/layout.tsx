@@ -1,4 +1,4 @@
-import SuggestionBox from '@/components/SuggestionBox';
+import FeedbackAuditor from '@/components/chat/FeedbackAuditor';
 
 export default function ChatLayout({
     children,
@@ -8,7 +8,7 @@ export default function ChatLayout({
     return (
         <>
             {children}
-            <SuggestionBox />
+            <FeedbackAuditor />
         </>
     );
 }
