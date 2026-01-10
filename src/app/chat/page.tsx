@@ -120,23 +120,11 @@ export default function Chat() {
         onResponse: (response) => {
             logger.debug('[useChat] onResponse received', { status: response.status, statusText: response.statusText });
         },
-        onFinish: async (message) => {
-            const activeId = conversationIdRef.current;
-            logger.debug('[useChat] onFinish', {
-                snippet: message.content?.slice(0, 50),
-                activeId,
-                userId,
-                msgCount: messagesRef.current.length
-            });
-
-            if (activeId && userId) {
-                logger.debug('[useChat] Persisting messages for conv', { activeId });
-                await saveMessagesToDb(activeId, [...messagesRef.current, message]);
+        onFinish: async () => {
+            if (userId) {
+                logger.debug('[onFinish] Refreshing radar and history');
                 loadConversations(userId);
-                fetchRadarData(userId); // Refresh radar data after logging
-            }
-            else {
-                logger.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
+                fetchRadarData(userId);
             }
         },
         onError: (e) => {
@@ -182,9 +170,14 @@ export default function Chat() {
                 .gte('logged_at', sevenDaysAgo.toISOString())
                 .order('logged_at', { ascending: false });
 
-            if (error) {
-                logger.error('[fetchRadarData] Error fetching logs:', error);
-                setRadarData(null);
+            if (!data || data.length === 0) {
+                setRadarData({
+                    avg_calories: 0,
+                    avg_protein: 0,
+                    avg_carbs: 0,
+                    avg_fat: 0,
+                    raw_logs_count: 0
+                });
                 return;
             }
 
