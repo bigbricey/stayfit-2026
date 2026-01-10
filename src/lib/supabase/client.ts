@@ -14,6 +14,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const url: string = supabaseUrl
 const key: string = supabaseAnonKey
 
+// SSR-friendly factory
 export function createClient() {
     return createBrowserClient(url, key)
 }
+
+// Client-side singleton for use in 'use client' components
+export const supabase = typeof window !== 'undefined' ? createClient() : null as any;

@@ -2,7 +2,7 @@
 
 import { useChat } from 'ai/react';
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, supabase } from '@/lib/supabase/client';
 import { PanelLeftOpen, Sparkles, X } from 'lucide-react';
 
 // Components
@@ -85,8 +85,8 @@ export default function Chat() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [radarData, setRadarData] = useState<any>(null);
 
-    // Memoized Supabase client to prevent recreation on every render
-    const supabase = useMemo(() => createClient(), []);
+    // Use the singleton supabase client
+
 
     // Responsive initial state
     useEffect(() => {
@@ -244,7 +244,7 @@ export default function Chat() {
             setIsLoadingConversations(false);
         };
         init();
-    }, [fetchRadarData]);
+    }, []);
 
     // Watch for tool-based profile updates in Guest Mode
     useEffect(() => {
@@ -376,7 +376,7 @@ export default function Chat() {
             .eq('conversation_id', conversationId);
 
         const existingSignatures = new Set(
-            existingMessages?.map(m => `${m.role}:${m.content?.slice(0, 100)}`) || []
+            existingMessages?.map((m: any) => `${m.role}:${m.content?.slice(0, 100)}`) || []
         );
 
         const newMessages = currentMessages.filter(m =>

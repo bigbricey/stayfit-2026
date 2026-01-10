@@ -278,7 +278,13 @@ export default function Sidebar({
 
                 {/* Active Radar Widget */}
                 <div className="px-4 py-2 border-t border-gray-800/50 mt-2">
-                    <ActiveRadarWidget data={radarData} />
+                    {userId ? (
+                        <ActiveRadarWidget data={radarData} />
+                    ) : (
+                        <div className="px-4 py-3 bg-[#1a1d24]/30 rounded-xl border border-dashed border-[#2a2d34] text-center">
+                            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Radar Disabled in Guest Mode</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
