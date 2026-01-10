@@ -742,30 +742,30 @@ export async function POST(req: Request) {
                         return `No ${log_type || 'entries'} found ${dateStr} to delete. Try specifying a different date (e.g., "delete yesterday's lunch") or searching by item name.`;
                     }
 
-                    // Filter by search text if provided - search content_raw AND flexible_data.items
+                    // Filter by search text if provided - search content_raw AND data_structured
                     let matches = logs;
                     if (search_text) {
                         const searchLower = search_text.toLowerCase();
                         matches = logs.filter(logEntry => {
-                            // Check content_raw
+                            // Check content_raw (the original user input)
                             if (logEntry.content_raw?.toLowerCase().includes(searchLower)) return true;
 
-                            // Check data_structured
-                            if (JSON.stringify(logEntry.data_structured)?.toLowerCase().includes(searchLower)) return true;
-
-                            // Check flexible_data.items array
-                            const items = logEntry.flexible_data?.items;
-                            if (Array.isArray(items)) {
-                                if (items.some((item: string) => item?.toLowerCase().includes(searchLower))) return true;
+                            // Check data_structured (where all nutritional data lives)
+                            const ds = logEntry.data_structured;
+                            if (ds) {
+                                // Check the items array specifically
+                                if (Array.isArray(ds.items)) {
+                                    if (ds.items.some((item: string) => item?.toLowerCase().includes(searchLower))) return true;
+                                }
+                                // Check all data_structured as JSON
+                                if (JSON.stringify(ds).toLowerCase().includes(searchLower)) return true;
                             }
-
-                            // Check all flexible_data
-                            if (JSON.stringify(logEntry.flexible_data)?.toLowerCase().includes(searchLower)) return true;
 
                             return false;
                         });
                         log('[delete_log] After search filter:', { searchText: search_text, matchCount: matches.length });
                     }
+
 
                     if (matches.length === 0) {
                         // If no match on specific date, try expanded 7-day search
@@ -786,8 +786,9 @@ export async function POST(req: Request) {
                                 const searchLower = search_text.toLowerCase();
                                 const extendedMatches = extendedLogs.filter(logEntry =>
                                     logEntry.content_raw?.toLowerCase().includes(searchLower) ||
-                                    JSON.stringify(logEntry.flexible_data)?.toLowerCase().includes(searchLower)
+                                    JSON.stringify(logEntry.data_structured)?.toLowerCase().includes(searchLower)
                                 );
+
 
                                 if (extendedMatches.length > 0) {
                                     const found = extendedMatches[0];
