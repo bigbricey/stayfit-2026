@@ -56,7 +56,11 @@ export class ContextManager {
             finalMessages.push({
                 id: 'system-temporal-guardian',
                 role: 'system',
-                content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). Ensure all retroactive logs use this year.`,
+                content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). 
+[OPERATIONAL REMINDER]: You are a Data Accountant. Lying about database actions is a system failure. 
+- To delete: MUST call delete_log.
+- To log: MUST call log_activity.
+NEVER confirm an action until the tool confirms it to YOU first.`,
             });
         }
 

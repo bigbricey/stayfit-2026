@@ -207,6 +207,9 @@ export async function POST(req: Request) {
         model: openrouter(modelId),
         maxSteps: 5,
         messages: tieredMessages,
+        experimental_onToolCall: async ({ toolCalls }) => {
+            console.log('[API/Chat] MODEL PROPOSED TOOLS:', toolCalls.map(tc => tc.toolName));
+        },
         onFinish: async (event) => {
             if (user && conversationId) {
                 // Server-Side Persistence: Fallback/Primary mechanism
@@ -747,24 +750,13 @@ export async function POST(req: Request) {
                     let matches = logs;
                     if (search_text) {
                         const searchLower = search_text.toLowerCase();
+                        console.log(`[delete_log] searching for ${searchLower}...`);
                         matches = logs.filter(logEntry => {
-                            // Check content_raw (the original user input)
-                            if (logEntry.content_raw?.toLowerCase().includes(searchLower)) return true;
-
-                            // Check data_structured (where all nutritional data lives)
-                            const ds = logEntry.data_structured;
-                            if (ds) {
-                                // Check the items array specifically
-                                if (Array.isArray(ds.items)) {
-                                    if (ds.items.some((item: string) => item?.toLowerCase().includes(searchLower))) return true;
-                                }
-                                // Check all data_structured as JSON
-                                if (JSON.stringify(ds).toLowerCase().includes(searchLower)) return true;
-                            }
-
-                            return false;
+                            const raw = (logEntry.content_raw || '').toLowerCase();
+                            const ds = JSON.stringify(logEntry.data_structured || {}).toLowerCase();
+                            return raw.includes(searchLower) || ds.includes(searchLower);
                         });
-                        log('[delete_log] After search filter:', { searchText: search_text, matchCount: matches.length });
+                        console.log(`[delete_log] matches: ${matches.length}`);
                     }
 
 
