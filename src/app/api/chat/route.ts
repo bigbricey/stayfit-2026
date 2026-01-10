@@ -607,22 +607,30 @@ export async function POST(req: Request) {
                 description: 'Delete a logged entry from the Data Vault. Use when user says they didn\'t eat something, made a mistake, or wants to remove an entry. Can search by description or delete most recent entry of a type.',
                 parameters: z.object({
                     log_id: z.string().optional().describe('Specific log ID to delete if known'),
-                    search_text: z.string().optional().describe('Text to search for in the log content (e.g., "steak", "lunch")'),
+                    search_text: z.string().optional().describe('Text to search for in the log content (e.g., "steak", "lunch", "eggs")'),
                     log_type: z.enum(['meal', 'workout', 'blood_work', 'biometric', 'note']).optional(),
                     date: z.string().optional().describe('Date to search (YYYY-MM-DD format). Defaults to today if not specified.'),
-                    delete_most_recent: z.boolean().optional().describe('If true, delete the most recent matching entry'),
+                    delete_most_recent: z.boolean().optional().describe('If true, delete the most recent matching entry across all dates'),
                 }),
                 execute: async ({ log_id, search_text, log_type, date, delete_most_recent }) => {
                     if (!user) return '[DEMO MODE] Cannot delete logs. Sign in to enable data management.';
 
+                    log('[delete_log] Tool called with:', { log_id, search_text, log_type, date, delete_most_recent });
+
                     // If specific ID provided, delete directly
                     if (log_id) {
-                        const { error } = await supabase
+                        log('[delete_log] Direct ID delete:', log_id);
+                        const { error, count } = await supabase
                             .from('metabolic_logs')
                             .delete()
                             .eq('id', log_id)
                             .eq('user_id', user.id);
-                        return error ? `Error deleting: ${error.message}` : 'Entry deleted from Data Vault.';
+
+                        if (error) {
+                            logWarn('[delete_log] Direct delete error:', error);
+                            return `Error deleting: ${error.message}`;
+                        }
+                        return 'Entry deleted from Data Vault.';
                     }
 
                     // Timezone-aware search window
@@ -633,40 +641,106 @@ export async function POST(req: Request) {
                     const utcStart = fromZonedTime(startLocal, clientTimezone).toISOString();
                     const utcEnd = fromZonedTime(endLocal, clientTimezone).toISOString();
 
+                    log('[delete_log] Search window:', { searchDate, utcStart, utcEnd, clientTimezone });
+
+                    // Build query - if delete_most_recent, search last 7 days
+                    let queryStart = utcStart;
+                    let queryEnd = utcEnd;
+
+                    if (delete_most_recent) {
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        queryStart = weekAgo.toISOString();
+                        queryEnd = new Date().toISOString();
+                    }
+
                     let query = supabase
                         .from('metabolic_logs')
                         .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
                         .eq('user_id', user.id)
-                        .gte('logged_at', utcStart)
-                        .lte('logged_at', utcEnd)
+                        .gte('logged_at', queryStart)
+                        .lte('logged_at', queryEnd)
                         .order('logged_at', { ascending: false });
 
                     if (log_type) query = query.eq('log_type', log_type);
 
                     const { data: logs, error: searchError } = await query;
-                    if (searchError) return `Error searching: ${searchError.message}`;
-                    if (!logs || logs.length === 0) return 'No matching entries found to delete.';
+                    if (searchError) {
+                        logWarn('[delete_log] Search error:', searchError);
+                        return `Error searching: ${searchError.message}`;
+                    }
 
-                    // Filter by search text if provided
+                    log('[delete_log] Found logs:', { count: logs?.length || 0 });
+
+                    if (!logs || logs.length === 0) {
+                        // Helpful message with context
+                        const dateStr = date ? `on ${date}` : 'today';
+                        return `No ${log_type || 'entries'} found ${dateStr} to delete. Try specifying a different date (e.g., "delete yesterday's lunch") or searching by item name.`;
+                    }
+
+                    // Filter by search text if provided - search content_raw AND flexible_data.items
                     let matches = logs;
                     if (search_text) {
                         const searchLower = search_text.toLowerCase();
-                        matches = logs.filter(log =>
-                            log.content_raw?.toLowerCase().includes(searchLower) ||
-                            JSON.stringify(log.data_structured)?.toLowerCase().includes(searchLower)
-                        );
+                        matches = logs.filter(logEntry => {
+                            // Check content_raw
+                            if (logEntry.content_raw?.toLowerCase().includes(searchLower)) return true;
+
+                            // Check data_structured
+                            if (JSON.stringify(logEntry.data_structured)?.toLowerCase().includes(searchLower)) return true;
+
+                            // Check flexible_data.items array
+                            const items = logEntry.flexible_data?.items;
+                            if (Array.isArray(items)) {
+                                if (items.some((item: string) => item?.toLowerCase().includes(searchLower))) return true;
+                            }
+
+                            // Check all flexible_data
+                            if (JSON.stringify(logEntry.flexible_data)?.toLowerCase().includes(searchLower)) return true;
+
+                            return false;
+                        });
+                        log('[delete_log] After search filter:', { searchText: search_text, matchCount: matches.length });
                     }
 
-                    if (matches.length === 0) return `No entries matching "${search_text}" found.`;
+                    if (matches.length === 0) {
+                        // If no match on specific date, try expanded 7-day search
+                        if (!delete_most_recent && !date) {
+                            log('[delete_log] No match today, trying 7-day search');
+                            const weekAgo = new Date();
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+
+                            const { data: extendedLogs } = await supabase
+                                .from('metabolic_logs')
+                                .select('id, log_type, content_raw, data_structured, flexible_data, logged_at')
+                                .eq('user_id', user.id)
+                                .gte('logged_at', weekAgo.toISOString())
+                                .order('logged_at', { ascending: false })
+                                .limit(50);
+
+                            if (extendedLogs && search_text) {
+                                const searchLower = search_text.toLowerCase();
+                                const extendedMatches = extendedLogs.filter(logEntry =>
+                                    logEntry.content_raw?.toLowerCase().includes(searchLower) ||
+                                    JSON.stringify(logEntry.flexible_data)?.toLowerCase().includes(searchLower)
+                                );
+
+                                if (extendedMatches.length > 0) {
+                                    const found = extendedMatches[0];
+                                    const foundDate = new Date(found.logged_at).toLocaleDateString();
+                                    return `No "${search_text}" found today, but I found one from ${foundDate}: "${found.content_raw?.substring(0, 40)}...". Say "delete ${search_text} from ${foundDate.split('/').join('-')}" to remove it.`;
+                                }
+                            }
+                        }
+                        return `No entries matching "${search_text}" found. Please verify the item name or try "show today" to see what's logged.`;
+                    }
 
                     // Delete the most recent match (or first match)
                     const toDelete = matches[0];
-                    log('[delete_log] Attempting to delete:', {
+                    log('[delete_log] Deleting:', {
                         id: toDelete.id,
-                        user_id: user.id,
                         content: toDelete.content_raw?.substring(0, 50),
-                        logged_at: toDelete.logged_at,
-                        search_window: { utcStart, utcEnd, searchDate }
+                        logged_at: toDelete.logged_at
                     });
 
                     const { error: deleteError } = await supabase
@@ -685,17 +759,20 @@ export async function POST(req: Request) {
                         .from('metabolic_logs')
                         .select('id')
                         .eq('id', toDelete.id)
-                        .single();
+                        .maybeSingle();  // Use maybeSingle to avoid error on no rows
 
                     if (verifyGone) {
                         logWarn('[delete_log] CRITICAL: Delete reported success but row still exists!', { id: toDelete.id });
-                        return `Error: Delete operation failed silently. The entry "${toDelete.content_raw?.substring(0, 30)}..." could not be removed. This may be a permissions issue.`;
+                        return `Error: Delete operation failed silently. The entry could not be removed. This may be a database permissions issue - please contact support.`;
                     }
 
                     log('[delete_log] Delete verified successful');
-                    return `Deleted entry: "${toDelete.content_raw?.substring(0, 50)}..." (${toDelete.log_type} from ${new Date(toDelete.logged_at).toLocaleTimeString()})`;
+                    const deletedTime = new Date(toDelete.logged_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const deletedDate = new Date(toDelete.logged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return `✓ Deleted: "${toDelete.content_raw?.substring(0, 50)}..." (${toDelete.log_type}, ${deletedDate} at ${deletedTime})`;
                 },
             }),
+
             update_log: tool({
                 description: 'Update/correct an existing log entry. Use when user wants to fix a mistake like wrong portion size or calories.',
                 parameters: z.object({
