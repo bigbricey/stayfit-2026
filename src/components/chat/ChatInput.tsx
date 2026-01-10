@@ -17,6 +17,8 @@ interface ChatInputProps {
     onBarcodeScan?: (code: string) => void;
     showSidebar?: boolean;
     setInput?: (value: string) => void;
+    isLoading?: boolean;
+    onStop?: () => void;
 }
 
 export default function ChatInput({
@@ -28,7 +30,9 @@ export default function ChatInput({
     setSelectedImage,
     onBarcodeScan,
     showSidebar = false,
-    setInput
+    setInput,
+    isLoading = false,
+    onStop
 }: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,10 +78,15 @@ export default function ChatInput({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            if (input.trim() || selectedImage) {
+            if ((input.trim() || selectedImage) && !isLoading) {
                 onSubmit(e as unknown as React.FormEvent);
             }
         }
+    };
+
+    const handleStop = (e: React.MouseEvent) => {
+        e.preventDefault();
+        onStop?.();
     };
 
     return (
@@ -107,7 +116,7 @@ export default function ChatInput({
                     <div className={`
                         flex items-end gap-2 bg-[#1a1d24] rounded-xl px-3 py-2 
                         transition-all duration-200 border border-[#2a2d34]
-                        ${input.trim() || selectedImage ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
+                        ${(input.trim() || selectedImage) ? 'border-[#22c55e]/50' : 'group-hover:bg-[#22262f]'}
                         focus-within:bg-[#22262f] focus-within:border-[#22c55e]/50
                     `}>
                         {/* Hidden Inputs */}
@@ -131,24 +140,27 @@ export default function ChatInput({
                         <div className="flex items-center gap-1 mb-1">
                             <button
                                 type="button"
+                                disabled={isLoading}
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Photo Library"
                             >
                                 <ImageIcon size={20} />
                             </button>
                             <button
                                 type="button"
+                                disabled={isLoading}
                                 onClick={() => document.getElementById('cameraInput')?.click()}
-                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                className="p-2.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#2a2d34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Take Photo"
                             >
                                 <Camera size={20} />
                             </button>
                             <button
                                 type="button"
+                                disabled={isLoading}
                                 onClick={() => setShowScanner(true)}
-                                className="p-2.5 text-gray-400 hover:text-[#22c55e] rounded-lg hover:bg-[#2a2d34] transition-colors"
+                                className="p-2.5 text-gray-400 hover:text-[#22c55e] rounded-lg hover:bg-[#2a2d34] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Scan Barcode"
                             >
                                 <Scan size={20} />
@@ -169,19 +181,20 @@ export default function ChatInput({
                         {/* Textarea with word wrapping and auto-resize */}
                         <textarea
                             ref={textareaRef}
-                            className="flex-1 bg-transparent border-none text-[16px] text-white placeholder-gray-400 focus:outline-none focus:ring-0 px-2 py-3 resize-none overflow-y-auto"
+                            className="flex-1 bg-transparent border-none text-[16px] text-white placeholder-gray-400 focus:outline-none focus:ring-0 px-2 py-3 resize-none overflow-y-auto disabled:opacity-80"
                             style={{ minHeight: '48px', maxHeight: '200px' }}
                             value={input}
                             onChange={onInputChange}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask StayFit Coach..."
+                            placeholder={isLoading ? "Generating response..." : "Ask StayFit Coach..."}
                             autoFocus
                             rows={1}
+                            disabled={isLoading}
                         />
 
-                        {/* Right actions (Send) */}
+                        {/* Right actions (Send / Stop) */}
                         <div className="flex items-center gap-1 pr-1 mb-1">
-                            {isSupported && (
+                            {isSupported && !isLoading && (
                                 <button
                                     type="button"
                                     onClick={toggleListening}
@@ -194,16 +207,28 @@ export default function ChatInput({
                                     {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                                 </button>
                             )}
-                            <button
-                                type="submit"
-                                disabled={!input.trim() && !selectedImage}
-                                className={`p-2.5 rounded-lg transition-colors ml-1 ${input.trim() || selectedImage
-                                    ? 'bg-[#22c55e] text-white hover:bg-[#16a34a]'
-                                    : 'bg-[#2a2d34] text-gray-500 cursor-not-allowed'
-                                    }`}
-                            >
-                                <SendHorizontal size={20} />
-                            </button>
+
+                            {isLoading ? (
+                                <button
+                                    type="button"
+                                    onClick={handleStop}
+                                    className="p-2.5 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 group/stop"
+                                    title="Stop Generating"
+                                >
+                                    <div className="w-5 h-5 bg-white rounded-sm group-hover/stop:scale-90 transition-transform" />
+                                </button>
+                            ) : (
+                                <button
+                                    type="submit"
+                                    disabled={!input.trim() && !selectedImage}
+                                    className={`p-2.5 rounded-lg transition-colors ml-1 ${input.trim() || selectedImage
+                                        ? 'bg-[#22c55e] text-white hover:bg-[#16a34a]'
+                                        : 'bg-[#2a2d34] text-gray-500 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <SendHorizontal size={20} />
+                                </button>
+                            )}
                         </div>
                     </div>
 

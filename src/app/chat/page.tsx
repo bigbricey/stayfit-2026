@@ -105,9 +105,10 @@ export default function Chat() {
     }, [currentConversationId]);
 
     // AI Hook
-    const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error } = useChat({
+    const { messages, input, setInput, handleInputChange, handleSubmit, isLoading, setMessages, error, stop, reload } = useChat({
         maxSteps: 3,
         body: () => {
+
             logger.debug('[useChat] body() called', { convRef: conversationIdRef.current });
             return {
                 demoConfig,
@@ -404,6 +405,67 @@ export default function Chat() {
         window.location.href = '/';
     };
 
+    const handleEditMessage = async (id: string, newContent: string) => {
+        logger.debug('[handleEditMessage] Triggered', { messageId: id, contentSnippet: newContent.slice(0, 50) });
+
+        // 1. Find the index of the message being edited
+        const index = messages.findIndex(m => m.id === id);
+        if (index === -1) return;
+
+        // 2. Truncate messages to this point
+        const updatedMessages = messages.slice(0, index + 1);
+
+        // 3. Update the edited message content
+        updatedMessages[index] = {
+            ...updatedMessages[index],
+            content: newContent
+        };
+
+        // 4. Update internal state
+        setMessages(updatedMessages);
+
+        // 5. Cleanup database (delete all messages AFTER this one in the same conversation)
+        if (currentConversationId && userId) {
+            // Get all message IDs that come after this one in the local state
+            // (Note: we delete all messages with created_at > edited_message.created_at or similar)
+            // But since we use IDs, let's just delete anything from the DB that isn't in our new state
+            const remainingIds = updatedMessages.map(m => m.id);
+
+            logger.debug('[handleEditMessage] Cleaning up DB', { conversationId: currentConversationId });
+
+            const { error: deleteError } = await supabase
+                .from('messages')
+                .delete()
+                .eq('conversation_id', currentConversationId)
+                .not('id', 'in', `(${remainingIds.join(',')})`);
+
+            if (deleteError) {
+                logger.error('[handleEditMessage] DB Cleanup Error:', deleteError);
+            }
+
+            // Also update the content of the edited message in DB
+            const { error: updateError } = await supabase
+                .from('messages')
+                .update({ content: newContent })
+                .eq('id', id);
+
+            if (updateError) {
+                logger.error('[handleEditMessage] DB Update Error:', updateError);
+            }
+        }
+
+        // 6. Trigger re-generation
+        // We use reload() from useChat, but we need to make sure the state is updated first
+        // reload() usually uses the current messages state
+        setTimeout(() => {
+            // append usually sends the last user message, but reload() re-runs the last request
+            // If the last message is now a user message (which it should be after truncation), reload() works.
+            // If it's an assistant message for some reason, we might need a different approach.
+            // But editing is only allowed for user messages.
+            reload();
+        }, 100);
+    };
+
     // =========================================================================
     // Event Handlers
     // =========================================================================
@@ -543,6 +605,7 @@ export default function Chat() {
                                         key={m.id}
                                         message={m}
                                         userId={userId}
+                                        onEdit={handleEditMessage}
                                     />
                                 ))}
                                 {isLoading && (
@@ -574,6 +637,8 @@ export default function Chat() {
                     onBarcodeScan={handleBarcodeScan}
                     showSidebar={showSidebar}
                     setInput={setInput}
+                    isLoading={isLoading}
+                    onStop={stop}
                 />
 
                 <PWAInstallPrompt />

@@ -1,7 +1,8 @@
 'use client';
 
+import { useRef, useEffect, useState } from 'react';
+import { User, Sparkles, Quote, Info, Pencil, Check, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { User, Sparkles, Quote, Info } from 'lucide-react';
 import NutritionLabel from './NutritionLabel';
 import { logger } from '@/lib/logger';
 
@@ -31,11 +32,36 @@ interface Message {
 interface ChatMessageProps {
     message: Message;
     userId: string | null;
+    onEdit?: (id: string, newContent: string) => void;
 }
 
-export default function ChatMessage({ message, userId }: ChatMessageProps) {
+export default function ChatMessage({ message, userId, onEdit }: ChatMessageProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(message.content);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        if (isEditing && textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [isEditing]);
+
+    const handleSave = () => {
+        if (editContent.trim() !== message.content) {
+            onEdit?.(message.id, editContent);
+        }
+        setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+        setEditContent(message.content);
+        setIsEditing(false);
+    };
+
     return (
-        <div className="flex gap-4 group">
+        <div className="flex gap-4 group/message">
             {/* Avatar */}
             <div className="flex-shrink-0 mt-1">
                 {message.role === 'user' ? (
@@ -50,96 +76,141 @@ export default function ChatMessage({ message, userId }: ChatMessageProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 space-y-1">
-                <div className="font-medium text-sm text-gray-400">
-                    {message.role === 'user' ? 'You' : 'StayFit Coach'}
-                </div>
-                <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-[#1e1e1e] max-w-none text-[#e3e3e3]">
-                    <ReactMarkdown
-                        components={{
-                            table: ({ node, ...props }) => (
-                                <div className="overflow-x-auto my-4 rounded-xl border border-gray-800">
-                                    <table className="w-full text-sm text-left bg-[#1e1f20]" {...props} />
-                                </div>
-                            ),
-                            thead: ({ node, ...props }) => <thead className="bg-[#2e2f30] text-gray-200 font-medium" {...props} />,
-                            th: ({ node, ...props }) => <th className="px-5 py-3" {...props} />,
-                            td: ({ node, ...props }) => <td className="px-5 py-3 border-t border-gray-800" {...props} />,
-                            blockquote: ({ node, children, ...props }) => (
-                                <div className="relative my-6 px-6 py-4 bg-emerald-500/5 border-l-4 border-emerald-500 rounded-r-xl group/quote">
-                                    <div className="absolute -top-3 left-4 bg-[#0a0b0d] px-2 text-emerald-500">
-                                        <Quote size={14} className="fill-emerald-500/20" />
-                                    </div>
-                                    <div className="text-gray-300 italic text-[0.95rem] leading-relaxed">
-                                        {children}
-                                    </div>
-                                </div>
-                            ),
-                            pre: ({ node, children, ...props }) => {
-                                // Check if this is a nutrition code block
-                                const codeChild = node?.children?.[0] as any;
-                                if (codeChild?.tagName === 'code') {
-                                    const className = codeChild.properties?.className?.[0] || '';
-                                    if (className === 'language-nutrition') {
-                                        // Extract the JSON from the code block
-                                        const codeContent = codeChild.children?.[0]?.value || '';
-                                        try {
-                                            const nutritionData = JSON.parse(codeContent);
-                                            return <NutritionLabel data={nutritionData} />;
-                                        } catch (e) {
-                                            logger.error('Failed to parse nutrition data:', e);
-                                        }
-                                    }
-                                }
-                                return <pre className="bg-[#1e1e1e] rounded-lg p-4 overflow-x-auto" {...props}>{children}</pre>;
-                            },
-                            code: ({ node, ...props }) => {
-                                // @ts-ignore
-                                const inline = props.inline
-                                return inline
-                                    ? <code className="bg-[#2e2f30] px-1.5 py-0.5 rounded text-sm font-mono text-pink-300" {...props} />
-                                    : <code {...props} />
-                            }
-                        }}
-                    >
-                        {message.content}
-                    </ReactMarkdown>
+            <div className="flex-1 min-w-0 space-y-1 relative">
+                <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm text-gray-400">
+                        {message.role === 'user' ? 'You' : 'StayFit Coach'}
+                    </div>
+
+                    {message.role === 'user' && !isEditing && (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="opacity-0 group-hover/message:opacity-100 p-1.5 text-gray-500 hover:text-white hover:bg-[#2a2d34] rounded-lg transition-all"
+                            title="Edit message"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    )}
                 </div>
 
-                {/* Attachments */}
-                {Array.isArray(message.experimental_attachments) && message.experimental_attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                        {message.experimental_attachments.map((attachment, index) => (
-                            <div key={`${attachment.name || attachment.url || 'attachment'}-${index}`} className="relative group/img max-w-[300px]">
-                                {attachment.contentType?.startsWith('image/') || attachment.type?.startsWith('image/') ? (
-                                    <div className="rounded-xl overflow-hidden border border-[#2a2d34] bg-[#1a1d24]">
-                                        <img
-                                            src={attachment.url}
-                                            alt={attachment.name || 'Attachment'}
-                                            className="w-full h-auto object-cover max-h-[300px]"
-                                        />
+                {isEditing ? (
+                    <div className="mt-2 space-y-3">
+                        <textarea
+                            ref={textareaRef}
+                            value={editContent}
+                            onChange={(e) => {
+                                setEditContent(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${e.target.scrollHeight}px`;
+                            }}
+                            className="w-full bg-[#1a1d24] border border-[#2a2d34] rounded-xl p-3 text-white focus:outline-none focus:border-[#22c55e]/50 resize-none min-h-[100px]"
+                        />
+                        <div className="flex items-center gap-2 justify-end">
+                            <button
+                                onClick={handleCancel}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex items-center gap-1.5 bg-[#22c55e] hover:bg-[#16a34a] text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                            >
+                                <Check size={14} />
+                                Save & Resend
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-[#1e1e1e] max-w-none text-[#e3e3e3]">
+                            <ReactMarkdown
+                                components={{
+                                    table: ({ node, ...props }) => (
+                                        <div className="overflow-x-auto my-4 rounded-xl border border-gray-800">
+                                            <table className="w-full text-sm text-left bg-[#1e1f20]" {...props} />
+                                        </div>
+                                    ),
+                                    thead: ({ node, ...props }) => <thead className="bg-[#2e2f30] text-gray-200 font-medium" {...props} />,
+                                    th: ({ node, ...props }) => <th className="px-5 py-3" {...props} />,
+                                    td: ({ node, ...props }) => <td className="px-5 py-3 border-t border-gray-800" {...props} />,
+                                    blockquote: ({ node, children, ...props }) => (
+                                        <div className="relative my-6 px-6 py-4 bg-emerald-500/5 border-l-4 border-emerald-500 rounded-r-xl group/quote">
+                                            <div className="absolute -top-3 left-4 bg-[#0a0b0d] px-2 text-emerald-500">
+                                                <Quote size={14} className="fill-emerald-500/20" />
+                                            </div>
+                                            <div className="text-gray-300 italic text-[0.95rem] leading-relaxed">
+                                                {children}
+                                            </div>
+                                        </div>
+                                    ),
+                                    pre: ({ node, children, ...props }) => {
+                                        // Check if this is a nutrition code block
+                                        const codeChild = node?.children?.[0] as any;
+                                        if (codeChild?.tagName === 'code') {
+                                            const className = codeChild.properties?.className?.[0] || '';
+                                            if (className === 'language-nutrition') {
+                                                // Extract the JSON from the code block
+                                                const codeContent = codeChild.children?.[0]?.value || '';
+                                                try {
+                                                    const nutritionData = JSON.parse(codeContent);
+                                                    return <NutritionLabel data={nutritionData} />;
+                                                } catch (e) {
+                                                    logger.error('Failed to parse nutrition data:', e);
+                                                }
+                                            }
+                                        }
+                                        return <pre className="bg-[#1e1e1e] rounded-lg p-4 overflow-x-auto" {...props}>{children}</pre>;
+                                    },
+                                    code: ({ node, ...props }) => {
+                                        // @ts-ignore
+                                        const inline = props.inline
+                                        return inline
+                                            ? <code className="bg-[#2e2f30] px-1.5 py-0.5 rounded text-sm font-mono text-pink-300" {...props} />
+                                            : <code {...props} />
+                                    }
+                                }}
+                            >
+                                {message.content}
+                            </ReactMarkdown>
+                        </div>
+
+                        {/* Attachments */}
+                        {Array.isArray(message.experimental_attachments) && message.experimental_attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                                {message.experimental_attachments.map((attachment, index) => (
+                                    <div key={`${attachment.name || attachment.url || 'attachment'}-${index}`} className="relative group/img max-w-[300px]">
+                                        {attachment.contentType?.startsWith('image/') || attachment.type?.startsWith('image/') ? (
+                                            <div className="rounded-xl overflow-hidden border border-[#2a2d34] bg-[#1a1d24]">
+                                                <img
+                                                    src={attachment.url}
+                                                    alt={attachment.name || 'Attachment'}
+                                                    className="w-full h-auto object-cover max-h-[300px]"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="px-3 py-2 rounded-lg bg-[#1a1d24] border border-[#2a2d34] text-xs text-gray-400">
+                                                {attachment.name || 'File'}
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="px-3 py-2 rounded-lg bg-[#1a1d24] border border-[#2a2d34] text-xs text-gray-400">
-                                        {attachment.name || 'File'}
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Tool Logs */}
+                        {Array.isArray(message.toolInvocations) && message.toolInvocations.map((tool) => (
+                            <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">
+                                {tool.toolName === 'log_activity' && 'result' in tool && (
+                                    <div className="text-xs text-emerald-400 flex items-center gap-1.5 opacity-75">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        Log secured
                                     </div>
                                 )}
                             </div>
                         ))}
-                    </div>
+                    </>
                 )}
-
-                {/* Tool Logs */}
-                {Array.isArray(message.toolInvocations) && message.toolInvocations.map((tool) => (
-                    <div key={tool.toolCallId} className="mt-2 pl-2 border-l-2 border-gray-800">
-                        {tool.toolName === 'log_activity' && 'result' in tool && (
-                            <div className="text-xs text-emerald-400 flex items-center gap-1.5 opacity-75">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                Log secured
-                            </div>
-                        )}
-                    </div>
-                ))}
             </div>
         </div>
     );
