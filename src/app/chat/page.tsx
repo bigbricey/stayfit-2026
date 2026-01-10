@@ -537,9 +537,7 @@ export default function Chat() {
         setSelectedFile(null);
     };
 
-    const handleSuggestionClick = (text: string) => {
-        setInput(text);
-    };
+
 
     // =========================================================================
     // Render
@@ -596,7 +594,6 @@ export default function Chat() {
                         {messages.length === 0 ? (
                             <WelcomeScreen
                                 userName={userName}
-                                onSuggestionClick={handleSuggestionClick}
                             />
                         ) : (
                             <div className="pt-20 pb-40 space-y-8">

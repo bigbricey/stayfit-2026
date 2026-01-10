@@ -1,13 +1,10 @@
 'use client';
 
-import SuggestionChips from './SuggestionChips';
-
 interface WelcomeScreenProps {
     userName: string | null;
-    onSuggestionClick: (text: string) => void;
 }
 
-export default function WelcomeScreen({ userName, onSuggestionClick }: WelcomeScreenProps) {
+export default function WelcomeScreen({ userName }: WelcomeScreenProps) {
     return (
         <div className="flex-1 flex flex-col items-start justify-center min-h-[60vh] space-y-8 animate-in fade-in duration-700 pl-4">
             <div className="space-y-2 text-left">
@@ -18,8 +15,6 @@ export default function WelcomeScreen({ userName, onSuggestionClick }: WelcomeSc
                     Track meals, plan workouts, or check your macros.
                 </p>
             </div>
-
-            <SuggestionChips onChipClick={onSuggestionClick} />
         </div>
     );
 }
