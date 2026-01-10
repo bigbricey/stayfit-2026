@@ -488,38 +488,47 @@ export async function POST(req: Request) {
                         timestamp = new Date().toISOString();
                     }
 
+                    // Put all nutritional data into data_structured JSONB column
+                    // (The table schema only has: id, user_id, log_type, content_raw, data_structured, logged_at)
                     const insertData = {
                         user_id: user.id,
                         log_type,
                         content_raw,
-                        calories: core?.calories,
-                        protein: core?.protein,
-                        fat: core?.fat,
-                        carbs: core?.carbs,
-                        fiber: core?.fiber,
-                        sugar_g: core?.sugar_g,
-                        magnesium_mg: core?.magnesium_mg,
-                        potassium_mg: core?.potassium_mg,
-                        zinc_mg: core?.zinc_mg,
-                        sodium_mg: core?.sodium_mg,
-                        vitamin_d_iu: core?.vitamin_d_iu,
-                        vitamin_b12_ug: core?.vitamin_b12_ug,
-                        flexible_data: {
+                        data_structured: {
+                            // Core metrics
+                            calories: core?.calories,
+                            protein: core?.protein,
+                            fat: core?.fat,
+                            carbs: core?.carbs,
+                            fiber: core?.fiber,
+                            sugar_g: core?.sugar_g,
+                            // Minerals
+                            magnesium_mg: core?.magnesium_mg,
+                            potassium_mg: core?.potassium_mg,
+                            zinc_mg: core?.zinc_mg,
+                            sodium_mg: core?.sodium_mg,
+                            vitamin_d_iu: core?.vitamin_d_iu,
+                            vitamin_b12_ug: core?.vitamin_b12_ug,
+                            // Items array
+                            items: core?.items,
+                            // Flexible data (symptoms, feelings, etc)
                             ...flexible,
-                            items: core?.items
+                            // Confidence metadata
+                            is_estimated,
+                            confidence_score,
                         },
-                        is_estimated,
-                        confidence_score,
                         logged_at: timestamp,
                     };
+
 
                     log('[log_activity] Inserting:', {
                         user_id: user.id,
                         log_type,
                         content_raw: content_raw?.substring(0, 30),
-                        calories: insertData.calories,
+                        calories: core?.calories,
                         logged_at: timestamp
                     });
+
 
                     const { data: insertedData, error } = await supabase
                         .from('metabolic_logs')
@@ -641,22 +650,23 @@ export async function POST(req: Request) {
                         return JSON.stringify({ message: 'No meals logged today yet.', totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }, goals: activeGoals });
                     }
 
-                    // CRITICAL: Macros are stored in dedicated columns, NOT data_structured
+                    // Macros are stored in data_structured JSONB column
                     const totals = logs.reduce((acc, log) => {
-                        const f = log.flexible_data || {};
+                        const d = log.data_structured || {};
                         return {
-                            calories: acc.calories + (log.calories || 0),
-                            protein: acc.protein + (log.protein || 0),
-                            fat: acc.fat + (log.fat || 0),
-                            carbs: acc.carbs + (log.carbs || 0),
-                            fiber: acc.fiber + (log.fiber || 0),
-                            sugar: acc.sugar + (f.sugar || 0),
+                            calories: acc.calories + (d.calories || 0),
+                            protein: acc.protein + (d.protein || 0),
+                            fat: acc.fat + (d.fat || 0),
+                            carbs: acc.carbs + (d.carbs || 0),
+                            fiber: acc.fiber + (d.fiber || 0),
+                            sugar: acc.sugar + (d.sugar_g || 0),
                         };
                     }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0 });
 
                     return JSON.stringify({ totals, meals_count: logs.length, goals: activeGoals, logs });
                 },
             }),
+
             delete_log: tool({
                 description: 'Delete a logged entry from the Data Vault. Use when user says they didn\'t eat something, made a mistake, or wants to remove an entry. Can search by description or delete most recent entry of a type.',
                 parameters: z.object({
