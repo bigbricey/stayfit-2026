@@ -205,6 +205,7 @@ export async function POST(req: Request) {
 
     const result = await streamText({
         model: openrouter(modelId),
+        maxSteps: 5,
         messages: tieredMessages,
         onFinish: async (event) => {
             if (user && conversationId) {
