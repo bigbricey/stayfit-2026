@@ -6,54 +6,54 @@ import { Database } from '../types/database';
 
 // Robust DietMode type: preserves Database types + Autocomplete + Custom strings
 type DietMode = Database['public']['Tables']['users_secure']['Row']['diet_mode']
-   | 'modified_keto'
-   | 'tkd'
-   | 'carnivore'
-   | (string & {});
+  | 'modified_keto'
+  | 'tkd'
+  | 'carnivore'
+  | (string & {});
 
 type CoachMode = 'hypertrophy' | 'fat_loss' | 'longevity' | 'maintenance' | 'contest_prep';
 
 interface SafetyFlags {
-   warn_seed_oils?: boolean;
-   warn_sugar?: boolean;
-   warn_gluten?: boolean;
-   [key: string]: boolean | undefined;
+  warn_seed_oils?: boolean;
+  warn_sugar?: boolean;
+  warn_gluten?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 interface UserBiometrics {
-   weight?: number;
-   weight_unit?: 'lbs' | 'kg' | string;
-   height?: number;
-   height_unit?: 'in' | 'cm' | string;
-   sex?: 'male' | 'female' | string;
-   age?: number;
-   birthdate?: string;
-   waist?: number;
+  weight?: number;
+  weight_unit?: 'lbs' | 'kg' | string;
+  height?: number;
+  height_unit?: 'in' | 'cm' | string;
+  sex?: 'male' | 'female' | string;
+  age?: number;
+  birthdate?: string;
+  waist?: number;
 }
 
 interface UserRadar {
-   avg_calories: number;
-   avg_protein: number;
-   avg_carbs: number;
-   avg_fat: number;
-   raw_logs_count: number;
+  avg_calories: number;
+  avg_protein: number;
+  avg_carbs: number;
+  avg_fat: number;
+  raw_logs_count: number;
 }
 
 interface UserProfile {
-   name?: string;
-   preferred_language?: string;
-   diet_mode?: DietMode;
-   active_coach?: CoachMode | (string & {});
-   biometrics?: UserBiometrics;
-   safety_flags?: SafetyFlags;
-   cooldowns?: Record<string, string>; // ISO timestamps
-   active_radar?: UserRadar;
-   [key: string]: unknown;
+  name?: string;
+  preferred_language?: string;
+  diet_mode?: DietMode;
+  active_coach?: CoachMode | (string & {});
+  biometrics?: UserBiometrics;
+  safety_flags?: SafetyFlags;
+  cooldowns?: Record<string, string>; // ISO timestamps
+  active_radar?: UserRadar;
+  [key: string]: unknown;
 }
 
 interface Goal {
-   type: string;
-   target: string;
+  type: string;
+  target: string;
 }
 
 // ============================================================================
@@ -83,8 +83,8 @@ const OPERATIONAL_RULES = `
     User sees: "Calories: 2,100". 
     User NEVER sees: "(100g * 4) + 20...".
   </rule>
-  <rule id="3_TABLE_FIRST">
-    When logging food, output the Macro Table FIRST, followed by ONE sentence of context.
+  <rule id="3_DATA_FIRST">
+    When logging food, you MUST output the High-Fidelity Nutrition Card (using \`\`\`nutrition json block) FIRST, followed by ONE sentence of context. Never use Markdown tables for food logs.
   </rule>
   <rule id="4_MANDATORY_DELETION">
     If user says "delete", "remove", "undo", or "I didn't eat that", you MUST call \`delete_log\`. 
@@ -101,47 +101,60 @@ const USDA_PROTOCOL = `
 <protocol_usda_analysis>
   Since you must estimate nutrition for raw inputs, perform this sequence SILENTLY:
   1. IDENTIFY: Break down meal into ingredients and estimated weights (g).
-  2. LOOKUP: Retrieve USDA per-100g values from internal knowledge.
+  2. LOOKUP: Retrieve USDA values from internal knowledge. 
+     - MANDATORY: Extract Protein, Fat, Carbs, Fiber, Sugar, Sodium, Potassium, Magnesium, Calcium, Iron, Vitamin D, Cholesterol.
   3. CALCULATE: (Weight / 100) * Nutrient Value.
-  4. SUM: Total the meal.
-  5. OUTPUT: Pass final sums to \`log_activity\`. Display ONLY the totals table.
+  4. ASSESS: Assign a Metabolic Grade (A-F) and Insulin Load (low/medium/high) based on glycemic index and nutrient density.
+  5. SUM: Total the meal.
+  6. OUTPUT: Pass final sums to `log_activity`. Display the JSON block for the Nutrition Card.
 </protocol_usda_analysis>
 `;
 
 const OUTPUT_TEMPLATES = `
 <output_templates>
   <template type="food_log">
-    | Macro    | Amount |
-    |----------|--------|
-    | Calories | 2,710  |
-    | Protein  | 121g   |
-    | Fat      | 100g   |
-    | Carbs    | 156g   |
+    Wrap this JSON in a ```nutrition block:
+    {
+      "food_name": "Ribeye Steak",
+      "serving_size": "16oz (1lb)",
+      "calories": 1321,
+      "protein": 113,
+      "fat": 96,
+      "carbs": 0,
+      "fiber": 0,
+      "sugar": 0,
+      "sodium": 240,
+      "potassium": 1400,
+      "magnesium": 95,
+      "iron": 12,
+      "metabolic_grade": "A",
+      "insulin_load": "low"
+    }
 
-    *Context: "Ribeye & rice logged for Jan 9. Carb spike justified by workout."*
+    * Context: "1 lb ribeye logged for Jan 10. High-density protein source secured." *
   </template>
 
-  <template type="stats_request">
-    • **Name**: [Name]
-    • **Age**: [Age]
-    • **Stats**: [Height] | [Weight]
-    • **Mode**: [Diet Mode]
+  < template type = "stats_request" >
+    • ** Name **: [Name]
+    • ** Age **: [Age]
+    • ** Stats **: [Height] | [Weight]
+    • ** Mode **: [Diet Mode]
   </template>
-</output_templates>
-`;
+  </output_templates>
+    `;
 
 const TOOL_DEFINITIONS = `
-<tool_directives>
-  <tool name="log_activity">REQUIRED for saving food/workouts. Use "YYYY-MM-DD".</tool>
-  <tool name="delete_log">REQUIRED for removing items. Search by text or date.</tool>
-  <tool name="update_profile">Use when user states name, weight, or diet preference.</tool>
-  <tool name="query_logs">Use for "What did I eat yesterday?" or history checks.</tool>
-  
-  <handling_errors>
-    If a tool fails, tell the user exactly why. Do not pretend it worked.
+  < tool_directives >
+  <tool name="log_activity" > REQUIRED for saving food / workouts.Use "YYYY-MM-DD".</tool>
+    < tool name = "delete_log" > REQUIRED for removing items.Search by text or date.</tool>
+      < tool name = "update_profile" > Use when user states name, weight, or diet preference.</tool>
+        < tool name = "query_logs" > Use for "What did I eat yesterday?" or history checks.</tool>
+
+          <handling_errors>
+    If a tool fails, tell the user exactly why.Do not pretend it worked.
   </handling_errors>
-</tool_directives>
-`;
+  </tool_directives>
+    `;
 
 // ============================================================================
 // 3. HELPER FUNCTIONS
@@ -154,15 +167,15 @@ const buildGuardrails = (flags: SafetyFlags = {}): string => {
    if (flags.warn_gluten) alerts.push('⚠️ Gluten Sensitivity');
 
    return alerts.length > 0
-      ? `<safety_alerts>\n${alerts.map(a => `  • ${a}`).join('\n')}\n</safety_alerts>`
+      ? `<safety_alerts>\n${ alerts.map(a => `  • ${a}`).join('\n') } \n </safety_alerts>`
       : '';
 };
 
 const buildUserContext = (profile: UserProfile, goals: Goal[]): string => {
-   const bio = profile.biometrics || {};
-   const radar = profile.active_radar;
+  const bio = profile.biometrics || {};
+  const radar = profile.active_radar;
 
-   return `
+  return `
 <user_context>
   <profile>
     <name>${profile.name || 'User'}</name>
@@ -191,32 +204,32 @@ const buildUserContext = (profile: UserProfile, goals: Goal[]): string => {
 // ============================================================================
 
 export const METABOLIC_COACH_PROMPT = (
-   userProfile: UserProfile,
-   activeGoals: Goal[] = [],
-   customConstitution: string = '',
-   customSpecialist: string = '',
-   currentTime: string = new Date().toLocaleString()
+  userProfile: UserProfile,
+  activeGoals: Goal[] = [],
+  customConstitution: string = '',
+  customSpecialist: string = '',
+  currentTime: string = new Date().toLocaleString()
 ) => {
 
-   // ------------------------------------------------------------------
-   // TEMPORAL LOGIC: Enforce 2026 Timeline
-   // ------------------------------------------------------------------
-   // 1. Parse the passed time (or default to now).
-   const now = new Date(currentTime);
-   if (isNaN(now.getTime())) {
-      // Fallback if the input string is invalid
-      now.setTime(Date.now());
-   }
+  // ------------------------------------------------------------------
+  // TEMPORAL LOGIC: Enforce 2026 Timeline
+  // ------------------------------------------------------------------
+  // 1. Parse the passed time (or default to now).
+  const now = new Date(currentTime);
+  if (isNaN(now.getTime())) {
+    // Fallback if the input string is invalid
+    now.setTime(Date.now());
+  }
 
-   // 2. Force the year to 2026 if it's currently earlier
-   if (now.getFullYear() < 2026) {
-      now.setFullYear(2026);
-   }
+  // 2. Force the year to 2026 if it's currently earlier
+  if (now.getFullYear() < 2026) {
+    now.setFullYear(2026);
+  }
 
-   const dateString = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-   const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dateString = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-   const TEMPORAL_ANCHOR = `
+  const TEMPORAL_ANCHOR = `
 <temporal_anchor>
   <current_date>${dateString}</current_date>
   <current_time>${timeString}</current_time>
@@ -228,10 +241,10 @@ export const METABOLIC_COACH_PROMPT = (
 </temporal_anchor>
 `;
 
-   // ------------------------------------------------------------------
-   // FINAL ASSEMBLY
-   // ------------------------------------------------------------------
-   return `
+  // ------------------------------------------------------------------
+  // FINAL ASSEMBLY
+  // ------------------------------------------------------------------
+  return `
 ${CORE_IDENTITY}
 
 ${TEMPORAL_ANCHOR}
