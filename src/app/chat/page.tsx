@@ -170,6 +170,11 @@ export default function Chat() {
                 .gte('logged_at', startOfToday.toISOString())
                 .order('logged_at', { ascending: false });
 
+            if (error) {
+                logger.error('[fetchRadarData] Supabase error:', error);
+                return;
+            }
+
             if (!data || data.length === 0) {
                 setRadarData({
                     calories: 0,
@@ -181,36 +186,33 @@ export default function Chat() {
                 return;
             }
 
-            if (data && data.length > 0) {
-                logger.debug('[fetchRadarData] Data received', { count: data.length });
-                const totals = data.reduce((acc: any, log: any) => ({
-                    calories: acc.calories + (log.calories || 0),
-                    protein: acc.protein + (log.protein || 0),
-                    carbs: acc.carbs + (log.carbs || 0),
-                    fat: acc.fat + (log.fat || 0),
-                }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+            const totals = data.reduce((acc: any, log: any) => ({
+                calories: acc.calories + (log.calories || 0),
+                protein: acc.protein + (log.protein || 0),
+                carbs: acc.carbs + (log.carbs || 0),
+                fat: acc.fat + (log.fat || 0),
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-                setRadarData({
-                    calories: totals.calories,
-                    protein: totals.protein,
-                    carbs: totals.carbs,
-                    fat: totals.fat,
-                    raw_logs_count: data.length
-                });
-            } else {
-                logger.debug('[fetchRadarData] No logs found');
-                setRadarData({
-                    calories: 0,
-                    protein: 0,
-                    carbs: 0,
-                    fat: 0,
-                    raw_logs_count: 0
-                });
-            }
+            setRadarData({
+                calories: totals.calories,
+                protein: totals.protein,
+                carbs: totals.carbs,
+                fat: totals.fat,
+                raw_logs_count: data.length
+            });
         } catch (err) {
             logger.error('[fetchRadarData] Exception fetching radar data:', err);
             setRadarData(null);
         }
+    }, []);
+
+    const loadConversations = useCallback(async (uid: string) => {
+        const { data } = await supabase
+            .from('conversations')
+            .select('*')
+            .eq('user_id', uid)
+            .order('updated_at', { ascending: false });
+        setConversations(data || []);
     }, []);
 
     const handleBarcodeScan = async (code: string) => {
@@ -259,6 +261,23 @@ export default function Chat() {
         init();
     }, []);
 
+    // Watch for tool results to refresh sidebar early
+    useEffect(() => {
+        if (!userId) return;
+
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage?.toolInvocations) {
+            const hasSuccessfulLog = lastMessage.toolInvocations.some((tool: any) =>
+                tool.toolName === 'log_activity' && 'result' in tool
+            );
+            if (hasSuccessfulLog) {
+                logger.debug('[useEffect] Log detected, refreshing radar');
+                fetchRadarData(userId);
+                loadConversations(userId);
+            }
+        }
+    }, [messages, userId, fetchRadarData, loadConversations]);
+
     // Watch for tool-based profile updates in Guest Mode
     useEffect(() => {
         if (userId) return;
@@ -298,14 +317,6 @@ export default function Chat() {
     // Conversation CRUD
     // =========================================================================
 
-    const loadConversations = async (uid: string) => {
-        const { data } = await supabase
-            .from('conversations')
-            .select('*')
-            .eq('user_id', uid)
-            .order('updated_at', { ascending: false });
-        setConversations(data || []);
-    };
 
     const createNewConversation = async (): Promise<string | null> => {
         if (!userId) return null;
