@@ -83,6 +83,7 @@ export default function Chat() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isCompressing, setIsCompressing] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [radarData, setRadarData] = useState<any>(null);
 
     // Memoized Supabase client to prevent recreation on every render
     const supabase = useMemo(() => createClient(), []);
@@ -132,6 +133,7 @@ export default function Chat() {
                 logger.debug('[useChat] Persisting messages for conv', { activeId });
                 await saveMessagesToDb(activeId, [...messagesRef.current, message]);
                 loadConversations(userId);
+                fetchRadarData(userId); // Refresh radar data after logging
             }
             else {
                 logger.warn('[onFinish] Save skipped: missing ID or User', { activeId, userId });
@@ -166,6 +168,37 @@ export default function Chat() {
             setIsCompressing(false);
         }
     };
+
+    const fetchRadarData = useCallback(async (uid: string) => {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data } = await supabase
+            .from('metabolic_logs')
+            .select('calories, protein, carbs, fat, logged_at')
+            .eq('user_id', uid)
+            .gte('logged_at', sevenDaysAgo.toISOString())
+            .order('logged_at', { ascending: false });
+
+        if (data && data.length > 0) {
+            const totals = data.reduce((acc: any, log: any) => ({
+                calories: acc.calories + (log.calories || 0),
+                protein: acc.protein + (log.protein || 0),
+                carbs: acc.carbs + (log.carbs || 0),
+                fat: acc.fat + (log.fat || 0),
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+            setRadarData({
+                avg_calories: Math.round(totals.calories / 7),
+                avg_protein: Math.round(totals.protein / 7),
+                avg_carbs: Math.round(totals.carbs / 7),
+                avg_fat: Math.round(totals.fat / 7),
+                raw_logs_count: data.length
+            });
+        } else {
+            setRadarData(null);
+        }
+    }, [supabase]);
 
     const handleBarcodeScan = async (code: string) => {
         logger.debug('[handleBarcodeScan] Scanned code', { code });
@@ -203,12 +236,15 @@ export default function Chat() {
                     .eq('id', user.id)
                     .single();
                 if (profile?.name) setUserName(profile.name);
-                await loadConversations(user.id);
+                await Promise.all([
+                    loadConversations(user.id),
+                    fetchRadarData(user.id)
+                ]);
             }
             setIsLoadingConversations(false);
         };
         init();
-    }, []);
+    }, [fetchRadarData]);
 
     // Watch for tool-based profile updates in Guest Mode
     useEffect(() => {
@@ -570,6 +606,7 @@ export default function Chat() {
                 userId={userId}
                 userName={userName}
                 userEmail={userEmail}
+                radarData={radarData}
             />
 
             {/* Main Canvas */}
@@ -594,6 +631,7 @@ export default function Chat() {
                         {messages.length === 0 ? (
                             <WelcomeScreen
                                 userName={userName}
+                                onQuickLog={(text) => setInput(text)}
                             />
                         ) : (
                             <div className="pt-20 pb-40 space-y-8">

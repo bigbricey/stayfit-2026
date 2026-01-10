@@ -16,6 +16,7 @@ import {
     X
 } from 'lucide-react';
 import { isAdmin } from '@/lib/config';
+import ActiveRadarWidget from './ActiveRadarWidget';
 
 // Types
 interface Conversation {
@@ -41,6 +42,7 @@ interface SidebarProps {
     userId: string | null;
     userName: string | null;
     userEmail: string | null;
+    radarData?: any;
 }
 
 export default function Sidebar({
@@ -58,7 +60,8 @@ export default function Sidebar({
     onLogout,
     userId,
     userName,
-    userEmail
+    userEmail,
+    radarData
 }: SidebarProps) {
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingConversation, setEditingConversation] = useState<{ id: string; title: string } | null>(null);
@@ -271,6 +274,11 @@ export default function Sidebar({
                             )
                         ))
                     )}
+                </div>
+
+                {/* Active Radar Widget */}
+                <div className="px-4 py-2 border-t border-gray-800/50 mt-2">
+                    <ActiveRadarWidget data={radarData} />
                 </div>
 
                 {/* Footer */}
