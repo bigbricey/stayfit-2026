@@ -440,63 +440,117 @@ export async function POST(req: Request) {
                     date: z.string().optional().describe('The date (YYYY-MM-DD). Defaults to now.'),
                 }),
                 execute: async ({ log_type, content_raw, core, flexible, is_estimated, confidence_score, date }) => {
+                    log('[log_activity] Tool called:', {
+                        log_type,
+                        content_raw: content_raw?.substring(0, 50),
+                        date,
+                        hasCore: !!core,
+                        calories: core?.calories
+                    });
+
                     if (!user) {
-                        logWarn('[API/Chat] Blocked Tool Execution (Demo Mode): log_activity');
+                        logWarn('[log_activity] Blocked: Demo Mode');
                         return `[DEMO MODE] Item NOT saved to Vault. Analysis: ${JSON.stringify({ core, flexible })}`;
                     }
 
                     // HARD-LOCK: Enforce biometrics onboarding
-                    const { data: profile } = await supabase
+                    const { data: profile, error: profileError } = await supabase
                         .from('users_secure')
                         .select('biometrics')
                         .eq('id', user.id)
                         .single();
 
+                    if (profileError) {
+                        logWarn('[log_activity] Profile fetch error:', profileError);
+                    }
+
                     const bio = profile?.biometrics || {};
                     if (!bio.weight || !bio.height || !bio.sex) {
+                        log('[log_activity] Blocked: Incomplete biometrics', bio);
                         return "SYSTEM ERROR: Log BLOCKED. User profile is incomplete. You MUST ask the user for Height, Weight, and Biological Sex before I can perform metabolic calculations.";
                     }
 
+                    // Build timestamp - use timezone-aware logic for retroactive dates
                     let timestamp: string;
                     if (date) {
-                        // Retroactive: Snap to Noon UTC on that date
-                        timestamp = date.includes('T') ? date : `${date}T12:00:00Z`;
+                        // Retroactive: Snap to Noon in user's timezone, converted to UTC
+                        try {
+                            const noonLocal = new Date(`${date}T12:00:00`);
+                            timestamp = fromZonedTime(noonLocal, clientTimezone).toISOString();
+                            log('[log_activity] Retroactive timestamp:', { date, clientTimezone, timestamp });
+                        } catch (e) {
+                            // Fallback to UTC noon
+                            timestamp = `${date}T12:00:00Z`;
+                            logWarn('[log_activity] Timezone conversion failed, using UTC:', timestamp);
+                        }
                     } else {
                         // Live: Exact current time
                         timestamp = new Date().toISOString();
                     }
 
-                    const { error } = await supabase
+                    const insertData = {
+                        user_id: user.id,
+                        log_type,
+                        content_raw,
+                        calories: core?.calories,
+                        protein: core?.protein,
+                        fat: core?.fat,
+                        carbs: core?.carbs,
+                        fiber: core?.fiber,
+                        sugar_g: core?.sugar_g,
+                        magnesium_mg: core?.magnesium_mg,
+                        potassium_mg: core?.potassium_mg,
+                        zinc_mg: core?.zinc_mg,
+                        sodium_mg: core?.sodium_mg,
+                        vitamin_d_iu: core?.vitamin_d_iu,
+                        vitamin_b12_ug: core?.vitamin_b12_ug,
+                        flexible_data: {
+                            ...flexible,
+                            items: core?.items
+                        },
+                        is_estimated,
+                        confidence_score,
+                        logged_at: timestamp,
+                    };
+
+                    log('[log_activity] Inserting:', {
+                        user_id: user.id,
+                        log_type,
+                        content_raw: content_raw?.substring(0, 30),
+                        calories: insertData.calories,
+                        logged_at: timestamp
+                    });
+
+                    const { data: insertedData, error } = await supabase
                         .from('metabolic_logs')
-                        .insert({
-                            user_id: user.id,
-                            log_type,
-                            content_raw,
-                            // Spread core metrics directly into columns
-                            calories: core?.calories,
-                            protein: core?.protein,
-                            fat: core?.fat,
-                            carbs: core?.carbs,
-                            fiber: core?.fiber,
-                            sugar_g: core?.sugar_g,
-                            magnesium_mg: core?.magnesium_mg,
-                            potassium_mg: core?.potassium_mg,
-                            zinc_mg: core?.zinc_mg,
-                            sodium_mg: core?.sodium_mg,
-                            vitamin_d_iu: core?.vitamin_d_iu,
-                            vitamin_b12_ug: core?.vitamin_b12_ug,
-                            // Dump the rest into flexible_data
-                            flexible_data: {
-                                ...flexible,
-                                items: core?.items
-                            },
-                            is_estimated,
-                            confidence_score,
-                            logged_at: timestamp,
-                        });
-                    return error ? `Error logging data: ${error.message}` : 'Item secured in Data Vault.';
+                        .insert(insertData)
+                        .select('id, logged_at')
+                        .single();
+
+                    if (error) {
+                        logWarn('[log_activity] Insert ERROR:', error);
+                        return `Error logging data: ${error.message}`;
+                    }
+
+                    if (!insertedData) {
+                        logWarn('[log_activity] CRITICAL: Insert returned no data (likely RLS issue)');
+                        return `Error: Log operation failed silently. Your entry was not saved. This may be a permissions issue - please try again or contact support.`;
+                    }
+
+                    log('[log_activity] SUCCESS:', {
+                        id: insertedData.id,
+                        logged_at: insertedData.logged_at
+                    });
+
+                    // Build user-friendly response
+                    const logDate = new Date(insertedData.logged_at);
+                    const dateStr = logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const timeStr = logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                    return `✓ Logged for ${dateStr}: ${core?.calories ? `${core.calories} cal` : content_raw?.substring(0, 30)}`;
                 },
             }),
+
             repair_log_entry: tool({
                 description: 'Refine or repair an existing log entry with precise USDA chemical data. Use when a log is missing minerals or needs macro corrections.',
                 parameters: z.object({
