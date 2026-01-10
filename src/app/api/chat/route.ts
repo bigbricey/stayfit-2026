@@ -203,9 +203,18 @@ export async function POST(req: Request) {
         processedMessages
     );
 
+    // 8. Intent Detection & Tool Enforcement
+    const lastUserMessage = messages.slice(-1)[0]?.content?.toLowerCase() || '';
+    const mutationIntents = ['delete', 'remove', 'remove', 'update', 'fix', "didn't eat", "wasn't me", 'log', 'recorded'];
+    const isMutationIntent = mutationIntents.some(intent => lastUserMessage.includes(intent));
+
+    console.log('[API/Chat] CONTEXT SEQUENCE:', tieredMessages.map(m => m.role));
+    if (isMutationIntent) console.log('[API/Chat] MUTATION INTENT DETECTED - FORCING TOOL CALL');
+
     const result = await streamText({
         model: openrouter(modelId),
         maxSteps: 5,
+        toolChoice: isMutationIntent ? 'required' : 'auto',
         messages: tieredMessages,
         onFinish: async (event) => {
             if (user && conversationId) {

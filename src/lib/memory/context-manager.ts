@@ -44,26 +44,24 @@ export class ContextManager {
                 role: 'system',
                 content: systemContent,
             },
-            ...slidingWindow,
         ];
 
-        // 5. TEMPORAL GUARDIAN (Prevent Context Drift)
-        // If there is history, append a fresh reminder of the current year.
-        if (slidingWindow.length > 0) {
-            const now = new Date();
-            if (now.getFullYear() < 2026) now.setFullYear(2026);
+        // 5. TEMPORAL GUARDIAN (Prevent Context Drift) - Put at TOP after root
+        const now = new Date();
+        if (now.getFullYear() < 2026) now.setFullYear(2026);
 
-            finalMessages.push({
-                id: 'system-temporal-guardian',
-                role: 'system',
-                content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). 
+        finalMessages.push({
+            id: 'system-temporal-guardian',
+            role: 'system',
+            content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). 
 [OPERATIONAL REMINDER]: You are a Data Accountant. Lying about database actions is a system failure. 
 - To delete: MUST call delete_log.
 - To log: MUST call log_activity.
 NEVER confirm an action until the tool confirms it to YOU first.`,
-            });
-        }
+        });
 
+        // 6. Sliding Window (Episodic Memory) - History comes LAST
+        finalMessages.push(...slidingWindow);
 
         return finalMessages;
     }
