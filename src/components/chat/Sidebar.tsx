@@ -12,7 +12,8 @@ import {
     MoreVertical,
     Trash2,
     Pencil,
-    ShieldCheck
+    ShieldCheck,
+    X
 } from 'lucide-react';
 import { isAdmin } from '@/lib/config';
 
@@ -185,8 +186,17 @@ export default function Sidebar({
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 pl-10 focus:ring-0 focus:outline-none text-sm"
+                            className="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 pl-10 pr-10 focus:ring-0 focus:outline-none text-sm"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-1"
+                                title="Clear search"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
