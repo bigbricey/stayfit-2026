@@ -207,9 +207,6 @@ export async function POST(req: Request) {
         model: openrouter(modelId),
         maxSteps: 5,
         messages: tieredMessages,
-        experimental_onToolCall: async ({ toolCalls }) => {
-            console.log('[API/Chat] MODEL PROPOSED TOOLS:', toolCalls.map(tc => tc.toolName));
-        },
         onFinish: async (event) => {
             if (user && conversationId) {
                 // Server-Side Persistence: Fallback/Primary mechanism
