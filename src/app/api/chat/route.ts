@@ -117,18 +117,19 @@ export async function POST(req: Request) {
         if (goalsRes.data) activeGoals = goalsRes.data;
         if (convRes.data) memorySummary = convRes.data.memory_summary;
 
-        // Fetch "Active Radar" (Last 7 Days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        // Fetch "Active Radar" (Today's Totals)
+        const userNow = toZonedTime(new Date(), clientTimezone || 'UTC');
+        const startOfTodayLocal = new Date(userNow.setHours(0, 0, 0, 0));
+        const startOfTodayUTC = fromZonedTime(startOfTodayLocal, clientTimezone || 'UTC');
 
         const { data: radarData } = await supabase
             .from('metabolic_logs')
             .select('calories, protein, carbs, fat, logged_at')
             .eq('user_id', user.id)
-            .gte('logged_at', sevenDaysAgo.toISOString())
+            .gte('logged_at', startOfTodayUTC.toISOString())
             .order('logged_at', { ascending: false });
 
-        // Calculate 7-day averages for the prompt injection
+        // Calculate today's totals for the prompt injection
         if (radarData && radarData.length > 0) {
             const totals = radarData.reduce((acc: any, log: any) => ({
                 calories: acc.calories + (log.calories || 0),
@@ -137,13 +138,20 @@ export async function POST(req: Request) {
                 fat: acc.fat + (log.fat || 0),
             }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-            const daysCount = 7;
             userProfile.active_radar = {
-                avg_calories: Math.round(totals.calories / daysCount),
-                avg_protein: Math.round(totals.protein / daysCount),
-                avg_carbs: Math.round(totals.carbs / daysCount),
-                avg_fat: Math.round(totals.fat / daysCount),
+                calories: totals.calories,
+                protein: totals.protein,
+                carbs: totals.carbs,
+                fat: totals.fat,
                 raw_logs_count: radarData.length
+            };
+        } else {
+            userProfile.active_radar = {
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                raw_logs_count: 0
             };
         }
 

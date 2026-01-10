@@ -3,10 +3,10 @@
 import { Activity, Zap, Droplets, Utensils } from 'lucide-react';
 
 interface RadarData {
-    avg_calories: number;
-    avg_protein: number;
-    avg_carbs: number;
-    avg_fat: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
     raw_logs_count: number;
 }
 
@@ -30,7 +30,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                     </div>
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Active Radar</span>
                 </div>
-                <span className="text-[9px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded-full font-medium">Last 7d</span>
+                <span className="text-[9px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded-full font-medium">Today</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -39,7 +39,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                         <Zap size={10} className="text-yellow-500" /> CALS
                     </div>
                     <div className="text-lg font-black text-gray-100 tracking-tight leading-none">
-                        {data.avg_calories}<span className="text-[10px] text-gray-500 ml-1 font-bold">AVG</span>
+                        {data.calories}
                     </div>
                 </div>
                 <div className="space-y-1">
@@ -47,7 +47,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                         <Utensils size={10} className="text-emerald-500" /> PRO
                     </div>
                     <div className="text-lg font-black text-gray-100 tracking-tight leading-none">
-                        {data.avg_protein}g
+                        {data.protein}g
                     </div>
                 </div>
                 <div className="space-y-1">
@@ -55,7 +55,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                         <Droplets size={10} className="text-blue-500" /> CARBS
                     </div>
                     <div className="text-lg font-black text-gray-100 tracking-tight leading-none">
-                        {data.avg_carbs}g
+                        {data.carbs}g
                     </div>
                 </div>
                 <div className="space-y-1">
@@ -63,7 +63,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                         <div className="w-2 h-2 rounded-full bg-orange-500" /> FAT
                     </div>
                     <div className="text-lg font-black text-gray-100 tracking-tight leading-none">
-                        {data.avg_fat}g
+                        {data.fat}g
                     </div>
                 </div>
             </div>
@@ -72,7 +72,7 @@ export default function ActiveRadarWidget({ data }: { data: RadarData | null }) 
                 <span className="text-[9px] text-gray-600 font-medium uppercase">{data.raw_logs_count} Entries</span>
                 <div className="flex gap-1">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className={`w-1 h-3 rounded-full ${i < 3 ? 'bg-emerald-500/20' : 'bg-emerald-500'}`} />
+                        <div key={i} className={`w-1 h-3 rounded-full ${i < (data.raw_logs_count > 0 ? 3 : 0) ? 'bg-emerald-500/20' : data.raw_logs_count > 0 ? 'bg-emerald-500' : 'bg-gray-800'}`} />
                     ))}
                 </div>
             </div>

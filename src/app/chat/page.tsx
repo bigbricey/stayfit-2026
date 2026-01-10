@@ -159,23 +159,23 @@ export default function Chat() {
 
     const fetchRadarData = useCallback(async (uid: string) => {
         logger.debug('[fetchRadarData] Fetching for user', { uid });
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
 
         try {
             const { data, error } = await supabase
                 .from('metabolic_logs')
                 .select('calories, protein, carbs, fat, logged_at')
                 .eq('user_id', uid)
-                .gte('logged_at', sevenDaysAgo.toISOString())
+                .gte('logged_at', startOfToday.toISOString())
                 .order('logged_at', { ascending: false });
 
             if (!data || data.length === 0) {
                 setRadarData({
-                    avg_calories: 0,
-                    avg_protein: 0,
-                    avg_carbs: 0,
-                    avg_fat: 0,
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0,
                     raw_logs_count: 0
                 });
                 return;
@@ -191,19 +191,19 @@ export default function Chat() {
                 }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
                 setRadarData({
-                    avg_calories: Math.round(totals.calories / 7),
-                    avg_protein: Math.round(totals.protein / 7),
-                    avg_carbs: Math.round(totals.carbs / 7),
-                    avg_fat: Math.round(totals.fat / 7),
+                    calories: totals.calories,
+                    protein: totals.protein,
+                    carbs: totals.carbs,
+                    fat: totals.fat,
                     raw_logs_count: data.length
                 });
             } else {
                 logger.debug('[fetchRadarData] No logs found');
                 setRadarData({
-                    avg_calories: 0,
-                    avg_protein: 0,
-                    avg_carbs: 0,
-                    avg_fat: 0,
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0,
                     raw_logs_count: 0
                 });
             }

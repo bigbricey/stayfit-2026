@@ -32,10 +32,10 @@ interface UserBiometrics {
 }
 
 interface UserRadar {
-  avg_calories: number;
-  avg_protein: number;
-  avg_carbs: number;
-  avg_fat: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
   raw_logs_count: number;
 }
 
@@ -96,7 +96,7 @@ const OPERATIONAL_RULES = `
     Only show "Safety Alerts" (Sugar/Seed Oils) if the amount is significant.
   </rule>
   <rule id="6_PROACTIVE_GAPS">
-    After logging, if a user is significantly off track for their 7-day radar averages or current goals, suggest a specific, immediate corrective action (e.g., "You're 30g below your protein average today; consider a high-leverage protein source for your next meal.").
+    After logging, if a user is off track for their daily goals or current mode, suggest a specific, immediate corrective action (e.g., "You're at 20g protein for the day; consider a high-leverage protein source for your next meal.").
   </rule>
 </operational_rules>
 `;
@@ -191,9 +191,9 @@ const buildUserContext = (profile: UserProfile, goals: Goal[]): string => {
   </profile>
 
   <status>
-    <radar_7day>
-      ${radar ? `${radar.avg_calories}kcal avg | ${radar.avg_protein}g protein | ${radar.raw_logs_count} logs` : 'Initializing...'}
-    </radar_7day>
+    <radar_today>
+      ${radar ? `${radar.calories}kcal | ${radar.protein}g protein | ${radar.raw_logs_count} entries today` : 'Initializing...'}
+    </radar_today>
     <goals>
       ${goals.length > 0 ? goals.map(g => `${g.type}: ${g.target}`).join(' | ') : 'Maintenance'}
     </goals>
