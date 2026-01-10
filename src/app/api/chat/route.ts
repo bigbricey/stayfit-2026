@@ -203,18 +203,25 @@ export async function POST(req: Request) {
         processedMessages
     );
 
-    // 8. Intent Detection & Tool Enforcement
-    const lastUserMessage = messages.slice(-1)[0]?.content?.toLowerCase() || '';
-    const mutationIntents = ['delete', 'remove', 'remove', 'update', 'fix', "didn't eat", "wasn't me", 'log', 'recorded'];
-    const isMutationIntent = mutationIntents.some(intent => lastUserMessage.includes(intent));
+    // 8. Intent Detection & Operational Mandate Injection
+    const lastMessage = tieredMessages[tieredMessages.length - 1];
+    const userContent = lastMessage?.role === 'user' ? String(lastMessage.content).toLowerCase() : '';
+    const mutationIntents = ['delete', 'remove', 'update', 'fix', "didn't eat", "wasn't me", 'log', 'recorded', 'add'];
+    const isMutationIntent = mutationIntents.some(intent => userContent.includes(intent));
+
+    if (isMutationIntent && lastMessage && lastMessage.role === 'user') {
+        console.log('[API/Chat] MUTATION INTENT DETECTED - INJECTING OPERATIONAL MANDATE');
+        // We inject a final, unavoidable operational instruction directly into the last message's context
+        // This is a "Master-Level" pattern for models that try to bypass system instructions.
+        lastMessage.content = `${lastMessage.content}\n\n[OPERATIONAL MANDATE: DO NOT CONFIRM SUCCESS UNLESS YOU CALL A TOOL FIRST. IF YOU DO NOT HAVE PARAMS, CALL QUERY_LOGS TO FIND THEM.]`;
+    }
 
     console.log('[API/Chat] CONTEXT SEQUENCE:', tieredMessages.map(m => m.role));
-    if (isMutationIntent) console.log('[API/Chat] MUTATION INTENT DETECTED - FORCING TOOL CALL');
 
     const result = await streamText({
         model: openrouter(modelId),
         maxSteps: 5,
-        toolChoice: isMutationIntent ? 'required' : 'auto',
+        toolChoice: 'auto', // Back to auto for stability
         messages: tieredMessages,
         onFinish: async (event) => {
             if (user && conversationId) {

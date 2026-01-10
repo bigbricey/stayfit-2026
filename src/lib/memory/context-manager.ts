@@ -37,7 +37,11 @@ export class ContextManager {
         const userAndAssistantHistory = messages.filter(m => m.role !== 'system');
         const slidingWindow = userAndAssistantHistory.slice(-this.MAX_EPISODIC_MESSAGES);
 
-        // 4. Final Assemblage
+        // 4. Sliding Window (Episodic Memory)
+        // We separate the last message to inject the Temporal Guardian with maximum saliency
+        const history = [...slidingWindow];
+        const lastMessage = history.pop();
+
         const finalMessages: Message[] = [
             {
                 id: 'system-context-root',
@@ -46,22 +50,26 @@ export class ContextManager {
             },
         ];
 
-        // 5. TEMPORAL GUARDIAN (Prevent Context Drift) - Put at TOP after root
+        // 5. Build History with Recency-Injected Guardian
+        finalMessages.push(...history);
+
+        // TEMPORAL GUARDIAN (Absolute Recency)
         const now = new Date();
         if (now.getFullYear() < 2026) now.setFullYear(2026);
 
         finalMessages.push({
             id: 'system-temporal-guardian',
             role: 'system',
-            content: `[SYSTEM DATE REMINDER]: It is **${now.getFullYear()}** (${now.toLocaleDateString()}). 
-[OPERATIONAL REMINDER]: You are a Data Accountant. Lying about database actions is a system failure. 
-- To delete: MUST call delete_log.
-- To log: MUST call log_activity.
-NEVER confirm an action until the tool confirms it to YOU first.`,
+            content: `[SYSTEM DATE]: **${now.getFullYear()}** (${now.toLocaleDateString()}). 
+[CRITICAL PROTOCOL]: You are a Data Accountant. 
+- MUTATIONS (log/delete/update) MUST call a tool. 
+- PROHIBITED: Lying about database actions.
+- MANDATORY: Tool confirms action -> Then you confirm to user.`,
         });
 
-        // 6. Sliding Window (Episodic Memory) - History comes LAST
-        finalMessages.push(...slidingWindow);
+        if (lastMessage) {
+            finalMessages.push(lastMessage);
+        }
 
         return finalMessages;
     }
